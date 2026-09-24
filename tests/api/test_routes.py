@@ -13,8 +13,12 @@ from app.infrastructure.csv_repository import (
     PriceRepository,
     RunRepository,
 )
+from app.infrastructure.market_data import MarketRepository
+from app.infrastructure.online_repository import OnlinePriceRepository
 from app.main import create_app
+from app.services.analytics import AnalyticsService
 from app.services.collection_service import KamisCollectionService
+from app.services.comparison import ComparisonService
 from config.server_config import Settings
 from log import app_logger
 
@@ -34,7 +38,19 @@ def container(tmp_path: Path) -> ApplicationContainer:
     prices = PriceRepository(tmp_path, app_logger)
     runs = RunRepository(tmp_path, app_logger)
     service = KamisCollectionService(EmptyClient(), catalog, prices, runs, app_logger)
-    return ApplicationContainer(settings, catalog, prices, runs, service)
+    online = OnlinePriceRepository(tmp_path, app_logger)
+    market = MarketRepository(tmp_path, app_logger)
+    comparison = ComparisonService(prices, online, market, AnalyticsService())
+    return ApplicationContainer(
+        settings,
+        catalog,
+        prices,
+        runs,
+        service,
+        online_repository=online,
+        market_repository=market,
+        comparison_service=comparison,
+    )
 
 
 @pytest.fixture
@@ -102,3 +118,29 @@ def test_price_date_order_is_validated(client: TestClient) -> None:
         params={"start_date": "2026-09-25", "end_date": "2026-09-24"},
     )
     assert response.status_code == 422
+
+
+def test_dashboard_is_served_as_html(client: TestClient) -> None:
+    response = client.get("/")
+    assert response.status_code == 200
+    assert "KAMIS Market Lens" in response.text
+    assert "comparisonChart" in response.text
+
+
+def test_comparison_api_exposes_every_required_toggle(client: TestClient) -> None:
+    response = client.get(
+        "/api/v1/comparison", params={"item_code": "111", "mode": "base100"}
+    )
+    assert response.status_code == 200
+    required = {
+        "kamis_wholesale",
+        "kamis_retail",
+        "online_naver",
+        "online_coupang",
+        "kospi",
+        "kosdaq",
+        "sp500",
+        "nasdaq",
+        "dow_jones",
+    }
+    assert required.issubset(response.json()["series"])

@@ -24,6 +24,10 @@ class CollectionRequest(BaseModel):
         return self
 
 
+class DailyCollectionRequest(BaseModel):
+    observed_date: date
+
+
 @router.post("/collections/kamis")
 def collect_kamis(
     request: CollectionRequest,
@@ -32,6 +36,16 @@ def collect_kamis(
     return container.collection_service.collect(
         request.start_date, request.end_date
     ).to_dict()
+
+
+@router.post("/collections/all")
+def collect_all(
+    request: DailyCollectionRequest,
+    container: ContainerDependency,
+) -> dict[str, object]:
+    if container.daily_pipeline is None:
+        raise HTTPException(status_code=503, detail="daily pipeline unavailable")
+    return container.daily_pipeline.collect(request.observed_date).to_dict()
 
 
 @router.get("/collections/{run_id}")
