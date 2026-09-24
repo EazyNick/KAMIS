@@ -22,6 +22,7 @@ from app.services.comparison import ComparisonService
 from app.services.daily_pipeline import DailyPipeline
 from app.services.online_collection import OnlineCollectionService
 from app.services.online_pricing import OnlinePriceCalculator
+from app.services.startup_collection import StartupCollectionService
 from config.server_config import Settings
 from log import app_logger
 
@@ -40,6 +41,7 @@ class ApplicationContainer:
     market_client: MarketDataClient | None = None
     comparison_service: ComparisonService | None = None
     daily_pipeline: DailyPipeline | None = None
+    startup_collection_service: StartupCollectionService | None = None
 
     @classmethod
     def build(cls, settings: Settings) -> ApplicationContainer:
@@ -87,6 +89,12 @@ class ApplicationContainer:
             analytics_batch,
             app_logger,
         )
+        startup_collection = StartupCollectionService(
+            pipeline,
+            runs,
+            settings,
+            app_logger,
+        )
         return cls(
             settings,
             catalog,
@@ -100,4 +108,5 @@ class ApplicationContainer:
             market_client,
             comparison,
             pipeline,
+            startup_collection,
         )

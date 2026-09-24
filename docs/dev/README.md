@@ -25,6 +25,8 @@ Copy-Item .env.example .env
 .\.venv\Scripts\python.exe -m app.cli serve --host 127.0.0.1 --port 8000
 ```
 
+`serve` 또는 `app/main.py`로 서버를 시작하면 서울 기준 오늘의 `daily_pipeline` 성공 이력을 확인합니다. 성공 이력이 없거나 이전 실행이 실패·부분 실패라면 통합 수집을 백그라운드에서 시작하며, 이미 성공했다면 중복 수집하지 않습니다. 수집 중에도 웹과 API는 바로 사용할 수 있습니다.
+
 Swagger UI는 <http://127.0.0.1:8000/docs>에서 확인합니다.
 
 ## 데이터 구조
@@ -38,13 +40,13 @@ Swagger UI는 <http://127.0.0.1:8000/docs>에서 확인합니다.
 - `data/normalized/market_observations.csv`: 지수·환율·농산물 선물 종가
 - `data/analytics/`: 기준 100, 수익률, 상관·시차·이동 상관, 스프레드·변동성
 - `data/runs/collection_runs.csv`: 실행 상태, 건수, 실패 범위와 원인
-- `logs/`: 날짜별 애플리케이션 로그
+- `log/logs/`: 날짜별 애플리케이션 로그
 
 CSV는 임시 파일에 완전히 쓴 다음 원자적으로 교체합니다. 같은 관측값은 복제하지 않고 갱신합니다.
 
 ## 로그로 장애 조사하기
 
-주요 이벤트는 `collection.started/completed/failed`, `collection.query.failed`, `kamis.request.started/succeeded/no_data/failed`, `csv.write.succeeded/failed`, `http.request.completed/failed`, `scheduler.collection.*`입니다.
+주요 이벤트는 `startup.collection.scheduled/skipped/completed/failed`, `daily_pipeline.started/completed/source.failed`, `collection.started/completed/failed`, `collection.query.failed`, `kamis.request.started/succeeded/no_data/failed`, `csv.write.succeeded/failed`, `http.request.completed/failed`, `scheduler.collection.*`입니다.
 
 1. `collection.completed`의 `run_id`, `status`, `error_count`를 찾습니다.
 2. 같은 `run_id`의 `collection.query.failed`에서 품목·등급·기간과 `error_type`을 확인합니다.

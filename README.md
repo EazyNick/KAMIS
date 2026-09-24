@@ -36,15 +36,15 @@ KAMIS_CERT_KEY=발급받은_API_키
 KAMIS_CERT_ID=발급받은_요청자_ID
 ```
 
-4. 오늘 자료를 수집하고 웹 서버를 실행합니다.
+4. 웹 서버를 실행합니다.
 
 ```powershell
-$today = Get-Date -Format yyyy-MM-dd
-.\.venv\Scripts\python.exe -m app.cli collect-all --date $today
 .\.venv\Scripts\python.exe -m app.cli serve --host 127.0.0.1 --port 8000
 ```
 
-수집 없이 화면과 API부터 확인하려면 마지막 `serve` 명령만 실행해도 됩니다. `collect-all`은 전체 KAMIS 품목에 대해 네이버·쿠팡 검색까지 수행하므로 최초 실행 시간이 길어질 수 있습니다.
+서버가 시작되면 서울 기준 오늘의 `daily_pipeline` 성공 이력을 자동으로 확인합니다. 오늘 성공 이력이 없거나 이전 실행이 실패·부분 실패라면 백그라운드에서 KAMIS·네이버·쿠팡·시장 데이터 통합 수집을 시작합니다. 수집 중에도 대시보드와 API는 바로 사용할 수 있으며, 이미 성공한 날짜에는 다시 수집하지 않습니다.
+
+전체 KAMIS 품목에 대해 네이버·쿠팡 검색까지 수행하므로 최초 수집은 오래 걸릴 수 있습니다. 진행 상황과 실패 원인은 `log/logs/`의 로그에서 확인할 수 있습니다.
 
 ### VS Code에서 실행
 
@@ -71,7 +71,6 @@ python3.11 -m venv .venv
 ./.venv/bin/python -m playwright install chromium
 cp .env.example .env
 # 편집기로 .env에 KAMIS_CERT_KEY와 KAMIS_CERT_ID를 입력합니다.
-./.venv/bin/python -m app.cli collect-all --date "$(date +%F)"
 ./.venv/bin/python -m app.cli serve --host 127.0.0.1 --port 8000
 ```
 
@@ -87,6 +86,8 @@ cp .env.example .env
 KAMIS만 지정 기간으로 수집하거나 과거 3년 자료를 초기 적재할 수 있습니다.
 
 ```powershell
+$today = Get-Date -Format yyyy-MM-dd
+.\.venv\Scripts\python.exe -m app.cli collect-all --date $today
 .\.venv\Scripts\python.exe -m app.cli collect-kamis --start 2026-09-24 --end 2026-09-24
 .\.venv\Scripts\python.exe -m app.cli backfill-kamis --years 3
 .\.venv\Scripts\python.exe -m app.cli schedule

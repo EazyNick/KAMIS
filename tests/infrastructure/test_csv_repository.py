@@ -6,8 +6,12 @@ from zoneinfo import ZoneInfo
 import pytest
 
 from app.core.errors import StorageError
-from app.domain.models import PriceObservation, PriceType
-from app.infrastructure.csv_repository import PriceFilters, PriceRepository
+from app.domain.models import CollectionRun, PriceObservation, PriceType, RunStatus
+from app.infrastructure.csv_repository import (
+    PriceFilters,
+    PriceRepository,
+    RunRepository,
+)
 from log import app_logger
 
 
@@ -57,3 +61,21 @@ def test_repository_preserves_existing_file_when_new_write_fails(
         repository.upsert([price_row("1020")], "run-2")
 
     assert repository.path.read_bytes() == original
+
+
+def test_run_repository_detects_only_successful_daily_run(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path, app_logger)
+    observed_date = date(2026, 9, 24)
+    failed = CollectionRun.start("daily_pipeline", observed_date, observed_date).finish(
+        RunStatus.PARTIAL_FAILURE, record_count=3, error_count=1
+    )
+    repository.save(failed)
+
+    assert repository.has_successful_run("daily_pipeline", observed_date) is False
+
+    successful = CollectionRun.start(
+        "daily_pipeline", observed_date, observed_date
+    ).finish(RunStatus.SUCCESS, record_count=10, error_count=0)
+    repository.save(successful)
+
+    assert repository.has_successful_run("daily_pipeline", observed_date) is True

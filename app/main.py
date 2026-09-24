@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import sys
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from pathlib import Path
 from time import perf_counter
 from uuid import uuid4
@@ -28,7 +30,18 @@ from log import app_logger
 
 def create_app(container: ApplicationContainer | None = None) -> FastAPI:
     resolved = container or ApplicationContainer.build(Settings.from_env())
-    app = FastAPI(title="KAMIS Research Dashboard API", version="0.1.0")
+
+    @asynccontextmanager
+    async def lifespan(application: FastAPI) -> AsyncIterator[None]:
+        if resolved.startup_collection_service is not None:
+            resolved.startup_collection_service.ensure_today()
+        yield
+
+    app = FastAPI(
+        title="KAMIS Research Dashboard API",
+        version="0.1.0",
+        lifespan=lifespan,
+    )
     app.state.container = resolved
     app.include_router(dashboard_router)
     app.include_router(health_router)

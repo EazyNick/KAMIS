@@ -144,3 +144,23 @@ def test_comparison_api_exposes_every_required_toggle(client: TestClient) -> Non
         "dow_jones",
     }
     assert required.issubset(response.json()["series"])
+
+
+def test_application_startup_checks_today_collection(
+    container: ApplicationContainer,
+) -> None:
+    class FakeStartupCollection:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def ensure_today(self) -> str:
+            self.calls += 1
+            return "scheduled"
+
+    startup = FakeStartupCollection()
+    container.startup_collection_service = startup
+
+    with TestClient(create_app(container)):
+        pass
+
+    assert startup.calls == 1

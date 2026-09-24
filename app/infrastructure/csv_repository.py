@@ -272,3 +272,13 @@ class RunRepository(_AtomicCsvRepository):
     def latest(self) -> dict[str, Any] | None:
         rows = self._read()
         return dict(rows[-1]) if rows else None
+
+    def has_successful_run(self, source: str, requested_date: date) -> bool:
+        expected_date = requested_date.isoformat()
+        return any(
+            row.get("source") == source
+            and row.get("requested_start") == expected_date
+            and row.get("requested_end") == expected_date
+            and row.get("status") == "success"
+            for row in self._read()
+        )
