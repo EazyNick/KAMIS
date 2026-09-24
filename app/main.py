@@ -1,8 +1,16 @@
 from __future__ import annotations
 
+import sys
+from pathlib import Path
 from time import perf_counter
 from uuid import uuid4
 
+if __package__ in {None, ""}:
+    project_root = str(Path(__file__).resolve().parents[1])
+    if project_root not in sys.path:
+        sys.path.insert(0, project_root)
+
+import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
@@ -68,3 +76,12 @@ def create_app(container: ApplicationContainer | None = None) -> FastAPI:
 
 
 app = create_app()
+
+
+def main() -> int:
+    uvicorn.run(app, host="127.0.0.1", port=8000)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
