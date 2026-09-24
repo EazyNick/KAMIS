@@ -137,6 +137,30 @@ class PriceObservation:
             raise DataValidationError("negative price is not allowed")
         return price
 
+    @staticmethod
+    def parse_observed_date(data: dict[str, object]) -> date:
+        regday = optional_text(data.get("regday"))
+        if regday is None:
+            raise DataValidationError("missing price field: regday")
+
+        parts = regday.split("/")
+        if len(parts) == 2:
+            year = optional_text(data.get("yyyy"))
+            if year is None:
+                raise DataValidationError("missing price field: yyyy")
+            normalized = "-".join((year, *parts))
+        elif len(parts) == 3:
+            normalized = "-".join(parts)
+        else:
+            normalized = regday
+
+        try:
+            return date.fromisoformat(normalized)
+        except ValueError as error:
+            raise DataValidationError(
+                f"invalid price date: yyyy={data.get('yyyy')!r}, regday={regday!r}"
+            ) from error
+
     @classmethod
     def from_api(
         cls,
@@ -144,12 +168,9 @@ class PriceObservation:
         query: PriceQuery,
         collected_at: datetime,
     ) -> PriceObservation:
-        regday = optional_text(data.get("regday"))
-        if regday is None:
-            raise DataValidationError("missing price field: regday")
         return cls(
             price_type=query.price_type,
-            observed_date=date.fromisoformat(regday),
+            observed_date=cls.parse_observed_date(data),
             collected_at=collected_at,
             category_code=query.catalog_entry.category_code,
             item_code=query.catalog_entry.item_code,
