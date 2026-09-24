@@ -11,3 +11,6 @@ __pycache__/
 # Runtime logs
 log/logs/
 debug.log
+
+# Isolated implementation worktrees
+.worktrees/
