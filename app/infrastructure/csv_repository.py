@@ -65,7 +65,9 @@ class _AtomicCsvRepository:
         with path.open("w", encoding="utf-8-sig", newline="") as handle:
             if not fieldnames:
                 return
-            writer = csv.DictWriter(handle, fieldnames=fieldnames, extrasaction="ignore")
+            writer = csv.DictWriter(
+                handle, fieldnames=fieldnames, extrasaction="ignore"
+            )
             writer.writeheader()
             writer.writerows(rows)
             handle.flush()
@@ -130,7 +132,10 @@ class CatalogRepository(_AtomicCsvRepository):
         return [
             row
             for row in rows
-            if (filters.category_code is None or row.get("category_code") == filters.category_code)
+            if (
+                filters.category_code is None
+                or row.get("category_code") == filters.category_code
+            )
             and (filters.item_code is None or row.get("item_code") == filters.item_code)
             and (
                 filters.item_name is None
@@ -196,9 +201,11 @@ class PriceRepository(_AtomicCsvRepository):
                 continue
             if filters.item_code and row.get("item_code") != filters.item_code:
                 continue
-            if filters.item_name and filters.item_name.casefold() not in row.get(
-                "item_name", ""
-            ).casefold():
+            if (
+                filters.item_name
+                and filters.item_name.casefold()
+                not in row.get("item_name", "").casefold()
+            ):
                 continue
             if filters.start_date and observed < filters.start_date:
                 continue

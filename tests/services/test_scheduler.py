@@ -48,9 +48,7 @@ class FakeService:
 def test_scheduler_registers_single_daily_job() -> None:
     backend = FakeScheduler()
     service = FakeService()
-    scheduler = DailyScheduler(
-        backend, service, Settings.from_env(), app_logger
-    )
+    scheduler = DailyScheduler(backend, service, Settings.from_env(), app_logger)
 
     scheduler.start(paused=True)
 
@@ -63,8 +61,6 @@ def test_scheduler_registers_single_daily_job() -> None:
 
 def test_scheduler_shutdown_waits_for_collection() -> None:
     backend = FakeScheduler()
-    scheduler = DailyScheduler(
-        backend, FakeService(), Settings.from_env(), app_logger
-    )
+    scheduler = DailyScheduler(backend, FakeService(), Settings.from_env(), app_logger)
     scheduler.shutdown()
     assert backend.stopped is True

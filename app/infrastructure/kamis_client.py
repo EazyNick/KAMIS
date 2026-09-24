@@ -63,7 +63,9 @@ class KamisClient:
             timeout=self._settings.request_timeout_seconds,
         )
         if response.status_code == 429 or response.status_code >= 500:
-            raise requests.ConnectionError(f"retryable HTTP status {response.status_code}")
+            raise requests.ConnectionError(
+                f"retryable HTTP status {response.status_code}"
+            )
         response.raise_for_status()
         return response.json()
 

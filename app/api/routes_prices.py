@@ -23,7 +23,9 @@ def list_prices(
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> dict[str, object]:
     if start_date and end_date and start_date > end_date:
-        raise HTTPException(status_code=422, detail="start_date must not exceed end_date")
+        raise HTTPException(
+            status_code=422, detail="start_date must not exceed end_date"
+        )
     rows = container.price_repository.search(
         PriceFilters(price_type, item_code, item_name, start_date, end_date)
     )

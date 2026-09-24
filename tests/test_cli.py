@@ -29,9 +29,7 @@ def test_collect_command_returns_nonzero_on_failed_run(monkeypatch) -> None:
         lambda settings: SimpleNamespace(collection_service=service),
     )
 
-    result = main(
-        ["collect-kamis", "--start", "2026-09-24", "--end", "2026-09-24"]
-    )
+    result = main(["collect-kamis", "--start", "2026-09-24", "--end", "2026-09-24"])
 
     assert result == 1
 

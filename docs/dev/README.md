@@ -1,219 +1,55 @@
-# KAMIS 개발 환경 가이드
+# 개발·운영 가이드
 
-이 문서는 저장소를 처음 클론한 개발자가 로컬 개발 환경을 구성하기 위한 안내서다.
+## 환경 구성
 
-> 현재 프로젝트는 초기 개발 단계다. 데이터 수집기와 웹 대시보드의 실행 진입점은 구현하면서 이 문서에 계속 추가한다.
-
-## 1. 사전 요구사항
-
-- Git
-- Python 3.11 권장
-- VS Code 또는 원하는 Python IDE
-- KAMIS Open API 인증 키와 요청자 ID
-
-현재 `requirements.txt`는 Python 3.11 환경에서 생성됐다. 다른 Python 버전에서도 설치할 수 있지만 동일한 재현 환경이 필요하면 3.11을 사용한다.
-
-## 2. 저장소 클론
-
-```bash
-git clone <repository-url>
-cd KAMIS
-```
-
-`<repository-url>`은 실제 Git 저장소 주소로 교체한다.
-
-## 3. 가상환경 생성 및 활성화
-
-### Windows PowerShell
+Python 3.11 가상환경을 만들고 의존성을 설치합니다.
 
 ```powershell
 py -3.11 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-```
-
-PowerShell 실행 정책 때문에 활성화가 차단되면 현재 터미널에서만 다음 정책을 적용한다.
-
-```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\.venv\Scripts\Activate.ps1
-```
-
-활성화 없이도 가상환경의 Python을 직접 사용할 수 있다.
-
-```powershell
-.\.venv\Scripts\python.exe --version
-```
-
-### macOS/Linux
-
-```bash
-python3.11 -m venv .venv
-source .venv/bin/activate
-```
-
-## 4. Python 패키지 설치
-
-### Windows PowerShell
-
-```powershell
-.\.venv\Scripts\python.exe -m pip install --upgrade pip
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
-```
-
-### macOS/Linux
-
-```bash
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
-```
-
-설치 상태는 다음 명령으로 확인한다.
-
-```bash
-python -m pip check
-```
-
-## 5. Playwright 브라우저 설치
-
-Python 패키지와 별도로 크롤링 실행에 필요한 Chromium 런타임을 설치한다.
-
-### Windows PowerShell
-
-```powershell
-.\.venv\Scripts\python.exe -m playwright install chromium
-```
-
-### macOS/Linux
-
-```bash
-python -m playwright install chromium
-```
-
-대상 사이트의 이용약관과 `robots.txt`를 확인하고, CAPTCHA나 접근 제한을 우회하지 않는다.
-
-## 6. 환경변수 설정
-
-루트의 `.env.example`을 `.env`로 복사한다.
-
-### Windows PowerShell
-
-```powershell
 Copy-Item .env.example .env
 ```
 
-### macOS/Linux
+`.env`에는 `KAMIS_CERT_KEY`, `KAMIS_CERT_ID`를 설정합니다. 이 파일은 Git에서 제외됩니다. 키가 노출되면 KAMIS에서 재발급한 뒤 `.env`만 교체하고 이전 키를 폐기합니다.
 
-```bash
-cp .env.example .env
-```
-
-`.env`에 발급받은 값을 입력한다.
-
-```dotenv
-KAMIS_CERT_KEY=your_kamis_api_key
-KAMIS_CERT_ID=your_kamis_requester_id
-```
-
-`.env`는 Git에 커밋하지 않는다. 실제 인증 키를 문서, 로그, 테스트 코드 또는 화면 캡처에 포함하지 않는다.
-
-## 7. VS Code 설정
-
-1. VS Code에서 저장소 루트를 연다.
-2. 명령 팔레트에서 `Python: Select Interpreter`를 실행한다.
-3. Windows는 `.venv\Scripts\python.exe`, macOS/Linux는 `.venv/bin/python`을 선택한다.
-4. 새 터미널을 열고 Python 경로를 확인한다.
+## 실행
 
 ```powershell
-python -c "import sys; print(sys.executable)"
+.\.venv\Scripts\python.exe -m app.cli collect-kamis --start 2026-09-24 --end 2026-09-24
+.\.venv\Scripts\python.exe -m app.cli backfill-kamis --years 3
+.\.venv\Scripts\python.exe -m app.cli schedule
+.\.venv\Scripts\python.exe -m app.cli serve --host 127.0.0.1 --port 8000
 ```
 
-출력 경로가 이 저장소의 `.venv` 아래여야 한다.
+Swagger UI는 <http://127.0.0.1:8000/docs>에서 확인합니다.
 
-## 8. 로그 위치
+## 데이터 구조
 
-프로젝트 로그는 다음 경로에 저장한다.
+- `data/raw/kamis/catalog/`: 날짜별 KAMIS 품목 사전 원본 스냅샷
+- `data/normalized/kamis_catalog.csv`: 최신 정규화 품목 사전
+- `data/normalized/kamis_prices.csv`: 도매·소매 가격 누적 자료
+- `data/runs/collection_runs.csv`: 실행 상태, 건수, 실패 범위와 원인
+- `logs/`: 날짜별 애플리케이션 로그
 
-```text
-log/logs/
-```
+CSV는 임시 파일에 완전히 쓴 다음 원자적으로 교체합니다. 같은 관측값은 복제하지 않고 갱신합니다.
 
-`log` 패키지를 통해 생성되는 로그 파일은 해당 디렉터리에 모으며, 런타임 로그 파일은 Git에 커밋하지 않는다.
+## 로그로 장애 조사하기
 
-## 9. 개발 도구
+주요 이벤트는 `collection.started/completed/failed`, `collection.query.failed`, `kamis.request.started/succeeded/no_data/failed`, `csv.write.succeeded/failed`, `http.request.completed/failed`, `scheduler.collection.*`입니다.
 
-### 테스트
+1. `collection.completed`의 `run_id`, `status`, `error_count`를 찾습니다.
+2. 같은 `run_id`의 `collection.query.failed`에서 품목·등급·기간과 `error_type`을 확인합니다.
+3. `kamis.request.failed`에서 API 동작과 재시도 종료 원인을 확인합니다.
+4. 저장 문제면 `csv.write.failed`의 경로와 예외를 확인합니다.
+5. 웹 요청 문제면 응답의 `X-Correlation-ID`로 `http.request.*`를 검색합니다.
 
-```bash
-python -m pytest
-```
+인증 키와 요청자 ID, 인증 헤더는 마스킹되며 전체 쿼리 문자열을 기록하지 않습니다.
 
-### 린트
-
-```bash
-python -m ruff check .
-```
-
-### 코드 포맷 확인 및 적용
-
-```bash
-python -m ruff format --check .
-python -m ruff format .
-```
-
-## 10. 의존성 변경
-
-새 패키지는 반드시 프로젝트 가상환경에 설치한다.
-
-```bash
-python -m pip install <package-name>
-```
-
-설치 또는 제거 후 현재 환경을 고정한다.
-
-### Windows PowerShell
+## 검증
 
 ```powershell
-.\.venv\Scripts\python.exe -m pip freeze | Set-Content requirements.txt -Encoding utf8
+.\.venv\Scripts\python.exe -m pip check
+.\.venv\Scripts\python.exe -m pytest -q
+.\.venv\Scripts\python.exe -m ruff check .
+.\.venv\Scripts\python.exe -m ruff format --check .
 ```
-
-### macOS/Linux
-
-```bash
-python -m pip freeze > requirements.txt
-```
-
-커밋 전 다음 검사를 수행한다.
-
-```bash
-python -m pip check
-python -m pytest
-python -m ruff check .
-```
-
-## 11. 현재 주요 라이브러리
-
-| 용도 | 라이브러리 |
-|---|---|
-| HTTP/API | `requests`, `python-dotenv`, `tenacity` |
-| HTML 수집 | `beautifulsoup4`, `lxml`, `playwright` |
-| 데이터 처리 | `pandas`, `openpyxl`, `duckdb` |
-| 통계 분석 | `scipy`, `statsmodels` |
-| 금융 데이터 | `yfinance` |
-| 웹 대시보드 | `streamlit`, `plotly` |
-| 배치 실행 | `APScheduler` |
-| 로그 | `colorlog` |
-| 테스트·품질 | `pytest`, `ruff` |
-
-## 12. 문서 위치
-
-- 공모전 기획: `docs/Contest/KAMIS_공모전_주제_기획.md`
-- 개발 환경: `docs/dev/README.md`
-
-데이터 수집기와 대시보드가 구현되면 다음 내용을 추가한다.
-
-- 디렉터리 구조와 모듈 역할
-- 수집기별 실행 명령
-- 데이터 스키마와 CSV 예제
-- 스케줄러 등록 방법
-- Streamlit 실행 및 배포 방법
-- 테스트 데이터와 장애 대응 절차

@@ -480,7 +480,9 @@ def test_repository_preserves_existing_file_when_new_write_fails(tmp_path, monke
     repository = PriceRepository(tmp_path, app_logger)
     repository.upsert([PRICE_ROW], "run-1")
     original = repository.path.read_bytes()
-    monkeypatch.setattr(repository, "_serialize", Mock(side_effect=OSError("disk full")))
+    monkeypatch.setattr(
+        repository, "_serialize", Mock(side_effect=OSError("disk full"))
+    )
     with pytest.raises(StorageError, match="disk full"):
         repository.upsert([PRICE_ROW], "run-2")
     assert repository.path.read_bytes() == original
@@ -549,7 +551,9 @@ def test_three_year_backfill_is_split_without_gaps():
     assert all((part.end - part.start).days <= 365 for part in ranges)
     assert ranges[0].start == date(2023, 9, 25)
     assert ranges[-1].end == date(2026, 9, 24)
-    assert all(left.end + timedelta(days=1) == right.start for left, right in pairwise(ranges))
+    assert all(
+        left.end + timedelta(days=1) == right.start for left, right in pairwise(ranges)
+    )
 
 
 def test_second_collection_is_rejected_while_running(service_fixture):

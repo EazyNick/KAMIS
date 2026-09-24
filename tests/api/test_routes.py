@@ -33,9 +33,7 @@ def container(tmp_path: Path) -> ApplicationContainer:
     catalog = CatalogRepository(tmp_path, app_logger)
     prices = PriceRepository(tmp_path, app_logger)
     runs = RunRepository(tmp_path, app_logger)
-    service = KamisCollectionService(
-        EmptyClient(), catalog, prices, runs, app_logger
-    )
+    service = KamisCollectionService(EmptyClient(), catalog, prices, runs, app_logger)
     return ApplicationContainer(settings, catalog, prices, runs, service)
 
 

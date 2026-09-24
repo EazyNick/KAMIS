@@ -155,7 +155,8 @@ class PriceObservation:
             item_code=query.catalog_entry.item_code,
             kind_code=query.catalog_entry.kind_code,
             rank_code=query.rank_code,
-            item_name=optional_text(data.get("itemname")) or query.catalog_entry.item_name,
+            item_name=optional_text(data.get("itemname"))
+            or query.catalog_entry.item_name,
             variety=optional_text(data.get("kindname")) or query.catalog_entry.variety,
             region=optional_text(data.get("countyname")),
             market_name=optional_text(data.get("marketname")),
@@ -168,7 +169,9 @@ class PriceObservation:
         result["price_type"] = self.price_type.value
         result["observed_date"] = self.observed_date.isoformat()
         result["collected_at"] = self.collected_at.isoformat()
-        result["price_krw"] = str(self.price_krw) if self.price_krw is not None else None
+        result["price_krw"] = (
+            str(self.price_krw) if self.price_krw is not None else None
+        )
         return result
 
 
@@ -234,7 +237,9 @@ class CollectionRun:
         result["requested_start"] = self.requested_start.isoformat()
         result["requested_end"] = self.requested_end.isoformat()
         result["started_at"] = self.started_at.isoformat()
-        result["finished_at"] = self.finished_at.isoformat() if self.finished_at else None
+        result["finished_at"] = (
+            self.finished_at.isoformat() if self.finished_at else None
+        )
         result["status"] = self.status.value
         return result
 

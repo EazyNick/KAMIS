@@ -22,9 +22,7 @@ class ContextLogger:
     def __init__(self, logger: logging.Logger) -> None:
         self._logger = logger
 
-    def _message(
-        self, event: str, message: str, context: Mapping[str, object]
-    ) -> str:
+    def _message(self, event: str, message: str, context: Mapping[str, object]) -> str:
         safe = {
             key: "***" if key.lower() in self._secret_keys else value
             for key, value in context.items()

@@ -62,7 +62,9 @@ class LogManager:
                 # 현재 파일의 위치가 이미 server/log/log_manager.py이므로
                 # server/log/logs 디렉토리를 사용
                 current_file_dir = os.path.dirname(os.path.abspath(__file__))
-                self.directory = os.path.join(current_file_dir, "logs")  # server/log/logs 디렉토리
+                self.directory = os.path.join(
+                    current_file_dir, "logs"
+                )  # server/log/logs 디렉토리
             else:
                 self.directory = directory
 
@@ -180,9 +182,13 @@ class LogManager:
                 file_to_remove = files.pop(0)
                 try:
                     os.remove(file_to_remove)
-                    self.logger.debug(f"오래된 로그 파일 삭제: {os.path.basename(file_to_remove)}")
+                    self.logger.debug(
+                        f"오래된 로그 파일 삭제: {os.path.basename(file_to_remove)}"
+                    )
                 except OSError as e:
-                    self.logger.warning(f"로그 파일 삭제 실패: {file_to_remove}, 에러: {e}")
+                    self.logger.warning(
+                        f"로그 파일 삭제 실패: {file_to_remove}, 에러: {e}"
+                    )
         except OSError as error:
             self.logger.warning(
                 "로그 정리 중 에러 발생: %s: %s",
