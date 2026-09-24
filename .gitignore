@@ -12,5 +12,13 @@ __pycache__/
 log/logs/
 debug.log
 
+# Runtime data (CSV is the local source of truth, not repository content)
+data/raw/
+data/normalized/
+data/runs/
+data/analytics/
+data/browser-profile/
+!data/.gitkeep
+
 # Isolated implementation worktrees
 .worktrees/
