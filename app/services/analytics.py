@@ -6,6 +6,9 @@ import numpy as np
 import pandas as pd
 from scipy.stats import pearsonr, spearmanr
 
+from app.domain.models import ProductCatalogEntry
+from app.infrastructure.analytics_repository import AnalyticsRepository
+
 AnalysisMode = Literal["raw", "base100", "return_1d", "return_7d"]
 
 
@@ -179,3 +182,97 @@ class AnalyticsService:
             running = min(running, p_value * total / rank)
             result[original_index] = min(running, 1.0)
         return result
+
+
+class AnalyticsBatchService:
+    def __init__(
+        self,
+        comparison_service: Any,
+        analytics: AnalyticsService,
+        repository: AnalyticsRepository,
+    ) -> None:
+        self._comparison = comparison_service
+        self._analytics = analytics
+        self._repository = repository
+
+    def refresh(self, catalog: list[ProductCatalogEntry], run_id: str) -> int:
+        comparison_rows: list[dict[str, Any]] = []
+        correlation_rows: list[dict[str, Any]] = []
+        lag_rows: list[dict[str, Any]] = []
+        rolling_rows: list[dict[str, Any]] = []
+        spread_rows: list[dict[str, Any]] = []
+        for entry in catalog:
+            frame = self._comparison.build_frame(entry.item_code, None, None)
+            if frame.empty:
+                continue
+            for mode in ("raw", "base100", "return_1d", "return_7d"):
+                transformed = self._analytics.transform(frame, mode)
+                for observed_date, values in transformed.iterrows():
+                    for series_id, value in values.items():
+                        if pd.notna(value):
+                            comparison_rows.append(
+                                {
+                                    "item_code": entry.item_code,
+                                    "kind_code": entry.kind_code,
+                                    "observed_date": observed_date.date().isoformat(),
+                                    "mode": mode,
+                                    "series_id": series_id,
+                                    "value": float(value),
+                                }
+                            )
+            target = "kamis_retail" if "kamis_retail" in frame else None
+            if target:
+                for row in self._analytics.correlations(frame, target):
+                    correlation_rows.append(
+                        {
+                            "item_code": entry.item_code,
+                            "kind_code": entry.kind_code,
+                            **row,
+                        }
+                    )
+                for comparison in frame.columns:
+                    if comparison == target:
+                        continue
+                    lag_rows.extend(
+                        {
+                            "item_code": entry.item_code,
+                            "kind_code": entry.kind_code,
+                            **row,
+                        }
+                        for row in self._analytics.lag_correlations(
+                            frame, target, comparison
+                        )
+                    )
+                    rolling_rows.extend(
+                        {
+                            "item_code": entry.item_code,
+                            "kind_code": entry.kind_code,
+                            **row,
+                        }
+                        for row in self._analytics.rolling_correlations(
+                            frame, target, comparison
+                        )
+                    )
+            spread_frame = self._analytics.spreads_and_volatility(frame)
+            for observed_date, values in spread_frame.iterrows():
+                for metric, value in values.items():
+                    if pd.notna(value):
+                        spread_rows.append(
+                            {
+                                "item_code": entry.item_code,
+                                "kind_code": entry.kind_code,
+                                "observed_date": observed_date.date().isoformat(),
+                                "metric": metric,
+                                "value": float(value),
+                            }
+                        )
+        tables = {
+            "comparison_series": comparison_rows,
+            "correlations": correlation_rows,
+            "lag_correlations": lag_rows,
+            "rolling_correlations": rolling_rows,
+            "spreads_volatility": spread_rows,
+        }
+        for table, rows in tables.items():
+            self._repository.save(table, rows, run_id)
+        return sum(len(rows) for rows in tables.values())

@@ -31,6 +31,8 @@ def build_parser() -> argparse.ArgumentParser:
     collect.add_argument("--end", type=date.fromisoformat, required=True)
     backfill = commands.add_parser("backfill-kamis")
     backfill.add_argument("--years", type=int, default=3)
+    collect_all = commands.add_parser("collect-all")
+    collect_all.add_argument("--date", type=date.fromisoformat)
     commands.add_parser("schedule")
     return parser
 
@@ -66,11 +68,18 @@ def main(argv: Sequence[str] | None = None) -> int:
                 start_date = end_date - timedelta(days=arguments.years * 365)
                 run = container.collection_service.collect(start_date, end_date)
                 result = 1 if run.status is RunStatus.FAILED else 0
+            elif arguments.command == "collect-all":
+                if container.daily_pipeline is None:
+                    raise RuntimeError("daily pipeline is not configured")
+                observed_date = arguments.date or local_today(settings.timezone)
+                run = container.daily_pipeline.collect(observed_date)
+                result = 1 if run.status is RunStatus.FAILED else 0
             else:
                 backend = BlockingScheduler(timezone=settings.timezone)
-                DailyScheduler(
-                    backend, container.collection_service, settings, app_logger
-                ).start()
+                scheduled_service = (
+                    container.daily_pipeline or container.collection_service
+                )
+                DailyScheduler(backend, scheduled_service, settings, app_logger).start()
                 result = 0
         app_logger.info(
             "cli.command.completed",

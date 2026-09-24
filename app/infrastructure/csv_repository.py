@@ -11,7 +11,12 @@ from time import perf_counter
 from typing import Any
 
 from app.core.errors import StorageError
-from app.domain.models import CollectionRun, PriceObservation, ProductCatalogEntry
+from app.domain.models import (
+    CollectionRun,
+    PriceObservation,
+    ProductCatalogEntry,
+    split_codes,
+)
 from log.context_logger import ContextLogger
 
 
@@ -141,6 +146,28 @@ class CatalogRepository(_AtomicCsvRepository):
                 filters.item_name is None
                 or filters.item_name.casefold() in row.get("item_name", "").casefold()
             )
+        ]
+
+    def entries(self) -> list[ProductCatalogEntry]:
+        return [
+            ProductCatalogEntry(
+                category_code=row["category_code"],
+                category_name=row["category_name"],
+                item_code=row["item_code"],
+                item_name=row["item_name"],
+                kind_code=row["kind_code"],
+                variety=row["variety"],
+                wholesale_unit=row.get("wholesale_unit") or None,
+                wholesale_unit_size=row.get("wholesale_unit_size") or None,
+                retail_unit=row.get("retail_unit") or None,
+                retail_unit_size=row.get("retail_unit_size") or None,
+                eco_unit=row.get("eco_unit") or None,
+                eco_unit_size=row.get("eco_unit_size") or None,
+                wholesale_rank_codes=split_codes(row.get("wholesale_rank_codes")),
+                retail_rank_codes=split_codes(row.get("retail_rank_codes")),
+                eco_rank_codes=split_codes(row.get("eco_rank_codes")),
+            )
+            for row in self._read()
         ]
 
 
