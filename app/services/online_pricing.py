@@ -65,6 +65,7 @@ class OnlinePriceCalculator:
             candidate_count=len(offers),
             included_offers=tuple(included),
             excluded_offers=tuple(excluded),
+            collection_status="available" if offers else "unavailable",
         )
 
     @staticmethod

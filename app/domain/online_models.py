@@ -99,6 +99,7 @@ class PlatformPriceSummary:
     candidate_count: int
     included_offers: tuple[ShoppingOffer, ...]
     excluded_offers: tuple[ShoppingOffer, ...]
+    collection_status: str = "available"
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -112,4 +113,5 @@ class PlatformPriceSummary:
             ),
             "sample_count": self.sample_count,
             "candidate_count": self.candidate_count,
+            "collection_status": self.collection_status,
         }

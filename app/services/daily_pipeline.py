@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from datetime import date
+from threading import Lock
 from typing import Any, Protocol
 
+from app.core.errors import CollectionAlreadyRunning
 from app.domain.models import (
     CollectionError,
     CollectionRun,
@@ -39,12 +41,33 @@ class DailyPipeline:
         self._catalog_provider = catalog_provider
         self._analytics = analytics_refresher
         self._logger = logger
+        self._run_lock = Lock()
+
+    @property
+    def is_running(self) -> bool:
+        return self._run_lock.locked()
+
+    def acquire_for_test(self) -> None:
+        self._run_lock.acquire()
+
+    def release_for_test(self) -> None:
+        self._run_lock.release()
 
     def collect(
         self, observed_date: date, end_date: date | None = None
     ) -> CollectionRun:
         if end_date is not None and end_date != observed_date:
             raise ValueError("daily pipeline accepts one observed date")
+        if not self._run_lock.acquire(blocking=False):
+            raise CollectionAlreadyRunning(
+                "a unified daily collection is already running"
+            )
+        try:
+            return self._collect_unlocked(observed_date)
+        finally:
+            self._run_lock.release()
+
+    def _collect_unlocked(self, observed_date: date) -> CollectionRun:
         run = CollectionRun.start("daily_pipeline", observed_date, observed_date)
         self._runs.save(run)
         record_count = 0

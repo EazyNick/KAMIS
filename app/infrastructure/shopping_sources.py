@@ -190,6 +190,11 @@ class HtmlShoppingSource:
                 if isinstance(member_node, Tag)
                 else None
             )
+            if isinstance(member_node, Tag) and scope is None:
+                scope = self._discount_scope(
+                    member_node.get_text(" ", strip=True),
+                    card.get_text(" ", strip=True),
+                )
             quantity, unit = self._quantity(title)
             match_status = self._match_status(title, entry)
             product_id = str(card.get("data-id", "")) or f"{entry.item_code}-{index}"
@@ -245,6 +250,14 @@ class HtmlShoppingSource:
         if variety and variety not in normalized:
             return MatchStatus.COMPATIBLE
         return MatchStatus.EXACT
+
+    @staticmethod
+    def _discount_scope(label: str, context: str) -> str | None:
+        text = f"{label} {context}".casefold()
+        restricted = ("카드", "쿠폰", "첫구매", "결제", "와우", "멤버십", "유료")
+        if "회원" in text and not any(keyword in text for keyword in restricted):
+            return "all_members"
+        return "restricted"
 
 
 class NaverShoppingSource(HtmlShoppingSource):

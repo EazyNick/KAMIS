@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date
 from typing import Protocol
 
@@ -52,10 +52,12 @@ class OnlineCollectionService:
         for entry in catalog:
             item_summaries: list[PlatformPriceSummary] = []
             for source in self._sources:
+                source_failed = False
                 try:
                     found = source.search(entry, observed_date)
                 except Exception as error:
                     found = []
+                    source_failed = True
                     scope = f"{source.platform}:{entry.item_code}:{entry.kind_code}"
                     errors.append(f"{scope}:{type(error).__name__}:{error}")
                     self._logger.exception(  # noqa: PLE1205
@@ -74,6 +76,8 @@ class OnlineCollectionService:
                     entry.kind_code,
                     found,
                 )
+                if source_failed:
+                    summary = replace(summary, collection_status="collection_failed")
                 summaries.append(summary)
                 item_summaries.append(summary)
             combined = self._calculator.combined_average(item_summaries)
@@ -87,6 +91,18 @@ class OnlineCollectionService:
                     sum(summary.candidate_count for summary in item_summaries),
                     (),
                     (),
+                    (
+                        "available"
+                        if combined is not None
+                        else (
+                            "collection_failed"
+                            if any(
+                                summary.collection_status == "collection_failed"
+                                for summary in item_summaries
+                            )
+                            else "unavailable"
+                        )
+                    ),
                 )
             )
         self._repository.save_daily(offers, summaries, observed_date, run_id)

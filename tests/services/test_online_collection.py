@@ -74,3 +74,5 @@ def test_online_collection_isolates_platform_failure(tmp_path: Path) -> None:
     assert result.error_count == 1
     summaries = repository.search_summaries(item_code="111")
     assert {row["platform"] for row in summaries} == {"naver", "coupang", "combined"}
+    coupang = next(row for row in summaries if row["platform"] == "coupang")
+    assert coupang["collection_status"] == "collection_failed"

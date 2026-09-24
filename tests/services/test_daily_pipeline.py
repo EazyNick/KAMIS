@@ -1,6 +1,9 @@
 from datetime import date
 from types import SimpleNamespace
 
+import pytest
+
+from app.core.errors import CollectionAlreadyRunning
 from app.domain.models import RunStatus
 from app.services.daily_pipeline import DailyPipeline
 from log import app_logger
@@ -60,3 +63,15 @@ def test_daily_pipeline_isolates_source_partial_failure() -> None:
     assert run.error_count == 1
     assert len(market_repository.rows) == 1
     assert runs.saved[-1].status is RunStatus.PARTIAL_FAILURE
+
+
+def test_daily_pipeline_rejects_concurrent_run() -> None:
+    pipeline = DailyPipeline(
+        Kamis(), Online(), Market(), MarketRepo(), Runs(), list, None, app_logger
+    )
+    pipeline.acquire_for_test()
+    try:
+        with pytest.raises(CollectionAlreadyRunning):
+            pipeline.collect(date(2026, 9, 24))
+    finally:
+        pipeline.release_for_test()
