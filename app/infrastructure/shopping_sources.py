@@ -9,6 +9,7 @@ from urllib.parse import quote_plus
 from zoneinfo import ZoneInfo
 
 from bs4 import BeautifulSoup, Tag
+from playwright.sync_api import Browser, BrowserContext, Playwright, sync_playwright
 
 from app.domain.models import ProductCatalogEntry
 from app.domain.online_models import MatchStatus, ShoppingOffer
@@ -26,6 +27,71 @@ class ShoppingSession(Protocol):
     def get(
         self, url: str, *, timeout: float, headers: dict[str, str]
     ) -> TextResponse: ...
+
+
+class BrowserResponse:
+    def __init__(self, text: str, status_code: int) -> None:
+        self.text = text
+        self.status_code = status_code
+
+    def raise_for_status(self) -> None:
+        if self.status_code >= 400:
+            raise RuntimeError(f"shopping page returned HTTP {self.status_code}")
+
+
+class PlaywrightShoppingSession:
+    """Lazy browser session for JavaScript-rendered public shopping pages."""
+
+    def __init__(
+        self, *, user_data_dir: str | None = None, headless: bool = True
+    ) -> None:
+        self._playwright: Playwright | None = None
+        self._browser: Browser | None = None
+        self._context: BrowserContext | None = None
+        self._user_data_dir = user_data_dir
+        self._headless = headless
+
+    def _ensure_context(self) -> BrowserContext:
+        if self._context is None:
+            self._playwright = sync_playwright().start()
+            if self._user_data_dir:
+                self._context = self._playwright.chromium.launch_persistent_context(
+                    self._user_data_dir, headless=self._headless
+                )
+            else:
+                self._browser = self._playwright.chromium.launch(
+                    headless=self._headless
+                )
+                self._context = self._browser.new_context()
+        return self._context
+
+    def get(
+        self, url: str, *, timeout: float, headers: dict[str, str]
+    ) -> BrowserResponse:
+        context = self._ensure_context()
+        context.set_extra_http_headers(headers)
+        page = context.new_page()
+        try:
+            response = page.goto(
+                url,
+                wait_until="domcontentloaded",
+                timeout=round(timeout * 1000),
+            )
+            page.wait_for_timeout(1200)
+            return BrowserResponse(page.content(), response.status if response else 200)
+        finally:
+            page.close()
+
+    def close(self) -> None:
+        if self._context is not None:
+            self._context.close()
+            self._context = None
+        if self._browser is not None:
+            self._browser.close()
+            self._browser = None
+        if self._playwright is not None:
+            self._playwright.stop()
+            self._playwright = None
 
 
 class HtmlShoppingSource:
@@ -184,11 +250,11 @@ class HtmlShoppingSource:
 class NaverShoppingSource(HtmlShoppingSource):
     platform = "naver"
     search_url = "https://search.shopping.naver.com/search/all?query={query}"
-    card_selector = ".product_item"
-    link_selector = ".product_link"
-    price_selector = ".price"
-    shipping_selector = ".shipping"
-    member_selector = ".member-price"
+    card_selector = "[class*='product_item']"
+    link_selector = "[class*='product_link']"
+    price_selector = "[class*='price_num'], .price"
+    shipping_selector = "[class*='delivery'], .shipping"
+    member_selector = "[class*='member-price']"
 
 
 class CoupangShoppingSource(HtmlShoppingSource):

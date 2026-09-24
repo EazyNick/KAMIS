@@ -71,6 +71,25 @@ def online_summaries(
     )
 
 
+@router.get("/online/decisions")
+def online_decisions(
+    container: ContainerDependency,
+    item_code: str | None = None,
+    platform: str | None = None,
+    limit: Annotated[int, Query(ge=1, le=500)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> dict[str, Any]:
+    if container.online_repository is None:
+        raise HTTPException(status_code=503, detail="online repository unavailable")
+    return _page(
+        container.online_repository.search_decisions(
+            item_code=item_code, platform=platform
+        ),
+        limit,
+        offset,
+    )
+
+
 @router.get("/market")
 def market_data(
     container: ContainerDependency,

@@ -23,6 +23,8 @@ class Settings:
     request_timeout_seconds: float
     scheduler_hour: int
     scheduler_minute: int
+    shopping_user_data_dir: Path | None = None
+    shopping_headless: bool = True
 
     @classmethod
     def from_env(cls, *, load_environment_file: bool = True) -> Settings:
@@ -45,6 +47,13 @@ class Settings:
             request_timeout_seconds=float(os.getenv("REQUEST_TIMEOUT_SECONDS", "30")),
             scheduler_hour=int(os.getenv("SCHEDULER_HOUR", "7")),
             scheduler_minute=int(os.getenv("SCHEDULER_MINUTE", "0")),
+            shopping_user_data_dir=(
+                Path(value).resolve()
+                if (value := os.getenv("SHOPPING_USER_DATA_DIR"))
+                else None
+            ),
+            shopping_headless=os.getenv("SHOPPING_HEADLESS", "true").casefold()
+            not in {"0", "false", "no"},
         )
 
     def require_kamis_credentials(self) -> tuple[str, str]:

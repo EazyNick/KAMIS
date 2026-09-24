@@ -24,3 +24,13 @@ def test_missing_kamis_credentials_raise_clear_error(
 
     with pytest.raises(ConfigurationError, match="KAMIS_CERT_KEY"):
         settings.require_kamis_credentials()
+
+
+def test_shopping_browser_settings_are_explicit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("SHOPPING_USER_DATA_DIR", str(tmp_path / "browser-profile"))
+    monkeypatch.setenv("SHOPPING_HEADLESS", "false")
+    configured = Settings.from_env(load_environment_file=False)
+    assert configured.shopping_user_data_dir == (tmp_path / "browser-profile").resolve()
+    assert configured.shopping_headless is False

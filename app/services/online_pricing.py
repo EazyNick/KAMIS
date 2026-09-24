@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from decimal import Decimal
 
 from app.domain.online_models import PlatformPriceSummary, ShoppingOffer
@@ -22,7 +23,16 @@ class OnlinePriceCalculator:
             (offer for offer in offers if offer.is_comparable),
             key=lambda offer: offer.unit_price,
         )
-        excluded = [offer for offer in offers if not offer.is_comparable]
+        excluded = [
+            replace(
+                offer,
+                exclusion_reason=(
+                    "unavailable" if not offer.available else "match_rejected"
+                ),
+            )
+            for offer in offers
+            if not offer.is_comparable
+        ]
         remaining = list(comparable)
         while len(remaining) > 1:
             cheapest = remaining[0]
@@ -31,11 +41,16 @@ class OnlinePriceCalculator:
                 (offer.unit_price for offer in comparison), Decimal(0)
             ) / len(comparison)
             if cheapest.unit_price <= comparison_mean * self._minimum_ratio:
-                excluded.append(remaining.pop(0))
+                excluded.append(
+                    replace(remaining.pop(0), exclusion_reason="low_price_outlier")
+                )
                 continue
             break
         included = remaining[: self._maximum_sample]
-        excluded.extend(remaining[self._maximum_sample :])
+        excluded.extend(
+            replace(offer, exclusion_reason="sample_limit")
+            for offer in remaining[self._maximum_sample :]
+        )
         average = (
             sum((offer.unit_price for offer in included), Decimal(0)) / len(included)
             if included

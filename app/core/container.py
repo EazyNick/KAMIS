@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-import requests
-
 from app.infrastructure.analytics_repository import AnalyticsRepository
 from app.infrastructure.csv_repository import (
     CatalogRepository,
@@ -16,6 +14,7 @@ from app.infrastructure.online_repository import OnlinePriceRepository
 from app.infrastructure.shopping_sources import (
     CoupangShoppingSource,
     NaverShoppingSource,
+    PlaywrightShoppingSession,
 )
 from app.services.analytics import AnalyticsBatchService, AnalyticsService
 from app.services.collection_service import KamisCollectionService
@@ -52,7 +51,14 @@ class ApplicationContainer:
         online_repository = OnlinePriceRepository(settings.data_dir, app_logger)
         market_repository = MarketRepository(settings.data_dir, app_logger)
         analytics_repository = AnalyticsRepository(settings.data_dir, app_logger)
-        shopping_session = requests.Session()
+        shopping_session = PlaywrightShoppingSession(
+            user_data_dir=(
+                str(settings.shopping_user_data_dir)
+                if settings.shopping_user_data_dir
+                else None
+            ),
+            headless=settings.shopping_headless,
+        )
         sources = [
             NaverShoppingSource(shopping_session, app_logger),
             CoupangShoppingSource(shopping_session, app_logger),
