@@ -3,3 +3,11 @@
 .env.*
 !.env.example
 
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+
+# Runtime logs
+log/logs/
+debug.log
