@@ -18,13 +18,14 @@ LogManager Module
 
 from __future__ import annotations
 
-from datetime import datetime
 import glob
 import logging
 import os
-from pathlib import Path
 import sys
-from typing import TYPE_CHECKING
+from datetime import datetime
+from pathlib import Path
+from typing import TYPE_CHECKING, Self
+from zoneinfo import ZoneInfo
 
 if TYPE_CHECKING:
     from logging import Logger
@@ -42,7 +43,7 @@ class LogManager:
     _instance: LogManager | None = None
     logger: Logger
 
-    def __new__(cls, *args: object, **kwargs: object) -> LogManager:
+    def __new__(cls, *args: object, **kwargs: object) -> Self:
         if not cls._instance:
             cls._instance = super().__new__(cls)
         return cls._instance
@@ -73,7 +74,7 @@ class LogManager:
             # server_config에서 로그 레벨 읽기
             from config.server_config import settings
 
-            log_level_str = settings.LOG_LEVEL
+            log_level_str = settings.log_level
             self.log_level = getattr(logging, log_level_str.upper(), logging.INFO)
 
             self.max_files = max_files
@@ -85,7 +86,7 @@ class LogManager:
 
     def _init_timestamp(self) -> str:
         """타임스탬프 초기화"""
-        return datetime.now().strftime("%Y%m%d-%H%M%S")
+        return datetime.now(ZoneInfo("Asia/Seoul")).strftime("%Y%m%d-%H%M%S")
 
     def _init_logger(self) -> Logger:
         """로거 초기화"""
@@ -182,9 +183,12 @@ class LogManager:
                     self.logger.debug(f"오래된 로그 파일 삭제: {os.path.basename(file_to_remove)}")
                 except OSError as e:
                     self.logger.warning(f"로그 파일 삭제 실패: {file_to_remove}, 에러: {e}")
-        except Exception as e:
-            # clean_up_logs에서 에러가 발생해도 로거 초기화는 계속 진행
-            print(f"[WARNING] 로그 정리 중 에러 발생: {e}")
+        except OSError as error:
+            self.logger.warning(
+                "로그 정리 중 에러 발생: %s: %s",
+                type(error).__name__,
+                error,
+            )
 
 
 if __name__ == "__main__":
@@ -195,4 +199,4 @@ if __name__ == "__main__":
     log_manager.logger.warning("경고 메시지")
     log_manager.logger.error("This is an error message for testing purposes.")
     log_manager.logger.hr("Section Start", level=2)
-    print(f"Timestamp: {log_manager.get_timestamp()}")
+    log_manager.logger.info("Timestamp: %s", log_manager.get_timestamp())
