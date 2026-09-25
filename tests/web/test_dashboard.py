@@ -9,7 +9,7 @@ from playwright.sync_api import Route, sync_playwright
 DASHBOARD = Path(__file__).resolve().parents[2] / "app" / "web" / "dashboard.html"
 
 
-def test_dashboard_applies_defaults_and_draws_single_observation() -> None:
+def test_dashboard_applies_defaults_and_features_most_volatile_future() -> None:
     requested_urls: list[str] = []
     page_errors: list[str] = []
     catalog_item = {
@@ -21,6 +21,30 @@ def test_dashboard_applies_defaults_and_draws_single_observation() -> None:
         "variety": "수미",
         "wholesale_rank_codes": "04",
         "retail_rank_codes": "04",
+    }
+    chart_payload = {
+        "item_code": "222",
+        "mode": "base100",
+        "dates": ["2026-09-24", "2026-09-25"],
+        "series": {
+            "kamis_retail": [100.0, 100.0],
+            "kamis_wholesale": [100.0, 100.0],
+            "online_naver": [100.0, 100.0],
+            "online_coupang": [100.0, 100.0],
+            "online_combined": [100.0, 100.0],
+            "kospi": [100.0, 100.0],
+            "kosdaq": [100.0, 100.0],
+            "sp500": [100.0, 100.0],
+            "nasdaq": [100.0, 100.0],
+            "dow_jones": [100.0, 100.0],
+            "coffee_futures": [100.0, 100.0],
+            "orange_juice_futures": [100.0, 100.0],
+        },
+        "raw_series": {
+            "kamis_retail": [2350.0, 2400.0],
+            "coffee_futures": [200.0, 260.0],
+            "orange_juice_futures": [100.0, 200.0],
+        },
     }
     responses = {
         "/health": {
@@ -43,21 +67,9 @@ def test_dashboard_applies_defaults_and_draws_single_observation() -> None:
                 "end_date": "2026-09-24",
                 "mode": "base100",
             },
-            "chart": {
-                "item_code": "222",
-                "mode": "base100",
-                "dates": ["2026-09-24"],
-                "series": {"kamis_retail": [100.0]},
-                "raw_series": {"kamis_retail": [2350.0]},
-            },
+            "chart": chart_payload,
         },
-        "/api/v1/comparison": {
-            "item_code": "222",
-            "mode": "base100",
-            "dates": ["2026-09-24"],
-            "series": {"kamis_retail": [100.0]},
-            "raw_series": {"kamis_retail": [2350.0]},
-        },
+        "/api/v1/comparison": chart_payload,
         "/api/v1/correlations": [],
     }
 
@@ -108,7 +120,7 @@ def test_dashboard_applies_defaults_and_draws_single_observation() -> None:
         assert page.locator("#itemSelect").input_value() == "222"
         assert page.locator("#startDate").input_value() == "2026-06-27"
         assert page.locator("#endDate").input_value() == "2026-09-24"
-        assert page.evaluate("window.__arcCount") > 0
+        assert page.locator("#comparisonChart").evaluate("canvas => canvas.width") > 0
         assert any("/api/v1/dashboard/bootstrap" in url for url in requested_urls)
         assert not any("/api/v1/comparison?" in url for url in requested_urls)
         assert page.get_by_role("navigation").is_visible()
@@ -121,6 +133,10 @@ def test_dashboard_applies_defaults_and_draws_single_observation() -> None:
         assert dashboard_box["y"] < overview_box["y"]
         assert dashboard_box["width"] >= 1800
         assert chart_box["height"] >= 560
+        first_chip = page.locator("#legend .chip").first
+        assert first_chip.get_attribute("data-key") == "orange_juice_futures"
+        assert "주목" in first_chip.inner_text()
+        assert "off" not in (first_chip.get_attribute("class") or "")
         page.mouse.move(chart_box["x"] + 74, chart_box["y"] + chart_box["height"] / 2)
         tooltip = page.locator("#chartTooltip")
         assert tooltip.is_visible()
