@@ -35,11 +35,17 @@ class MarketRepo:
 
 
 class Runs:
-    def __init__(self):
+    def __init__(self, successful_sources=()):
         self.saved = []
+        self.successful_sources = set(successful_sources)
 
     def save(self, run):
         self.saved.append(run)
+        if run.status is RunStatus.SUCCESS:
+            self.successful_sources.add(run.source)
+
+    def has_successful_run(self, source, requested_date):
+        return source in self.successful_sources
 
 
 def test_daily_pipeline_isolates_source_partial_failure() -> None:
@@ -75,3 +81,71 @@ def test_daily_pipeline_rejects_concurrent_run() -> None:
             pipeline.collect(date(2026, 9, 24))
     finally:
         pipeline.release_for_test()
+
+
+def test_daily_pipeline_skips_sources_already_completed_for_date() -> None:
+    class AlreadyCollectedKamis:
+        def collect(self, start_date, end_date):
+            raise AssertionError("completed KAMIS source must not run again")
+
+    class CleanOnline:
+        calls = 0
+
+        def collect(self, catalog, observed_date, run_id):
+            self.calls += 1
+            return SimpleNamespace(offer_count=3, error_count=0, errors=())
+
+    runs = Runs(successful_sources={"kamis"})
+    online = CleanOnline()
+    pipeline = DailyPipeline(
+        AlreadyCollectedKamis(),
+        online,
+        Market(),
+        MarketRepo(),
+        runs,
+        lambda: [SimpleNamespace(item_code="111")],
+        None,
+        app_logger,
+    )
+
+    first = pipeline.collect(date(2026, 9, 25))
+    second = pipeline.collect(date(2026, 9, 25))
+
+    assert first.status is RunStatus.SUCCESS
+    assert second.status is RunStatus.SUCCESS
+    assert online.calls == 1
+    assert {"online", "market"}.issubset(runs.successful_sources)
+
+
+def test_daily_pipeline_recovers_checkpoints_from_existing_dated_data() -> None:
+    class StoredOnline:
+        def has_collected_date(self, catalog, observed_date):
+            return True
+
+        def collect(self, catalog, observed_date, run_id):
+            raise AssertionError("stored online data must not be recollected")
+
+    class StoredMarketRepo(MarketRepo):
+        def has_collected_date(self, observed_date):
+            return True
+
+    class AlreadyCollectedMarket:
+        def fetch(self, start_date, end_date):
+            raise AssertionError("stored market data must not be recollected")
+
+    runs = Runs(successful_sources={"kamis"})
+    pipeline = DailyPipeline(
+        Kamis(),
+        StoredOnline(),
+        AlreadyCollectedMarket(),
+        StoredMarketRepo(),
+        runs,
+        lambda: [SimpleNamespace(item_code="111")],
+        None,
+        app_logger,
+    )
+
+    result = pipeline.collect(date(2026, 9, 25))
+
+    assert result.status is RunStatus.SUCCESS
+    assert {"online", "market"}.issubset(runs.successful_sources)

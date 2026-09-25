@@ -161,6 +161,12 @@ class MarketRepository:
         )
         self._storage._atomic_write(ordered, run_id)
 
+    def has_collected_date(self, observed_date: date) -> bool:
+        expected = observed_date.isoformat()
+        return any(
+            row.get("observed_date") == expected for row in self._storage._read()
+        )
+
     def search(
         self,
         *,
