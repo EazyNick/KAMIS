@@ -1,7 +1,6 @@
 from pathlib import Path
 
-from .context_logger import ContextLogger
-from .logger import LogManager
+from .logger import LogManager, StructuredLogger
 
 # server_config에서 로그 디렉토리 설정 가져오기 (server 폴더 기준 상대 경로)
 log_dir = "logs"
@@ -15,6 +14,6 @@ log_directory = str(server_dir / log_dir)
 Path(log_directory).mkdir(parents=True, exist_ok=True)
 
 log_manager = LogManager(directory=log_directory)
-app_logger = ContextLogger(log_manager.logger)
+app_logger = StructuredLogger(log_manager.logger)
 
 __all__ = ["app_logger", "log_manager"]

@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any, ClassVar
 
 from app.infrastructure.csv_repository import _AtomicCsvRepository
-from log.context_logger import ContextLogger
+from log.logger import StructuredLogger
 
 
 class AnalyticsRepository:
@@ -16,7 +16,7 @@ class AnalyticsRepository:
         "spreads_volatility",
     }
 
-    def __init__(self, data_dir: Path, logger: ContextLogger) -> None:
+    def __init__(self, data_dir: Path, logger: StructuredLogger) -> None:
         self._data_dir = data_dir / "analytics"
         self._logger = logger
 

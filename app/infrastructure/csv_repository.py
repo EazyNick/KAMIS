@@ -17,7 +17,7 @@ from app.domain.models import (
     ProductCatalogEntry,
     split_codes,
 )
-from log.context_logger import ContextLogger
+from log.logger import StructuredLogger
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,7 +45,7 @@ class PriceFilters:
 
 
 class _AtomicCsvRepository:
-    def __init__(self, path: Path, logger: ContextLogger) -> None:
+    def __init__(self, path: Path, logger: StructuredLogger) -> None:
         self.path = path
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._logger = logger
@@ -98,7 +98,7 @@ class _AtomicCsvRepository:
             self._logger.exception(  # noqa: PLE1205 - custom structured logger
                 "csv.write.failed",
                 "CSV write failed",
-                error,  # noqa: TRY401 - ContextLogger records explicit error metadata
+                error,  # noqa: TRY401 - StructuredLogger records error metadata
                 path=self.path,
                 run_id=run_id,
                 duration_ms=round((perf_counter() - started) * 1000),
@@ -107,7 +107,7 @@ class _AtomicCsvRepository:
 
 
 class CatalogRepository(_AtomicCsvRepository):
-    def __init__(self, data_dir: Path, logger: ContextLogger) -> None:
+    def __init__(self, data_dir: Path, logger: StructuredLogger) -> None:
         super().__init__(data_dir / "normalized" / "kamis_catalog.csv", logger)
         self._raw_root = data_dir / "raw" / "kamis" / "catalog"
 
@@ -184,7 +184,7 @@ class PriceRepository(_AtomicCsvRepository):
         "requested_convert_kg",
     )
 
-    def __init__(self, data_dir: Path, logger: ContextLogger) -> None:
+    def __init__(self, data_dir: Path, logger: StructuredLogger) -> None:
         super().__init__(data_dir / "normalized" / "kamis_prices.csv", logger)
 
     @classmethod
@@ -250,7 +250,7 @@ class PriceRepository(_AtomicCsvRepository):
 
 
 class RunRepository(_AtomicCsvRepository):
-    def __init__(self, data_dir: Path, logger: ContextLogger) -> None:
+    def __init__(self, data_dir: Path, logger: StructuredLogger) -> None:
         super().__init__(data_dir / "runs" / "collection_runs.csv", logger)
 
     def save(self, run: CollectionRun) -> None:

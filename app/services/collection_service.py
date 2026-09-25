@@ -21,7 +21,7 @@ from app.infrastructure.csv_repository import (
     PriceRepository,
     RunRepository,
 )
-from log.context_logger import ContextLogger
+from log.logger import StructuredLogger
 
 
 class KamisClientProtocol(Protocol):
@@ -39,7 +39,7 @@ class KamisCollectionService:
         catalog_repository: CatalogRepository,
         price_repository: PriceRepository,
         run_repository: RunRepository,
-        logger: ContextLogger,
+        logger: StructuredLogger,
     ) -> None:
         self._client = client
         self._catalog_repository = catalog_repository

@@ -22,15 +22,75 @@ import glob
 import logging
 import os
 import sys
+from collections.abc import Mapping
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING, ClassVar, Self
 from zoneinfo import ZoneInfo
 
 if TYPE_CHECKING:
     from logging import Logger
 
 import colorlog
+
+
+class StructuredLogger:
+    """Emit searchable key-value logs through an existing logger."""
+
+    _secret_keys: ClassVar[set[str]] = {
+        "authorization",
+        "cert_id",
+        "cert_key",
+        "kamis_cert_id",
+        "kamis_cert_key",
+        "password",
+        "secret",
+        "token",
+    }
+
+    def __init__(self, logger: logging.Logger) -> None:
+        self._logger = logger
+
+    def _message(self, event: str, message: str, context: Mapping[str, object]) -> str:
+        safe = {
+            key: "***" if key.lower() in self._secret_keys else value
+            for key, value in context.items()
+        }
+        fields = " ".join(f"{key}={safe[key]!s}" for key in sorted(safe))
+        prefix = f"event={event} message={message!r}"
+        return f"{prefix} {fields}" if fields else prefix
+
+    def debug(self, event: str, message: str, **context: object) -> None:
+        self._logger.debug(self._message(event, message, context), stacklevel=2)
+
+    def info(self, event: str, message: str, **context: object) -> None:
+        self._logger.info(self._message(event, message, context), stacklevel=2)
+
+    def warning(self, event: str, message: str, **context: object) -> None:
+        self._logger.warning(self._message(event, message, context), stacklevel=2)
+
+    def error(self, event: str, message: str, **context: object) -> None:
+        self._logger.error(self._message(event, message, context), stacklevel=2)
+
+    def exception(
+        self,
+        event: str,
+        message: str,
+        error: BaseException,
+        **context: object,
+    ) -> None:
+        self._logger.exception(
+            self._message(
+                event,
+                message,
+                {
+                    **context,
+                    "error_type": type(error).__name__,
+                    "error": str(error),
+                },
+            ),
+            stacklevel=2,
+        )
 
 
 class LogManager:

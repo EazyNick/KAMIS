@@ -6,11 +6,11 @@ from typing import Any
 
 from app.domain.online_models import PlatformPriceSummary, ShoppingOffer
 from app.infrastructure.csv_repository import _AtomicCsvRepository
-from log.context_logger import ContextLogger
+from log.logger import StructuredLogger
 
 
 class OnlinePriceRepository:
-    def __init__(self, data_dir: Path, logger: ContextLogger) -> None:
+    def __init__(self, data_dir: Path, logger: StructuredLogger) -> None:
         self._offers = _AtomicCsvRepository(
             data_dir / "normalized" / "online_offers.csv", logger
         )

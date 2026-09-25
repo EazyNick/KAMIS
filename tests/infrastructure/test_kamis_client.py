@@ -11,7 +11,7 @@ from app.core.errors import KamisAuthenticationError
 from app.domain.models import PriceQuery, PriceType, ProductCatalogEntry
 from app.infrastructure.kamis_client import KamisClient
 from config.server_config import Settings
-from log.context_logger import ContextLogger
+from log.logger import StructuredLogger
 
 CATALOG_ROW = {
     "itemcategorycode": "100",
@@ -81,7 +81,7 @@ def test_fetch_catalog_parses_success_response(settings: Settings) -> None:
         {"condition": [[[]]], "error_code": "000", "info": [CATALOG_ROW]}
     )
     client = KamisClient(
-        settings, session, ContextLogger(logging.getLogger("test.kamis"))
+        settings, session, StructuredLogger(logging.getLogger("test.kamis"))
     )
 
     rows = client.fetch_catalog()
@@ -96,7 +96,7 @@ def test_auth_failure_does_not_log_credentials(
     session = FakeSession()
     session.queue_json({"error_code": "900", "error_message": "Unauthenticated"})
     client = KamisClient(
-        settings, session, ContextLogger(logging.getLogger("test.kamis.auth"))
+        settings, session, StructuredLogger(logging.getLogger("test.kamis.auth"))
     )
     query = PriceQuery(
         price_type=PriceType.WHOLESALE,
@@ -120,7 +120,7 @@ def test_no_data_response_returns_empty_list(settings: Settings) -> None:
     session = FakeSession()
     session.queue_json({"error_code": "001", "error_message": "no data"})
     client = KamisClient(
-        settings, session, ContextLogger(logging.getLogger("test.kamis.empty"))
+        settings, session, StructuredLogger(logging.getLogger("test.kamis.empty"))
     )
     query = PriceQuery(
         price_type=PriceType.RETAIL,

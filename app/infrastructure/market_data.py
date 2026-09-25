@@ -12,7 +12,7 @@ import pandas as pd
 import yfinance as yf
 
 from app.infrastructure.csv_repository import _AtomicCsvRepository
-from log.context_logger import ContextLogger
+from log.logger import StructuredLogger
 
 DEFAULT_MARKET_SYMBOLS = {
     "kospi": "^KS11",
@@ -53,7 +53,7 @@ class MarketDataClient:
     def __init__(
         self,
         downloader: Callable[..., pd.DataFrame] | None,
-        logger: ContextLogger,
+        logger: StructuredLogger,
         *,
         symbols: dict[str, str] | None = None,
     ) -> None:
@@ -143,7 +143,7 @@ class MarketDataClient:
 
 
 class MarketRepository:
-    def __init__(self, data_dir: Path, logger: ContextLogger) -> None:
+    def __init__(self, data_dir: Path, logger: StructuredLogger) -> None:
         self._storage = _AtomicCsvRepository(
             data_dir / "normalized" / "market_observations.csv", logger
         )

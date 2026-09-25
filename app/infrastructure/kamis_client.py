@@ -22,7 +22,7 @@ from app.domain.models import (
     ProductCatalogEntry,
 )
 from config.server_config import Settings
-from log.context_logger import ContextLogger
+from log.logger import StructuredLogger
 
 
 class ResponseLike(Protocol):
@@ -44,7 +44,7 @@ class KamisClient:
         self,
         settings: Settings,
         session: SessionLike,
-        logger: ContextLogger,
+        logger: StructuredLogger,
     ) -> None:
         self._settings = settings
         self._session = session
@@ -99,7 +99,7 @@ class KamisClient:
             self._logger.exception(
                 "kamis.request.failed",
                 "KAMIS request failed",
-                error,  # noqa: TRY401 - ContextLogger records explicit error metadata
+                error,  # noqa: TRY401 - StructuredLogger records error metadata
                 **context,
                 duration_ms=round((perf_counter() - started) * 1000),
             )

@@ -23,7 +23,7 @@ from playwright.sync_api import (
 from app.core.errors import ShoppingAccessBlocked
 from app.domain.models import ProductCatalogEntry
 from app.domain.online_models import MatchStatus, ShoppingOffer
-from log.context_logger import ContextLogger
+from log.logger import StructuredLogger
 
 
 class TextResponse(Protocol):
@@ -182,7 +182,7 @@ class HtmlShoppingSource:
     def __init__(
         self,
         session: ShoppingSession | None,
-        logger: ContextLogger,
+        logger: StructuredLogger,
         *,
         timeout: float = 30,
     ) -> None:

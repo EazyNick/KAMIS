@@ -5,7 +5,7 @@ from typing import Any, Protocol
 from zoneinfo import ZoneInfo
 
 from config.server_config import Settings
-from log.context_logger import ContextLogger
+from log.logger import StructuredLogger
 
 
 class CollectionServiceProtocol(Protocol):
@@ -26,7 +26,7 @@ class DailyScheduler:
         scheduler: SchedulerProtocol,
         collection_service: CollectionServiceProtocol,
         settings: Settings,
-        logger: ContextLogger,
+        logger: StructuredLogger,
     ) -> None:
         self._scheduler = scheduler
         self._service = collection_service

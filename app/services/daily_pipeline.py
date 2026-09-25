@@ -12,7 +12,7 @@ from app.domain.models import (
     ProductCatalogEntry,
     RunStatus,
 )
-from log.context_logger import ContextLogger
+from log.logger import StructuredLogger
 
 
 class AnalyticsRefresher(Protocol):
@@ -31,7 +31,7 @@ class DailyPipeline:
         run_repository: Any,
         catalog_provider: Callable[[], list[ProductCatalogEntry]],
         analytics_refresher: AnalyticsRefresher | None,
-        logger: ContextLogger,
+        logger: StructuredLogger,
     ) -> None:
         self._kamis = kamis_service
         self._online = online_service

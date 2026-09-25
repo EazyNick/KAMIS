@@ -7,7 +7,7 @@ from typing import Any, Literal, Protocol
 from zoneinfo import ZoneInfo
 
 from config.server_config import Settings
-from log.context_logger import ContextLogger
+from log.logger import StructuredLogger
 
 StartupDecision = Literal["scheduled", "already_collected", "already_running"]
 
@@ -39,7 +39,7 @@ class StartupCollectionService:
         pipeline: DailyPipelineProtocol,
         run_repository: RunRepositoryProtocol,
         settings: Settings,
-        logger: ContextLogger,
+        logger: StructuredLogger,
         *,
         task_runner: Callable[[Callable[[], None]], None] = start_daemon_task,
         today_provider: Callable[[], date] | None = None,

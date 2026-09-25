@@ -9,7 +9,7 @@ from app.domain.models import ProductCatalogEntry
 from app.domain.online_models import PlatformPriceSummary, ShoppingOffer
 from app.infrastructure.online_repository import OnlinePriceRepository
 from app.services.online_pricing import OnlinePriceCalculator
-from log.context_logger import ContextLogger
+from log.logger import StructuredLogger
 
 
 class ShoppingSourceProtocol(Protocol):
@@ -34,7 +34,7 @@ class OnlineCollectionService:
         sources: list[ShoppingSourceProtocol],
         repository: OnlinePriceRepository,
         calculator: OnlinePriceCalculator,
-        logger: ContextLogger,
+        logger: StructuredLogger,
         *,
         target_keys: set[tuple[str, str]] | None = None,
     ) -> None:
