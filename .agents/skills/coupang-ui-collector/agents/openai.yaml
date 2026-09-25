@@ -1,0 +1,6 @@
+interface:
+  display_name: "Coupang UI Collector"
+  short_description: "Collect Coupang prices through ordinary Chrome UI"
+  default_prompt: "Use $coupang-ui-collector to collect the supplied manifest into its raw CSV."
+policy:
+  allow_implicit_invocation: false
