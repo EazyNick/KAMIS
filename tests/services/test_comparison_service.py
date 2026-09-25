@@ -121,6 +121,26 @@ def test_comparison_fills_exchange_holiday_but_not_missing_open_session() -> Non
                 {"observed_date": "2026-07-06", "series_id": "sp500", "close": 101},
                 {"observed_date": "2026-09-21", "series_id": "sp500", "close": 110},
                 {"observed_date": "2026-09-23", "series_id": "sp500", "close": 112},
+                {
+                    "observed_date": "2026-07-02",
+                    "series_id": "corn_futures",
+                    "close": 500,
+                },
+                {
+                    "observed_date": "2026-07-06",
+                    "series_id": "corn_futures",
+                    "close": 510,
+                },
+                {
+                    "observed_date": "2026-09-21",
+                    "series_id": "corn_futures",
+                    "close": 520,
+                },
+                {
+                    "observed_date": "2026-09-23",
+                    "series_id": "corn_futures",
+                    "close": 530,
+                },
             ]
 
     service = ComparisonService(
@@ -130,6 +150,14 @@ def test_comparison_fills_exchange_holiday_but_not_missing_open_session() -> Non
     result = service.chart("111", None, None, "raw")
 
     assert result["series"]["sp500"] == [100.0, 100.0, 101.0, 110.0, None, 112.0]
+    assert result["series"]["corn_futures"] == [
+        500.0,
+        500.0,
+        510.0,
+        520.0,
+        None,
+        530.0,
+    ]
 
 
 def test_dashboard_defaults_prefer_online_item_and_bound_window_to_90_days() -> None:

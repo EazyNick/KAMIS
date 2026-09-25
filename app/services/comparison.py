@@ -29,11 +29,22 @@ MARKET_EXCHANGES = {
     "sp500": "XNYS",
     "nasdaq": "XNYS",
     "dow_jones": "XNYS",
+    # The commodity feeds follow US futures sessions, but the provider can
+    # publish values on partial-session days.  Only use full US market
+    # closures as a conservative proxy so genuine provider gaps stay empty.
+    "corn_futures": "XNYS",
+    "wheat_futures": "XNYS",
+    "soybean_futures": "XNYS",
+    "rough_rice_futures": "XNYS",
+    "coffee_futures": "XNYS",
+    "sugar_futures": "XNYS",
+    "cotton_futures": "XNYS",
+    "orange_juice_futures": "XNYS",
 }
 
 
 def fill_exchange_holidays(frame: pd.DataFrame) -> pd.DataFrame:
-    """Forward-fill index values only on dates the index exchange was closed."""
+    """Forward-fill market values only on dates their exchange was closed."""
     result = frame.copy()
     for series_id, exchange in MARKET_EXCHANGES.items():
         if series_id not in result:
