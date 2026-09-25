@@ -81,7 +81,7 @@ def test_dashboard_applies_defaults_and_draws_single_observation() -> None:
 
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True)
-        page = browser.new_page()
+        page = browser.new_page(viewport={"width": 2000, "height": 1200})
         page.on("pageerror", lambda error: page_errors.append(str(error)))
         page.add_init_script(
             """
@@ -109,6 +109,22 @@ def test_dashboard_applies_defaults_and_draws_single_observation() -> None:
         assert page.evaluate("window.__arcCount") > 0
         assert any("/api/v1/dashboard/bootstrap" in url for url in requested_urls)
         assert not any("/api/v1/comparison?" in url for url in requested_urls)
+        assert page.get_by_role("navigation").is_visible()
+        dashboard_box = page.locator("#dashboard").bounding_box()
+        overview_box = page.locator("#overview").bounding_box()
+        chart_box = page.locator("#comparisonChart").bounding_box()
+        assert dashboard_box is not None
+        assert overview_box is not None
+        assert chart_box is not None
+        assert dashboard_box["y"] < overview_box["y"]
+        assert dashboard_box["width"] >= 1800
+        assert chart_box["height"] >= 560
+        page.set_viewport_size({"width": 390, "height": 844})
+        page.wait_for_timeout(100)
+        mobile_chart_box = page.locator("#comparisonChart").bounding_box()
+        assert page.get_by_role("navigation").is_visible()
+        assert mobile_chart_box is not None
+        assert mobile_chart_box["height"] >= 400
         browser.close()
 
 
