@@ -5,6 +5,7 @@ from typing import Any, Protocol
 
 import numpy as np
 import pandas as pd
+from holidays import financial_holidays
 
 from app.infrastructure.csv_repository import PriceFilters
 from app.services.analytics import AnalysisMode, AnalyticsService
@@ -20,6 +21,56 @@ class OnlineRepositoryProtocol(Protocol):
 
 class MarketRepositoryProtocol(Protocol):
     def search(self, **kwargs: Any) -> list[dict[str, Any]]: ...
+
+
+MARKET_EXCHANGES = {
+    "kospi": "XKRX",
+    "kosdaq": "XKRX",
+    "sp500": "XNYS",
+    "nasdaq": "XNYS",
+    "dow_jones": "XNYS",
+}
+
+
+def fill_exchange_holidays(frame: pd.DataFrame) -> pd.DataFrame:
+    """Forward-fill index values only on dates the index exchange was closed."""
+    result = frame.copy()
+    for series_id, exchange in MARKET_EXCHANGES.items():
+        if series_id not in result:
+            continue
+        calendar = financial_holidays(exchange)
+        holiday_mask = pd.Series(
+            [timestamp.date() in calendar for timestamp in result.index],
+            index=result.index,
+        )
+        fillable = result[series_id].isna() & holiday_mask
+        if fillable.any():
+            previous = result[series_id].ffill()
+            result.loc[fillable, series_id] = previous.loc[fillable]
+    return result
+
+
+def chart_from_frame(
+    item_code: str,
+    mode: AnalysisMode,
+    frame: pd.DataFrame,
+    core_series: tuple[str, ...],
+) -> dict[str, Any]:
+    all_columns = list(dict.fromkeys([*core_series, *frame.columns]))
+    series: dict[str, list[float | None]] = {}
+    for column in all_columns:
+        values = (
+            frame[column] if column in frame else pd.Series(np.nan, index=frame.index)
+        )
+        series[column] = [
+            None if pd.isna(value) else float(value) for value in values.tolist()
+        ]
+    return {
+        "item_code": item_code,
+        "mode": mode,
+        "dates": [timestamp.date().isoformat() for timestamp in frame.index],
+        "series": series,
+    }
 
 
 class ComparisonService:
@@ -91,7 +142,7 @@ class ComparisonService:
             market["close"] = pd.to_numeric(market["close"], errors="coerce")
             for series_id, values in market.groupby("series_id"):
                 frame[str(series_id)] = values.groupby("observed_date")["close"].mean()
-        return frame.sort_index()
+        return fill_exchange_holidays(frame.sort_index())
 
     def chart(
         self,
@@ -103,23 +154,7 @@ class ComparisonService:
         frame = self._analytics.transform(
             self.build_frame(item_code, start_date, end_date), mode
         )
-        all_columns = list(dict.fromkeys([*self.core_series, *frame.columns]))
-        series: dict[str, list[float | None]] = {}
-        for column in all_columns:
-            values = (
-                frame[column]
-                if column in frame
-                else pd.Series(np.nan, index=frame.index)
-            )
-            series[column] = [
-                None if pd.isna(value) else float(value) for value in values.tolist()
-            ]
-        return {
-            "item_code": item_code,
-            "mode": mode,
-            "dates": [timestamp.date().isoformat() for timestamp in frame.index],
-            "series": series,
-        }
+        return chart_from_frame(item_code, mode, frame, self.core_series)
 
     def dashboard_defaults(self) -> dict[str, str | None]:
         price_rows = self._prices.search(PriceFilters())
