@@ -10,6 +10,7 @@ from zoneinfo import ZoneInfo
 
 import pandas as pd
 import yfinance as yf
+from holidays import financial_holidays
 
 from app.infrastructure.csv_repository import _AtomicCsvRepository
 from log.logger import StructuredLogger
@@ -61,24 +62,66 @@ class MarketDataClient:
         self._logger = logger
         self.symbols = symbols or dict(DEFAULT_MARKET_SYMBOLS)
 
-    def fetch(self, start_date: date, end_date: date) -> list[MarketObservation]:
+    def fetch(
+        self, start_date: date, end_date: date, *, series_ids: set[str] | None = None
+    ) -> list[MarketObservation]:
         started = perf_counter()
-        tickers = list(self.symbols.values())
+        selected = {
+            series_id: ticker
+            for series_id, ticker in self.symbols.items()
+            if series_ids is None or series_id in series_ids
+        }
+        tickers = list(selected.values())
         try:
-            frame = self._download(
-                tickers=tickers,
-                start=start_date.isoformat(),
-                end=(end_date + timedelta(days=1)).isoformat(),
-                auto_adjust=False,
-                progress=False,
-                group_by="ticker",
+            korean_tickers = [
+                ticker for ticker in tickers if ticker in {"^KS11", "^KQ11"}
+            ]
+            closed_dates = (
+                self._krx_closed_dates(start_date, end_date) if korean_tickers else {}
             )
-            rows = self._normalize(frame, start_date, end_date)
+            if closed_dates:
+                tickers = [ticker for ticker in tickers if ticker not in korean_tickers]
+                for observed_date, holiday_name in closed_dates.items():
+                    self._logger.info(  # noqa: PLE1205 - custom structured logger
+                        "market.collection.closed",
+                        "국내 증시 휴장일로 가격 데이터가 없는 정상 상황입니다. 조회를 건너뜁니다.",
+                        source="yfinance",
+                        market="XKRX",
+                        observed_date=observed_date,
+                        holiday_name=holiday_name,
+                        tickers=",".join(korean_tickers),
+                        reason="market_closed",
+                    )
+            rows = []
+            if tickers:
+                frame = self._download(
+                    tickers=tickers,
+                    start=start_date.isoformat(),
+                    end=(end_date + timedelta(days=1)).isoformat(),
+                    auto_adjust=False,
+                    progress=False,
+                    group_by="ticker",
+                )
+                rows = [
+                    row
+                    for row in self._normalize(
+                        frame,
+                        start_date,
+                        end_date,
+                        {
+                            key: value
+                            for key, value in selected.items()
+                            if value in tickers
+                        },
+                    )
+                    if row.ticker in tickers
+                ]
             self._logger.info(  # noqa: PLE1205 - custom structured logger
                 "market.collection.succeeded",
                 "Market data collection completed",
                 source="yfinance",
-                series_count=len(self.symbols),
+                series_count=len(selected),
+                skipped_series_count=len(korean_tickers) if closed_dates else 0,
                 record_count=len(rows),
                 duration_ms=round((perf_counter() - started) * 1000),
             )
@@ -94,13 +137,41 @@ class MarketDataClient:
             )
             raise
 
+    @staticmethod
+    def _krx_closed_dates(start_date: date, end_date: date) -> dict[date, str]:
+        """Return closure reasons only when the entire requested range is closed."""
+        calendar = financial_holidays("XKRX", language="ko")
+        closed: dict[date, str] = {}
+        for offset in range((end_date - start_date).days + 1):
+            observed_date = start_date + timedelta(days=offset)
+            holiday_name = calendar.get(observed_date)
+            if holiday_name:
+                closed[observed_date] = holiday_name
+            elif observed_date.weekday() >= 5:
+                closed[observed_date] = "주말 휴장"
+            else:
+                return {}
+        return closed
+
     def _normalize(
-        self, frame: pd.DataFrame, start_date: date, end_date: date
+        self,
+        frame: pd.DataFrame,
+        start_date: date,
+        end_date: date,
+        symbols: dict[str, str] | None = None,
     ) -> list[MarketObservation]:
         collected_at = datetime.now(ZoneInfo("Asia/Seoul"))
         result: list[MarketObservation] = []
-        for series_id, ticker in self.symbols.items():
+        selected = self.symbols if symbols is None else symbols
+        for series_id, ticker in selected.items():
             values = self._close_series(frame, ticker)
+            if (
+                values is None
+                and len(selected) == 1
+                and not isinstance(frame.columns, pd.MultiIndex)
+                and "Close" in frame
+            ):
+                values = frame["Close"]
             if values is None:
                 continue
             for timestamp, value in values.dropna().items():
@@ -129,8 +200,6 @@ class MarketDataClient:
                     return frame[key]
         if ticker in frame.columns:
             return frame[ticker]
-        if "Close" in frame.columns and len(frame.columns) == 1:
-            return frame["Close"]
         return None
 
     @staticmethod
@@ -149,17 +218,19 @@ class MarketRepository:
         )
 
     def upsert(self, rows: list[MarketObservation], run_id: str) -> None:
-        existing = self._storage._read()
-        indexed: dict[tuple[str, str], dict[str, Any]] = {
-            (row["series_id"], row["observed_date"]): row for row in existing
-        }
-        for observation in rows:
-            row = observation.to_dict()
-            indexed[(row["series_id"], row["observed_date"])] = row
-        ordered = sorted(
-            indexed.values(), key=lambda row: (row["observed_date"], row["series_id"])
-        )
-        self._storage._atomic_write(ordered, run_id)
+        with self._storage._lock:
+            existing = self._storage._read()
+            indexed: dict[tuple[str, str], dict[str, Any]] = {
+                (row["series_id"], row["observed_date"]): row for row in existing
+            }
+            for observation in rows:
+                row = observation.to_dict()
+                indexed[(row["series_id"], row["observed_date"])] = row
+            ordered = sorted(
+                indexed.values(),
+                key=lambda row: (row["observed_date"], row["series_id"]),
+            )
+            self._storage._atomic_write(ordered, run_id)
 
     def has_collected_date(self, observed_date: date) -> bool:
         expected = observed_date.isoformat()

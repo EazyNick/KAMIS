@@ -19,6 +19,7 @@ from app.services.analytics import AnalyticsBatchService, AnalyticsService
 from app.services.collection_service import KamisCollectionService
 from app.services.comparison import ComparisonService
 from app.services.daily_pipeline import DailyPipeline
+from app.services.market_history import MarketHistoryService
 from app.services.online_collection import OnlineCollectionService
 from app.services.online_pricing import OnlinePriceCalculator
 from app.services.startup_collection import StartupCollectionService
@@ -89,11 +90,22 @@ class ApplicationContainer:
             analytics_batch,
             app_logger,
         )
+        history = MarketHistoryService(
+            prices,
+            market_repository,
+            market_client,
+            runs,
+            app_logger,
+            on_collected=lambda run_id: analytics_batch.refresh(
+                catalog.entries(), run_id
+            ),
+        )
         startup_collection = StartupCollectionService(
             pipeline,
             runs,
             settings,
             app_logger,
+            history_collector=history.collect,
         )
         return cls(
             settings,

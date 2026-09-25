@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import date
+from threading import Event
 from types import SimpleNamespace
 
 from app.domain.models import RunStatus
@@ -89,3 +91,77 @@ def test_startup_does_not_schedule_while_pipeline_is_running() -> None:
 
     assert service.ensure_today() == "already_running"
     assert pipeline.calls == []
+
+
+def test_startup_checks_history_even_when_today_succeeded() -> None:
+    pipeline = FakePipeline()
+    history_calls = []
+    queued = []
+    service = StartupCollectionService(
+        pipeline,
+        FakeRunRepository(successful=True),
+        Settings.from_env(),
+        app_logger,
+        task_runner=queued.append,
+        today_provider=lambda: TODAY,
+        history_collector=lambda: history_calls.append("history"),
+    )
+    assert service.ensure_today() == "scheduled"
+    assert service.ensure_today() == "already_running"
+    assert history_calls == []
+    queued[0]()
+    assert history_calls == ["history"]
+    assert pipeline.calls == []
+
+
+def test_startup_checks_history_after_daily_failure() -> None:
+    history_calls = []
+
+    class FailingPipeline(FakePipeline):
+        def collect(self, observed_date):
+            raise RuntimeError("daily unavailable")
+
+    service = StartupCollectionService(
+        FailingPipeline(),
+        FakeRunRepository(successful=False),
+        Settings.from_env(),
+        app_logger,
+        task_runner=run_immediately,
+        today_provider=lambda: TODAY,
+        history_collector=lambda: history_calls.append("history"),
+    )
+    assert service.ensure_today() == "scheduled"
+    assert history_calls == ["history"]
+
+
+def test_built_application_lifespan_starts_history_after_daily_success(
+    tmp_path, monkeypatch
+):
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    from fastapi.testclient import TestClient
+
+    from app.core.container import ApplicationContainer
+    from app.domain.models import CollectionRun
+    from app.main import create_app
+    from app.services.market_history import MarketHistoryService
+
+    history_started = Event()
+
+    def collect_history(self):
+        history_started.set()
+
+    monkeypatch.setattr(MarketHistoryService, "collect", collect_history)
+    settings = replace(Settings.from_env(), data_dir=tmp_path)
+    container = ApplicationContainer.build(settings)
+    today = datetime.now(ZoneInfo(settings.timezone)).date()
+    container.run_repository.save(
+        CollectionRun.start("daily_pipeline", today, today).finish(
+            RunStatus.SUCCESS,
+            record_count=0,
+            error_count=0,
+        )
+    )
+    with TestClient(create_app(container)):
+        assert history_started.wait(timeout=5)

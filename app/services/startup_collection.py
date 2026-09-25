@@ -43,11 +43,13 @@ class StartupCollectionService:
         *,
         task_runner: Callable[[Callable[[], None]], None] = start_daemon_task,
         today_provider: Callable[[], date] | None = None,
+        history_collector: Callable[[], object] | None = None,
     ) -> None:
         self._pipeline = pipeline
         self._runs = run_repository
         self._logger = logger
         self._task_runner = task_runner
+        self._history_collector = history_collector
         self._today_provider = today_provider or (
             lambda: datetime.now(ZoneInfo(settings.timezone)).date()
         )
@@ -57,7 +59,10 @@ class StartupCollectionService:
     def ensure_today(self) -> StartupDecision:
         observed_date = self._today_provider()
         with self._lock:
-            if self._runs.has_successful_run("daily_pipeline", observed_date):
+            daily_completed = self._runs.has_successful_run(
+                "daily_pipeline", observed_date
+            )
+            if daily_completed and self._history_collector is None:
                 self._logger.info(  # noqa: PLE1205 - custom structured logger
                     "startup.collection.skipped",
                     "Today's daily collection already succeeded",
@@ -79,15 +84,19 @@ class StartupCollectionService:
 
         self._logger.info(  # noqa: PLE1205 - custom structured logger
             "startup.collection.scheduled",
-            "Today's missing daily collection was scheduled",
+            "Startup collection and market history check scheduled",
             source="daily_pipeline",
             observed_date=observed_date,
         )
-        self._task_runner(lambda: self._collect(observed_date))
+        self._task_runner(
+            lambda: self._collect(observed_date, daily_completed=daily_completed)
+        )
         return "scheduled"
 
-    def _collect(self, observed_date: date) -> None:
+    def _collect(self, observed_date: date, *, daily_completed: bool = False) -> None:
         try:
+            if daily_completed:
+                return
             run = self._pipeline.collect(observed_date)
             self._logger.info(  # noqa: PLE1205 - custom structured logger
                 "startup.collection.completed",
@@ -108,5 +117,16 @@ class StartupCollectionService:
                 observed_date=observed_date,
             )
         finally:
-            with self._lock:
-                self._scheduled_dates.discard(observed_date)
+            try:
+                if self._history_collector is not None:
+                    self._history_collector()
+            except Exception as error:
+                self._logger.exception(  # noqa: PLE1205 - structured logger
+                    "startup.market_history.failed",
+                    "Market history backfill failed; missing data will be retried on next startup",
+                    error,  # noqa: TRY401 - structured error metadata
+                    observed_date=observed_date,
+                )
+            finally:
+                with self._lock:
+                    self._scheduled_dates.discard(observed_date)

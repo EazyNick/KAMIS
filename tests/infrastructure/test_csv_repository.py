@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
@@ -13,6 +14,19 @@ from app.infrastructure.csv_repository import (
     RunRepository,
 )
 from log import app_logger
+
+
+def test_price_date_range_uses_actual_observations(tmp_path: Path) -> None:
+    repository = PriceRepository(tmp_path, app_logger)
+    assert repository.observed_date_range() is None
+    repository.upsert(
+        [
+            replace(price_row(), observed_date=date(2024, 1, 3)),
+            replace(price_row(), observed_date=date(2026, 9, 23)),
+        ],
+        "seed",
+    )
+    assert repository.observed_date_range() == (date(2024, 1, 3), date(2026, 9, 23))
 
 
 def price_row(price: str = "1000") -> PriceObservation:

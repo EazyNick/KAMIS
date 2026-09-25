@@ -248,6 +248,25 @@ class PriceRepository(_AtomicCsvRepository):
     def count(self) -> int:
         return len(self._read())
 
+    def observed_date_range(self) -> tuple[date, date] | None:
+        """Scan the date column without loading the full price history into memory."""
+        with self._lock:
+            if not self.path.exists():
+                return None
+            earliest: date | None = None
+            latest: date | None = None
+            try:
+                with self.path.open(encoding="utf-8-sig", newline="") as handle:
+                    for row in csv.DictReader(handle):
+                        observed = date.fromisoformat(row["observed_date"])
+                        earliest = min(earliest, observed) if earliest else observed
+                        latest = max(latest, observed) if latest else observed
+            except (OSError, csv.Error, ValueError, KeyError) as error:
+                raise StorageError(
+                    f"failed to read date range from {self.path}: {error}"
+                ) from error
+            return (earliest, latest) if earliest and latest else None
+
 
 class RunRepository(_AtomicCsvRepository):
     def __init__(self, data_dir: Path, logger: StructuredLogger) -> None:
