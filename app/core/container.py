@@ -60,6 +60,7 @@ class ApplicationContainer:
                 else None
             ),
             headless=settings.shopping_headless,
+            minimum_interval_seconds=settings.shopping_request_interval_seconds,
         )
         sources = [
             NaverShoppingSource(shopping_session, app_logger),
@@ -70,6 +71,7 @@ class ApplicationContainer:
             online_repository,
             OnlinePriceCalculator(),
             app_logger,
+            target_keys=set(settings.online_target_keys),
         )
         market_client = MarketDataClient(None, app_logger)
         analytics = AnalyticsService()

@@ -12,7 +12,9 @@ Copy-Item .env.example .env
 
 `.env`에는 `KAMIS_CERT_KEY`, `KAMIS_CERT_ID`를 설정합니다. 이 파일은 Git에서 제외됩니다. 키가 노출되면 KAMIS에서 재발급한 뒤 `.env`만 교체하고 이전 키를 폐기합니다.
 
-네이버·쿠팡이 로그인 세션을 요구하면 자동화 전용 Chromium 프로필 경로를 `SHOPPING_USER_DATA_DIR`에 설정합니다. 사람이 사용 중인 기본 브라우저 프로필을 동시에 열지 마십시오. 화면이 필요한 로그인 준비 단계에서는 `SHOPPING_HEADLESS=false`, 일일 실행에서는 `true`를 사용합니다. 접근 제한·CAPTCHA·HTTP 418/403은 우회하지 않으며 해당 소스를 `수집 실패`로 기록하고 다른 소스를 계속 처리합니다. 검색 결과가 정상적으로 0건인 경우에만 그 날짜를 온라인 비교 불가로 처리합니다.
+KAMIS 품목·가격은 전체 수집하며, 네이버·쿠팡은 `ONLINE_TARGETS`에 설정된 대표 KAMIS 품목 10개만 검색합니다. 기본값은 쌀, 감자, 배추, 무, 양파, 깐마늘, 토마토, 사과, 배, 고등어이며 정확한 `item_code:kind_code` 쌍은 `.env.example`에 있습니다. 카탈로그에 중복 행이 있어도 품목·플랫폼당 한 번만 요청하므로 하루 최대 20회이고, `SHOPPING_REQUEST_INTERVAL_SECONDS`(기본 5초) 간격으로 순차 실행합니다.
+
+자동화 전용 Chromium 프로필은 기본적으로 `data/browser-profile`에 저장되며 `SHOPPING_USER_DATA_DIR`로 변경할 수 있습니다. 사람이 사용 중인 기본 브라우저 프로필을 동시에 열지 마십시오. 화면이 필요한 최초 로그인 준비 단계에서는 `SHOPPING_HEADLESS=false`, 일일 실행에서는 `true`를 사용합니다. 접근 제한·CAPTCHA·HTTP 403/418/429는 우회하지 않습니다. 감지 즉시 해당 플랫폼의 남은 대표 품목 검색을 중단하고 `online.collection.source.blocked` 이벤트에 상태 코드와 품목을 기록하며, 다른 플랫폼과 KAMIS·시장 데이터 수집은 계속합니다. 검색 결과가 정상적으로 0건인 경우에만 그 날짜를 온라인 비교 불가로 처리합니다.
 
 ## 실행
 

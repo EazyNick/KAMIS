@@ -35,3 +35,13 @@ class StorageError(ApplicationError):
 
 class CollectionAlreadyRunning(ApplicationError):
     """Raised when a second collection starts while one is active."""
+
+
+class ShoppingAccessBlocked(ApplicationError):
+    """Raised when a shopping platform refuses automated page access."""
+
+    def __init__(self, status_code: int | None, reason: str) -> None:
+        self.status_code = status_code
+        self.reason = reason
+        detail = f"HTTP {status_code}" if status_code is not None else reason
+        super().__init__(f"shopping access blocked: {detail}")

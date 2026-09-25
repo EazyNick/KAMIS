@@ -1,16 +1,26 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from datetime import date, datetime
 from decimal import Decimal
-from time import perf_counter
+from time import monotonic, perf_counter, sleep
 from typing import ClassVar, Protocol
 from urllib.parse import quote_plus
 from zoneinfo import ZoneInfo
 
 from bs4 import BeautifulSoup, Tag
-from playwright.sync_api import Browser, BrowserContext, Playwright, sync_playwright
+from playwright.sync_api import (
+    Browser,
+    BrowserContext,
+    Playwright,
+    sync_playwright,
+)
+from playwright.sync_api import (
+    TimeoutError as PlaywrightTimeoutError,
+)
 
+from app.core.errors import ShoppingAccessBlocked
 from app.domain.models import ProductCatalogEntry
 from app.domain.online_models import MatchStatus, ShoppingOffer
 from log.context_logger import ContextLogger
@@ -25,31 +35,81 @@ class TextResponse(Protocol):
 
 class ShoppingSession(Protocol):
     def get(
-        self, url: str, *, timeout: float, headers: dict[str, str]
+        self,
+        url: str,
+        *,
+        timeout: float,
+        headers: dict[str, str],
+        wait_selectors: tuple[str, ...] = (),
     ) -> TextResponse: ...
 
 
+class RequestRateLimiter:
+    """Guarantee a minimum delay between browser navigations."""
+
+    def __init__(
+        self,
+        minimum_interval_seconds: float,
+        *,
+        clock: Callable[[], float] = monotonic,
+        sleeper: Callable[[float], None] = sleep,
+    ) -> None:
+        self._minimum_interval_seconds = max(0.0, minimum_interval_seconds)
+        self._clock = clock
+        self._sleeper = sleeper
+        self._last_request_at: float | None = None
+
+    def wait(self) -> None:
+        now = self._clock()
+        if self._last_request_at is not None:
+            remaining = self._minimum_interval_seconds - (now - self._last_request_at)
+            if remaining > 0:
+                self._sleeper(remaining)
+                now = self._clock()
+        self._last_request_at = now
+
+
 class BrowserResponse:
+    _ACCESS_CHALLENGE_MARKERS = (
+        "captcha",
+        "자동입력 방지",
+        "로봇이 아닙니다",
+        "비정상적인 접근",
+    )
+
     def __init__(self, text: str, status_code: int) -> None:
         self.text = text
         self.status_code = status_code
 
     def raise_for_status(self) -> None:
+        if self.status_code in {403, 418, 429}:
+            raise ShoppingAccessBlocked(
+                self.status_code,
+                f"shopping page returned HTTP {self.status_code}",
+            )
         if self.status_code >= 400:
             raise RuntimeError(f"shopping page returned HTTP {self.status_code}")
+        normalized = self.text.casefold()
+        if any(marker in normalized for marker in self._ACCESS_CHALLENGE_MARKERS):
+            raise ShoppingAccessBlocked(None, "access challenge detected")
 
 
 class PlaywrightShoppingSession:
     """Lazy browser session for JavaScript-rendered public shopping pages."""
 
     def __init__(
-        self, *, user_data_dir: str | None = None, headless: bool = True
+        self,
+        *,
+        user_data_dir: str | None = None,
+        headless: bool = True,
+        minimum_interval_seconds: float = 5,
     ) -> None:
         self._playwright: Playwright | None = None
         self._browser: Browser | None = None
         self._context: BrowserContext | None = None
         self._user_data_dir = user_data_dir
         self._headless = headless
+        self._rate_limiter = RequestRateLimiter(minimum_interval_seconds)
 
     def _ensure_context(self) -> BrowserContext:
         if self._context is None:
@@ -66,19 +126,34 @@ class PlaywrightShoppingSession:
         return self._context
 
     def get(
-        self, url: str, *, timeout: float, headers: dict[str, str]
+        self,
+        url: str,
+        *,
+        timeout: float,
+        headers: dict[str, str],
+        wait_selectors: tuple[str, ...] = (),
     ) -> BrowserResponse:
         context = self._ensure_context()
         context.set_extra_http_headers(headers)
         page = context.new_page()
         try:
+            self._rate_limiter.wait()
             response = page.goto(
                 url,
                 wait_until="domcontentloaded",
                 timeout=round(timeout * 1000),
             )
-            page.wait_for_timeout(1200)
-            return BrowserResponse(page.content(), response.status if response else 200)
+            status_code = response.status if response else 200
+            if status_code < 400 and wait_selectors:
+                try:
+                    page.wait_for_function(
+                        "selectors => selectors.some(s => document.querySelector(s))",
+                        arg=list(wait_selectors),
+                        timeout=round(timeout * 1000),
+                    )
+                except PlaywrightTimeoutError:
+                    pass
+            return BrowserResponse(page.content(), status_code)
         finally:
             page.close()
 
@@ -102,6 +177,7 @@ class HtmlShoppingSource:
     price_selector: ClassVar[str]
     shipping_selector: ClassVar[str]
     member_selector: ClassVar[str]
+    no_result_selector: ClassVar[str]
 
     def __init__(
         self,
@@ -132,6 +208,7 @@ class HtmlShoppingSource:
                         "AppleWebKit/537.36 Chrome/124 Safari/537.36"
                     )
                 },
+                wait_selectors=(self.card_selector, self.no_result_selector),
             )
             response.raise_for_status()
             rows = self.parse_html(response.text, entry, observed_date)
@@ -268,6 +345,7 @@ class NaverShoppingSource(HtmlShoppingSource):
     price_selector = "[class*='price_num'], .price"
     shipping_selector = "[class*='delivery'], .shipping"
     member_selector = "[class*='member-price']"
+    no_result_selector = "[class*='noResult'], [class*='no_result']"
 
 
 class CoupangShoppingSource(HtmlShoppingSource):
@@ -278,3 +356,4 @@ class CoupangShoppingSource(HtmlShoppingSource):
     price_selector = ".price-value"
     shipping_selector = ".delivery-fee"
     member_selector = ".member-price"
+    no_result_selector = ".no-result, .search-no-result"

@@ -127,6 +127,14 @@ class OnlinePriceRepository:
             and (platform is None or row.get("platform") == platform)
         ]
 
+    def summaries_for_date(self, observed_date: date) -> list[dict[str, str]]:
+        expected = observed_date.isoformat()
+        return [
+            row
+            for row in self._summaries._read()
+            if row.get("observed_date") == expected
+        ]
+
     def search_decisions(
         self, *, item_code: str | None = None, platform: str | None = None
     ) -> list[dict[str, str]]:

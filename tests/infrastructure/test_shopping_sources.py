@@ -1,8 +1,15 @@
 from datetime import date
 
+import pytest
+
+from app.core.errors import ShoppingAccessBlocked
 from app.domain.models import ProductCatalogEntry
 from app.domain.online_models import MatchStatus
-from app.infrastructure.shopping_sources import NaverShoppingSource
+from app.infrastructure.shopping_sources import (
+    BrowserResponse,
+    NaverShoppingSource,
+    RequestRateLimiter,
+)
 from log import app_logger
 
 ENTRY = ProductCatalogEntry(
@@ -55,3 +62,33 @@ def test_plain_registration_discount_is_available_to_all_members() -> None:
     )[0]
     assert row.member_discount_scope == "all_members"
     assert row.unit_price == 10000
+
+
+def test_request_rate_limiter_waits_for_remaining_interval() -> None:
+    now = [100.0]
+    sleeps: list[float] = []
+
+    def sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+        now[0] += seconds
+
+    limiter = RequestRateLimiter(5, clock=lambda: now[0], sleeper=sleep)
+
+    limiter.wait()
+    now[0] += 2
+    limiter.wait()
+
+    assert sleeps == [3]
+
+
+@pytest.mark.parametrize(
+    "html",
+    [
+        "<html><title>CAPTCHA</title></html>",
+        "<div>자동입력 방지 확인이 필요합니다</div>",
+        "<div>비정상적인 접근입니다</div>",
+    ],
+)
+def test_browser_response_reports_access_challenge_as_blocked(html: str) -> None:
+    with pytest.raises(ShoppingAccessBlocked, match="access challenge"):
+        BrowserResponse(html, 200).raise_for_status()
