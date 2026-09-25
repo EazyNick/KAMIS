@@ -1,0 +1,2 @@
+run_id,observed_date,collected_at,platform,item_code,kind_code,query,product_id,title,url,displayed_price,shipping_fee,member_price,member_discount_scope,quantity,unit,unit_price_text,advertisement,availability,raw_accessible_name
+fixture-run,2026-09-26,2026-09-26T10:00:00+09:00,coupang,111,10,쌀 일반계 10kg,fixture-rice,국내산 쌀 일반계 10kg,https://www.coupang.com/vp/products/1,34900,0,,none,10,kg,,false,available,국내산 쌀 일반계 10kg 34900원
