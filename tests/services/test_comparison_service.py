@@ -41,6 +41,48 @@ class MarketRepo:
         ]
 
 
+class DefaultPriceRepo:
+    def search(self, filters):
+        return [
+            {
+                "item_code": "111",
+                "observed_date": "2026-01-01",
+                "price_type": "retail",
+                "price_krw": 1000,
+            },
+            {
+                "item_code": "111",
+                "observed_date": "2026-09-24",
+                "price_type": "retail",
+                "price_krw": 1100,
+            },
+            {
+                "item_code": "222",
+                "observed_date": "2026-09-25",
+                "price_type": "retail",
+                "price_krw": 900,
+            },
+        ]
+
+
+class DefaultOnlineRepo:
+    def search_summaries(self, **kwargs):
+        return [
+            {
+                "item_code": "111",
+                "platform": "naver",
+                "average_unit_price": "1200",
+                "observed_date": "2026-09-24",
+            },
+            {
+                "item_code": "222",
+                "platform": "naver",
+                "average_unit_price": None,
+                "observed_date": "2026-09-25",
+            },
+        ]
+
+
 def test_comparison_chart_uses_kamis_observation_dates_and_all_series() -> None:
     service = ComparisonService(
         PriceRepo(), OnlineRepo(), MarketRepo(), AnalyticsService()
@@ -51,3 +93,16 @@ def test_comparison_chart_uses_kamis_observation_dates_and_all_series() -> None:
     assert result["series"]["kamis_retail"] == [1000.0, 1100.0]
     assert result["series"]["online_naver"] == [None, 1200.0]
     assert result["series"]["kospi"] == [2600.0, 2610.0]
+
+
+def test_dashboard_defaults_prefer_online_item_and_bound_window_to_90_days() -> None:
+    service = ComparisonService(
+        DefaultPriceRepo(), DefaultOnlineRepo(), MarketRepo(), AnalyticsService()
+    )
+
+    assert service.dashboard_defaults() == {
+        "item_code": "111",
+        "start_date": "2026-06-27",
+        "end_date": "2026-09-24",
+        "mode": "base100",
+    }

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 from typing import Any, Protocol
 
 import numpy as np
@@ -119,6 +119,49 @@ class ComparisonService:
             "mode": mode,
             "dates": [timestamp.date().isoformat() for timestamp in frame.index],
             "series": series,
+        }
+
+    def dashboard_defaults(self) -> dict[str, str | None]:
+        price_rows = self._prices.search(PriceFilters())
+        dates_by_item: dict[str, list[date]] = {}
+        for row in price_rows:
+            item_code = str(row.get("item_code", ""))
+            observed_date = row.get("observed_date")
+            if not item_code or not observed_date:
+                continue
+            dates_by_item.setdefault(item_code, []).append(
+                date.fromisoformat(str(observed_date))
+            )
+
+        if not dates_by_item:
+            return {
+                "item_code": None,
+                "start_date": None,
+                "end_date": None,
+                "mode": "base100",
+            }
+
+        online_item_codes = {
+            str(row.get("item_code"))
+            for row in self._online.search_summaries()
+            if row.get("item_code") and row.get("average_unit_price") not in {None, ""}
+        }
+        item_code = max(
+            dates_by_item,
+            key=lambda code: (
+                code in online_item_codes,
+                max(dates_by_item[code]),
+                len(dates_by_item[code]),
+            ),
+        )
+        available_dates = dates_by_item[item_code]
+        end_date = max(available_dates)
+        start_date = max(min(available_dates), end_date - timedelta(days=89))
+        return {
+            "item_code": item_code,
+            "start_date": start_date.isoformat(),
+            "end_date": end_date.isoformat(),
+            "mode": "base100",
         }
 
     def correlations(

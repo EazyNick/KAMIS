@@ -127,6 +127,13 @@ def comparison(
     return container.comparison_service.chart(item_code, start_date, end_date, mode)
 
 
+@router.get("/dashboard/defaults")
+def dashboard_defaults(container: ContainerDependency) -> dict[str, str | None]:
+    if container.comparison_service is None:
+        raise HTTPException(status_code=503, detail="comparison service unavailable")
+    return container.comparison_service.dashboard_defaults()
+
+
 @router.get("/correlations")
 def correlations(
     container: ContainerDependency,

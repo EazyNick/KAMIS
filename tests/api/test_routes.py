@@ -127,6 +127,18 @@ def test_dashboard_is_served_as_html(client: TestClient) -> None:
     assert "comparisonChart" in response.text
 
 
+def test_dashboard_defaults_endpoint_handles_empty_dataset(client: TestClient) -> None:
+    response = client.get("/api/v1/dashboard/defaults")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "item_code": None,
+        "start_date": None,
+        "end_date": None,
+        "mode": "base100",
+    }
+
+
 def test_comparison_api_exposes_every_required_toggle(client: TestClient) -> None:
     response = client.get(
         "/api/v1/comparison", params={"item_code": "111", "mode": "base100"}
