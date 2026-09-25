@@ -78,6 +78,28 @@ def test_startup_collects_today_when_successful_run_is_missing() -> None:
     assert pipeline.calls == [TODAY]
 
 
+def test_startup_backfills_market_history_before_daily_pipeline() -> None:
+    events: list[str] = []
+
+    class OrderedPipeline(FakePipeline):
+        def collect(self, observed_date: date):
+            events.append("daily")
+            return super().collect(observed_date)
+
+    service = StartupCollectionService(
+        OrderedPipeline(),
+        FakeRunRepository(successful=False),
+        Settings.from_env(),
+        app_logger,
+        task_runner=run_immediately,
+        today_provider=lambda: TODAY,
+        history_collector=lambda: events.append("history"),
+    )
+
+    assert service.ensure_today() == "scheduled"
+    assert events == ["history", "daily"]
+
+
 def test_startup_does_not_schedule_while_pipeline_is_running() -> None:
     pipeline = FakePipeline(running=True)
     service = StartupCollectionService(
@@ -107,9 +129,11 @@ def test_startup_checks_history_even_when_today_succeeded() -> None:
         history_collector=lambda: history_calls.append("history"),
     )
     assert service.ensure_today() == "scheduled"
+    assert service.is_running is True
     assert service.ensure_today() == "already_running"
     assert history_calls == []
     queued[0]()
+    assert service.is_running is False
     assert history_calls == ["history"]
     assert pipeline.calls == []
 

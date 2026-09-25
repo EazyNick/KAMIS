@@ -101,3 +101,100 @@ def test_dashboard_applies_defaults_and_draws_single_observation() -> None:
             for url in requested_urls
         )
         browser.close()
+
+
+def test_dashboard_refreshes_chart_after_startup_collection_finishes() -> None:
+    health_calls = 0
+    comparison_calls = 0
+    catalog_item = {
+        "category_code": "100",
+        "category_name": "식량작물",
+        "item_code": "111",
+        "item_name": "쌀",
+        "kind_code": "01",
+        "variety": "일반계",
+        "wholesale_rank_codes": "04",
+        "retail_rank_codes": "04",
+    }
+
+    def handle(route: Route) -> None:
+        nonlocal health_calls, comparison_calls
+        parsed = urlparse(route.request.url)
+        if parsed.path == "/":
+            route.fulfill(
+                status=200,
+                content_type="text/html; charset=utf-8",
+                body=DASHBOARD.read_text(encoding="utf-8"),
+            )
+            return
+        if parsed.path == "/health":
+            health_calls += 1
+            running = health_calls == 1
+            payload = {
+                "status": "ok",
+                "collection_running": running,
+                "latest_run": {
+                    "requested_end": "2026-09-24",
+                    "status": "running" if running else "success",
+                },
+            }
+        elif parsed.path == "/api/v1/catalog":
+            payload = {"items": [catalog_item], "total": 1}
+        elif parsed.path == "/api/v1/online/summaries":
+            payload = {"items": [], "total": 0}
+        elif parsed.path == "/api/v1/dashboard/defaults":
+            payload = {
+                "item_code": "111",
+                "start_date": "2026-06-27",
+                "end_date": "2026-09-24",
+                "mode": "base100",
+            }
+        elif parsed.path == "/api/v1/comparison":
+            comparison_calls += 1
+            payload = {
+                "item_code": "111",
+                "mode": "base100",
+                "dates": ["2026-09-24"],
+                "series": {
+                    "kamis_retail": [100.0],
+                    "kospi": [None if comparison_calls == 1 else 100.0],
+                },
+            }
+        elif parsed.path == "/api/v1/correlations":
+            payload = []
+        else:
+            route.fulfill(status=404, body="not found")
+            return
+        route.fulfill(
+            status=200,
+            content_type="application/json",
+            body=json.dumps(payload, ensure_ascii=False),
+        )
+
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch(headless=True)
+        page = browser.new_page()
+        page.add_init_script(
+            """
+            const nativeSetTimeout = window.setTimeout.bind(window);
+            window.setTimeout = (callback, delay, ...args) =>
+              nativeSetTimeout(callback, Math.min(delay, 20), ...args);
+            window.__arcCount = 0;
+            const nativeGetContext = HTMLCanvasElement.prototype.getContext;
+            HTMLCanvasElement.prototype.getContext = function (...args) {
+              const context = nativeGetContext.apply(this, args);
+              const nativeArc = context.arc.bind(context);
+              context.arc = function (...arcArgs) {
+                window.__arcCount += 1;
+                return nativeArc(...arcArgs);
+              };
+              return context;
+            };
+            """
+        )
+        page.route("**/*", handle)
+        page.goto("http://dashboard.test/")
+        page.wait_for_function("window.__arcCount >= 3", timeout=1000)
+
+        assert comparison_calls >= 2
+        browser.close()

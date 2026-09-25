@@ -56,6 +56,11 @@ class StartupCollectionService:
         self._lock = Lock()
         self._scheduled_dates: set[date] = set()
 
+    @property
+    def is_running(self) -> bool:
+        with self._lock:
+            return bool(self._scheduled_dates)
+
     def ensure_today(self) -> StartupDecision:
         observed_date = self._today_provider()
         with self._lock:
@@ -95,28 +100,6 @@ class StartupCollectionService:
 
     def _collect(self, observed_date: date, *, daily_completed: bool = False) -> None:
         try:
-            if daily_completed:
-                return
-            run = self._pipeline.collect(observed_date)
-            self._logger.info(  # noqa: PLE1205 - custom structured logger
-                "startup.collection.completed",
-                "Startup daily collection completed",
-                source="daily_pipeline",
-                observed_date=observed_date,
-                run_id=getattr(run, "run_id", None),
-                status=getattr(run, "status", None),
-                record_count=getattr(run, "record_count", 0),
-                error_count=getattr(run, "error_count", 0),
-            )
-        except Exception as error:
-            self._logger.exception(  # noqa: PLE1205 - custom structured logger
-                "startup.collection.failed",
-                "Startup daily collection failed",
-                error,  # noqa: TRY401 - custom logger records explicit error metadata
-                source="daily_pipeline",
-                observed_date=observed_date,
-            )
-        finally:
             try:
                 if self._history_collector is not None:
                     self._history_collector()
@@ -127,6 +110,29 @@ class StartupCollectionService:
                     error,  # noqa: TRY401 - structured error metadata
                     observed_date=observed_date,
                 )
-            finally:
-                with self._lock:
-                    self._scheduled_dates.discard(observed_date)
+
+            if daily_completed:
+                return
+            try:
+                run = self._pipeline.collect(observed_date)
+                self._logger.info(  # noqa: PLE1205 - custom structured logger
+                    "startup.collection.completed",
+                    "Startup daily collection completed",
+                    source="daily_pipeline",
+                    observed_date=observed_date,
+                    run_id=getattr(run, "run_id", None),
+                    status=getattr(run, "status", None),
+                    record_count=getattr(run, "record_count", 0),
+                    error_count=getattr(run, "error_count", 0),
+                )
+            except Exception as error:
+                self._logger.exception(  # noqa: PLE1205 - custom structured logger
+                    "startup.collection.failed",
+                    "Startup daily collection failed",
+                    error,  # noqa: TRY401 - custom logger records explicit error metadata
+                    source="daily_pipeline",
+                    observed_date=observed_date,
+                )
+        finally:
+            with self._lock:
+                self._scheduled_dates.discard(observed_date)

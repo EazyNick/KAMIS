@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from fastapi.testclient import TestClient
@@ -62,6 +63,17 @@ def test_health_reports_service_and_data_status(client: TestClient) -> None:
     response = client.get("/health")
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
+
+
+def test_health_reports_startup_backfill_as_collection_running(
+    client: TestClient, container: ApplicationContainer
+) -> None:
+    container.startup_collection_service = SimpleNamespace(is_running=True)
+
+    response = client.get("/health")
+
+    assert response.status_code == 200
+    assert response.json()["collection_running"] is True
 
 
 def test_catalog_filters_and_paginates(
