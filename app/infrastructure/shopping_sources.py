@@ -13,6 +13,7 @@ from bs4 import BeautifulSoup, Tag
 from playwright.sync_api import (
     Browser,
     BrowserContext,
+    Page,
     Playwright,
     sync_playwright,
 )
@@ -40,6 +41,17 @@ class ShoppingSession(Protocol):
         *,
         timeout: float,
         headers: dict[str, str],
+        wait_selectors: tuple[str, ...] = (),
+    ) -> TextResponse: ...
+
+    def search_from_home(
+        self,
+        home_url: str,
+        query: str,
+        *,
+        timeout: float,
+        headers: dict[str, str],
+        search_input_selectors: tuple[str, ...],
         wait_selectors: tuple[str, ...] = (),
     ) -> TextResponse: ...
 
@@ -72,6 +84,7 @@ class RequestRateLimiter:
 class BrowserResponse:
     _ACCESS_CHALLENGE_MARKERS = (
         "captcha",
+        "access denied",
         "자동입력 방지",
         "로봇이 아닙니다",
         "비정상적인 접근",
@@ -102,6 +115,7 @@ class PlaywrightShoppingSession:
         *,
         user_data_dir: str | None = None,
         headless: bool = True,
+        browser_channel: str | None = "chrome",
         minimum_interval_seconds: float = 5,
     ) -> None:
         self._playwright: Playwright | None = None
@@ -109,6 +123,8 @@ class PlaywrightShoppingSession:
         self._context: BrowserContext | None = None
         self._user_data_dir = user_data_dir
         self._headless = headless
+        self._browser_channel = browser_channel
+        self._search_pages: dict[str, Page] = {}
         self._rate_limiter = RequestRateLimiter(minimum_interval_seconds)
 
     def _ensure_context(self) -> BrowserContext:
@@ -116,11 +132,13 @@ class PlaywrightShoppingSession:
             self._playwright = sync_playwright().start()
             if self._user_data_dir:
                 self._context = self._playwright.chromium.launch_persistent_context(
-                    self._user_data_dir, headless=self._headless
+                    self._user_data_dir,
+                    channel=self._browser_channel,
+                    headless=self._headless,
                 )
             else:
                 self._browser = self._playwright.chromium.launch(
-                    headless=self._headless
+                    channel=self._browser_channel, headless=self._headless
                 )
                 self._context = self._browser.new_context()
         return self._context
@@ -157,10 +175,76 @@ class PlaywrightShoppingSession:
         finally:
             page.close()
 
+    def search_from_home(
+        self,
+        home_url: str,
+        query: str,
+        *,
+        timeout: float,
+        headers: dict[str, str],
+        search_input_selectors: tuple[str, ...],
+        wait_selectors: tuple[str, ...] = (),
+    ) -> BrowserResponse:
+        context = self._ensure_context()
+        context.set_extra_http_headers(headers)
+        page = self._search_pages.get(home_url)
+        status_code = 200
+        if page is None or page.is_closed():
+            page = context.new_page()
+            self._search_pages[home_url] = page
+            self._rate_limiter.wait()
+            response = page.goto(
+                home_url,
+                wait_until="domcontentloaded",
+                timeout=round(timeout * 1000),
+            )
+            status_code = response.status if response else 200
+            home_response = BrowserResponse(page.content(), status_code)
+            home_response.raise_for_status()
+
+        try:
+            page.wait_for_function(
+                "selectors => selectors.some(s => document.querySelector(s))",
+                arg=list(search_input_selectors),
+                timeout=round(timeout * 1000),
+            )
+        except PlaywrightTimeoutError:
+            return BrowserResponse(page.content(), status_code)
+
+        search_input = next(
+            (
+                locator
+                for selector in search_input_selectors
+                if (locator := page.locator(selector).first).count()
+                and locator.is_visible()
+            ),
+            None,
+        )
+        if search_input is None:
+            return BrowserResponse(page.content(), status_code)
+
+        self._rate_limiter.wait()
+        search_input.fill(query)
+        search_input.press("Enter")
+        try:
+            page.wait_for_load_state(
+                "domcontentloaded", timeout=round(timeout * 1000)
+            )
+            if wait_selectors:
+                page.wait_for_function(
+                    "selectors => selectors.some(s => document.querySelector(s))",
+                    arg=list(wait_selectors),
+                    timeout=round(timeout * 1000),
+                )
+        except PlaywrightTimeoutError:
+            pass
+        return BrowserResponse(page.content(), 200)
+
     def close(self) -> None:
         if self._context is not None:
             self._context.close()
             self._context = None
+            self._search_pages.clear()
         if self._browser is not None:
             self._browser.close()
             self._browser = None
@@ -199,17 +283,7 @@ class HtmlShoppingSource:
         url = self.search_url.format(query=quote_plus(query))
         started = perf_counter()
         try:
-            response = self._session.get(
-                url,
-                timeout=self._timeout,
-                headers={
-                    "User-Agent": (
-                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                        "AppleWebKit/537.36 Chrome/124 Safari/537.36"
-                    )
-                },
-                wait_selectors=(self.card_selector, self.no_result_selector),
-            )
+            response = self._request(query, url)
             response.raise_for_status()
             rows = self.parse_html(response.text, entry, observed_date)
             self._logger.info(  # noqa: PLE1205 - custom structured logger
@@ -233,6 +307,16 @@ class HtmlShoppingSource:
                 duration_ms=round((perf_counter() - started) * 1000),
             )
             raise
+
+    def _request(self, query: str, url: str) -> TextResponse:
+        if self._session is None:
+            raise RuntimeError(f"{self.platform} shopping session is not configured")
+        return self._session.get(
+            url,
+            timeout=self._timeout,
+            headers={},
+            wait_selectors=(self.card_selector, self.no_result_selector),
+        )
 
     def parse_html(
         self, html: str, entry: ProductCatalogEntry, observed_date: date
@@ -351,9 +435,27 @@ class NaverShoppingSource(HtmlShoppingSource):
 class CoupangShoppingSource(HtmlShoppingSource):
     platform = "coupang"
     search_url = "https://www.coupang.com/np/search?q={query}"
-    card_selector = "li.search-product"
-    link_selector = "a.search-product-link"
-    price_selector = ".price-value"
+    home_url = "https://www.coupang.com/"
+    search_input_selectors = (
+        "#headerSearchKeyword",
+        "input[name='q']",
+        "input[type='search']",
+    )
+    card_selector = "li.search-product, [data-product-id]"
+    link_selector = "a.search-product-link, a[href*='/vp/products/']"
+    price_selector = ".price-value, [class*='price-value']"
     shipping_selector = ".delivery-fee"
     member_selector = ".member-price"
     no_result_selector = ".no-result, .search-no-result"
+
+    def _request(self, query: str, url: str) -> TextResponse:
+        if self._session is None:
+            raise RuntimeError("coupang shopping session is not configured")
+        return self._session.search_from_home(
+            self.home_url,
+            query,
+            timeout=self._timeout,
+            headers={},
+            search_input_selectors=self.search_input_selectors,
+            wait_selectors=(self.card_selector, self.no_result_selector),
+        )

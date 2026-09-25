@@ -7,6 +7,7 @@ from app.domain.models import ProductCatalogEntry
 from app.domain.online_models import MatchStatus
 from app.infrastructure.shopping_sources import (
     BrowserResponse,
+    CoupangShoppingSource,
     NaverShoppingSource,
     RequestRateLimiter,
 )
@@ -85,6 +86,7 @@ def test_request_rate_limiter_waits_for_remaining_interval() -> None:
     "html",
     [
         "<html><title>CAPTCHA</title></html>",
+        "<html><title>Access Denied</title></html>",
         "<div>자동입력 방지 확인이 필요합니다</div>",
         "<div>비정상적인 접근입니다</div>",
     ],
@@ -92,3 +94,31 @@ def test_request_rate_limiter_waits_for_remaining_interval() -> None:
 def test_browser_response_reports_access_challenge_as_blocked(html: str) -> None:
     with pytest.raises(ShoppingAccessBlocked, match="access challenge"):
         BrowserResponse(html, 200).raise_for_status()
+
+
+def test_coupang_search_starts_at_home_and_uses_search_box() -> None:
+    html = """
+    <li class="search-product" data-id="p1">
+      <a class="search-product-link" href="/vp/products/p1">쌀 일반 1kg</a>
+      <span class="price-value">10,000원</span>
+    </li>
+    """
+
+    class HomeSearchSession:
+        def __init__(self) -> None:
+            self.request: tuple[str, str] | None = None
+
+        def get(self, *args, **kwargs):
+            raise AssertionError("Coupang must not enter the search URL directly")
+
+        def search_from_home(self, home_url: str, query: str, **kwargs):
+            self.request = (home_url, query)
+            return BrowserResponse(html, 200)
+
+    session = HomeSearchSession()
+    rows = CoupangShoppingSource(session, app_logger).search(
+        ENTRY, date(2026, 9, 25)
+    )
+
+    assert session.request == ("https://www.coupang.com/", "쌀 일반")
+    assert len(rows) == 1

@@ -37,7 +37,8 @@ class Settings:
     scheduler_hour: int
     scheduler_minute: int
     shopping_user_data_dir: Path | None = None
-    shopping_headless: bool = True
+    shopping_headless: bool = False
+    shopping_browser_channel: str | None = "chrome"
     shopping_request_interval_seconds: float = 5.0
     online_target_keys: frozenset[tuple[str, str]] = frozenset(
         DEFAULT_ONLINE_TARGET_KEYS
@@ -70,8 +71,13 @@ class Settings:
                 if (value := os.getenv("SHOPPING_USER_DATA_DIR"))
                 else (data_dir / "browser-profile").resolve()
             ),
-            shopping_headless=os.getenv("SHOPPING_HEADLESS", "true").casefold()
+            shopping_headless=os.getenv("SHOPPING_HEADLESS", "false").casefold()
             not in {"0", "false", "no"},
+            shopping_browser_channel=(
+                value
+                if (value := os.getenv("SHOPPING_BROWSER_CHANNEL", "chrome").strip())
+                else None
+            ),
             shopping_request_interval_seconds=float(
                 os.getenv("SHOPPING_REQUEST_INTERVAL_SECONDS", "5")
             ),

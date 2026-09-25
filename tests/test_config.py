@@ -38,6 +38,7 @@ def test_shopping_browser_settings_are_explicit(
     configured = Settings.from_env(load_environment_file=False)
     assert configured.shopping_user_data_dir == (tmp_path / "browser-profile").resolve()
     assert configured.shopping_headless is False
+    assert configured.shopping_browser_channel == "chrome"
 
 
 def test_online_collection_defaults_to_ten_representative_kamis_items(

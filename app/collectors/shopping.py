@@ -36,6 +36,7 @@ def build_browser_session(
             else None
         ),
         headless=False if headful else settings.shopping_headless,
+        browser_channel=settings.shopping_browser_channel,
         minimum_interval_seconds=settings.shopping_request_interval_seconds,
     )
 
