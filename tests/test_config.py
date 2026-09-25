@@ -66,3 +66,24 @@ def test_online_targets_must_contain_exactly_ten_unique_pairs(
 
     with pytest.raises(ConfigurationError, match="exactly 10"):
         Settings.from_env(load_environment_file=False)
+
+
+def test_coupang_agent_settings_have_safe_defaults(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    for name in (
+        "COUPANG_AGENT_ENABLED",
+        "CODEX_EXECUTABLE",
+        "COUPANG_AGENT_TIMEOUT_SECONDS",
+        "COUPANG_AGENT_RUN_DIR",
+    ):
+        monkeypatch.delenv(name, raising=False)
+
+    configured = Settings.from_env(load_environment_file=False)
+
+    assert configured.coupang_agent_enabled is True
+    assert configured.codex_executable == "codex"
+    assert configured.coupang_agent_timeout_seconds == 600
+    assert configured.coupang_agent_run_dir == (
+        configured.project_root / "data/runs/coupang-agent"
+    ).resolve()

@@ -40,6 +40,10 @@ class Settings:
     shopping_headless: bool = False
     shopping_browser_channel: str | None = "chrome"
     shopping_request_interval_seconds: float = 5.0
+    coupang_agent_enabled: bool = True
+    codex_executable: str = "codex"
+    coupang_agent_timeout_seconds: float = 600.0
+    coupang_agent_run_dir: Path = Path("data/runs/coupang-agent")
     online_target_keys: frozenset[tuple[str, str]] = frozenset(
         DEFAULT_ONLINE_TARGET_KEYS
     )
@@ -81,6 +85,20 @@ class Settings:
             shopping_request_interval_seconds=float(
                 os.getenv("SHOPPING_REQUEST_INTERVAL_SECONDS", "5")
             ),
+            coupang_agent_enabled=os.getenv(
+                "COUPANG_AGENT_ENABLED", "true"
+            ).casefold()
+            not in {"0", "false", "no"},
+            codex_executable=os.getenv("CODEX_EXECUTABLE", "codex").strip()
+            or "codex",
+            coupang_agent_timeout_seconds=float(
+                os.getenv("COUPANG_AGENT_TIMEOUT_SECONDS", "600")
+            ),
+            coupang_agent_run_dir=(
+                Path(value) if Path(value).is_absolute() else project_root / value
+            ).resolve()
+            if (value := os.getenv("COUPANG_AGENT_RUN_DIR", "data/runs/coupang-agent"))
+            else (project_root / "data/runs/coupang-agent").resolve(),
             online_target_keys=online_target_keys,
         )
 

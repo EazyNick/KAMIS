@@ -45,3 +45,11 @@ class ShoppingAccessBlocked(ApplicationError):
         self.reason = reason
         detail = f"HTTP {status_code}" if status_code is not None else reason
         super().__init__(f"shopping access blocked: {detail}")
+
+
+class CodexCliTimeout(ApplicationError):
+    """Raised when a Codex CLI collection exceeds its configured deadline."""
+
+    def __init__(self, timeout_seconds: float) -> None:
+        self.timeout_seconds = timeout_seconds
+        super().__init__(f"Codex CLI timed out after {timeout_seconds:g} seconds")
