@@ -47,6 +47,7 @@ class ApplicationContainer:
     daily_pipeline: DailyPipeline | None = None
     startup_collection_service: StartupCollectionService | None = None
     dashboard_bootstrap_service: DashboardBootstrapService | None = None
+    coupang_agent_source: CoupangAgentSource | None = None
 
     @classmethod
     def build(cls, settings: Settings) -> ApplicationContainer:
@@ -163,4 +164,9 @@ class ApplicationContainer:
             pipeline,
             startup_collection,
             dashboard_bootstrap,
+            coupang_agent_source=(
+                coupang_source
+                if isinstance(coupang_source, CoupangAgentSource)
+                else None
+            ),
         )

@@ -4,12 +4,14 @@ from dataclasses import replace
 from datetime import date
 from pathlib import Path
 from types import SimpleNamespace
+from decimal import Decimal
 
 import pytest
 from fastapi.testclient import TestClient
 
 from app.core.container import ApplicationContainer
 from app.domain.models import ProductCatalogEntry
+from app.domain.online_models import MatchStatus, ShoppingOffer
 from app.infrastructure.csv_repository import (
     CatalogRepository,
     PriceRepository,
@@ -257,3 +259,66 @@ def test_application_startup_checks_today_collection(
         pass
 
     assert startup.calls == 1
+
+
+def test_coupang_agent_endpoint_returns_collection_result(
+    client: TestClient, container: ApplicationContainer
+) -> None:
+    entry = ProductCatalogEntry(
+        "100",
+        "식량",
+        "111",
+        "쌀",
+        "10",
+        "10kg",
+        "kg",
+        "10",
+        "kg",
+        "10",
+        None,
+        None,
+        ("04",),
+        ("04",),
+        (),
+    )
+    container.catalog_repository.save_snapshot(
+        [entry], date(2026, 9, 26), "catalog-run"
+    )
+
+    class AgentSource:
+        platform = "coupang"
+
+        def prepare(self, entries, observed_date, run_id):
+            self.entries = entries
+
+        def search(self, selected, observed_date):
+            return [
+                ShoppingOffer(
+                    "coupang",
+                    "p1",
+                    "쌀 10kg",
+                    "https://example.test",
+                    selected.item_code,
+                    selected.kind_code,
+                    MatchStatus.EXACT,
+                    Decimal("30000"),
+                    None,
+                    None,
+                    Decimal("0"),
+                    Decimal("1"),
+                    "kamis_retail_unit",
+                    True,
+                    observed_date=observed_date,
+                )
+            ]
+
+    container.coupang_agent_source = AgentSource()  # type: ignore[assignment]
+
+    response = client.post(
+        "/api/v1/collections/coupang-agent",
+        json={"observed_date": "2026-09-26", "item": "111:10"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["target_count"] == 1
+    assert response.json()["offer_count"] == 1
