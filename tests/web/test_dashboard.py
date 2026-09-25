@@ -119,6 +119,14 @@ def test_dashboard_applies_defaults_and_draws_single_observation() -> None:
         assert dashboard_box["y"] < overview_box["y"]
         assert dashboard_box["width"] >= 1800
         assert chart_box["height"] >= 560
+        page.mouse.move(chart_box["x"] + 74, chart_box["y"] + chart_box["height"] / 2)
+        tooltip = page.locator("#chartTooltip")
+        assert tooltip.is_visible()
+        assert "2026-09-24" in tooltip.inner_text()
+        assert "KAMIS 소매" in tooltip.inner_text()
+        assert "100" in tooltip.inner_text()
+        page.mouse.move(0, 0)
+        assert not tooltip.is_visible()
         page.set_viewport_size({"width": 390, "height": 844})
         page.wait_for_timeout(100)
         mobile_chart_box = page.locator("#comparisonChart").bounding_box()
