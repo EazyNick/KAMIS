@@ -97,6 +97,28 @@ $today = Get-Date -Format yyyy-MM-dd
 .\.venv\Scripts\python.exe -m app.cli schedule
 ```
 
+## 수집기 개별 실행
+
+서버가 사용하는 KAMIS·네이버·쿠팡·시장 수집기는 각각 독립된 파일로도 실행할 수 있습니다. 네이버·쿠팡 문제를 확인할 때는 `--headful`로 브라우저를 표시하고, `--item`으로 KAMIS 품목 하나만 지정할 수 있습니다.
+
+```powershell
+# KAMIS 전체 품목의 해당 날짜 가격
+.\.venv\Scripts\python.exe app\collectors\kamis.py --date 2026-09-25
+
+# 네이버 대표 10개 / 쌀 10kg 한 품목만 화면 표시
+.\.venv\Scripts\python.exe app\collectors\naver.py --date 2026-09-25 --headful
+.\.venv\Scripts\python.exe app\collectors\naver.py --date 2026-09-25 --item 111:10 --headful
+
+# 쿠팡 대표 10개 / 쌀 10kg 한 품목만 화면 표시
+.\.venv\Scripts\python.exe app\collectors\coupang.py --date 2026-09-25 --headful
+.\.venv\Scripts\python.exe app\collectors\coupang.py --date 2026-09-25 --item 111:10 --headful
+
+# 주가지수·선물·환율
+.\.venv\Scripts\python.exe app\collectors\market.py --date 2026-09-25
+```
+
+날짜를 생략하면 서울 기준 오늘을 사용합니다. 네이버·쿠팡 단독 실행 결과는 해당 플랫폼 데이터만 갱신하며 다른 플랫폼과 기존 통합 평균은 덮어쓰지 않습니다. HTTP 403/418/429 또는 CAPTCHA는 로그에 `shopping.search.failed`와 `online.collection.source.blocked`로 기록됩니다.
+
 실제 인증정보는 `.env`에만 저장하며 저장소, 로그, 화면에 노출하지 않습니다.
 
 대시보드는 KAMIS 도매·소매, 네이버, 쿠팡, 통합 온라인 평균, 국내외 5개 주가지수와 관련 농산물 선물·환율을 제공합니다. 시계열별 활성화, 기준 100·원값·1일·7일 변화율, 날짜 필터, 검색 가능한 웹 테이블과 상관관계 분석을 지원합니다.

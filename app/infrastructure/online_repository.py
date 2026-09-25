@@ -81,7 +81,14 @@ class OnlinePriceRepository:
         raw = _AtomicCsvRepository(
             self._raw_root / observed_date.isoformat() / "offers.csv", self._logger
         )
-        raw._atomic_write(offer_rows, run_id)
+        raw._atomic_write(
+            self._upsert(
+                raw._read(),
+                offer_rows,
+                ("observed_date", "platform", "item_code", "kind_code", "product_id"),
+            ),
+            run_id,
+        )
         self._offers._atomic_write(
             self._upsert(
                 self._offers._read(),

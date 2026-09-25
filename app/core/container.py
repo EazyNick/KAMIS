@@ -2,20 +2,19 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from app.collectors.coupang import build_coupang_source
+from app.collectors.kamis import build_kamis_collector
+from app.collectors.market import build_market_collector
+from app.collectors.naver import build_naver_source
 from app.infrastructure.analytics_repository import AnalyticsRepository
 from app.infrastructure.csv_repository import (
     CatalogRepository,
     PriceRepository,
     RunRepository,
 )
-from app.infrastructure.kamis_client import KamisClient, build_requests_session
 from app.infrastructure.market_data import MarketDataClient, MarketRepository
 from app.infrastructure.online_repository import OnlinePriceRepository
-from app.infrastructure.shopping_sources import (
-    CoupangShoppingSource,
-    NaverShoppingSource,
-    PlaywrightShoppingSession,
-)
+from app.infrastructure.shopping_sources import PlaywrightShoppingSession
 from app.services.analytics import AnalyticsBatchService, AnalyticsService
 from app.services.collection_service import KamisCollectionService
 from app.services.comparison import ComparisonService
@@ -48,8 +47,7 @@ class ApplicationContainer:
         catalog = CatalogRepository(settings.data_dir, app_logger)
         prices = PriceRepository(settings.data_dir, app_logger)
         runs = RunRepository(settings.data_dir, app_logger)
-        client = KamisClient(settings, build_requests_session(), app_logger)
-        service = KamisCollectionService(client, catalog, prices, runs, app_logger)
+        service = build_kamis_collector(settings, catalog, prices, runs)
         online_repository = OnlinePriceRepository(settings.data_dir, app_logger)
         market_repository = MarketRepository(settings.data_dir, app_logger)
         analytics_repository = AnalyticsRepository(settings.data_dir, app_logger)
@@ -63,8 +61,8 @@ class ApplicationContainer:
             minimum_interval_seconds=settings.shopping_request_interval_seconds,
         )
         sources = [
-            NaverShoppingSource(shopping_session, app_logger),
-            CoupangShoppingSource(shopping_session, app_logger),
+            build_naver_source(shopping_session),
+            build_coupang_source(shopping_session),
         ]
         online_service = OnlineCollectionService(
             sources,
@@ -73,7 +71,7 @@ class ApplicationContainer:
             app_logger,
             target_keys=set(settings.online_target_keys),
         )
-        market_client = MarketDataClient(None, app_logger)
+        market_client = build_market_collector()
         analytics = AnalyticsService()
         comparison = ComparisonService(
             prices, online_repository, market_repository, analytics

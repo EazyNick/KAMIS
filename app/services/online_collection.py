@@ -77,6 +77,8 @@ class OnlineCollectionService:
         catalog: list[ProductCatalogEntry],
         observed_date: date,
         run_id: str,
+        *,
+        include_combined: bool = True,
     ) -> OnlineCollectionResult:
         offers: list[ShoppingOffer] = []
         summaries: list[PlatformPriceSummary] = []
@@ -153,38 +155,39 @@ class OnlineCollectionService:
                     summary = replace(summary, collection_status="collection_failed")
                 summaries.append(summary)
                 item_summaries.append(summary)
-            combined = self._calculator.combined_average(item_summaries)
-            summaries.append(
-                PlatformPriceSummary(
-                    "combined",
-                    entry.item_code,
-                    entry.kind_code,
-                    combined,
-                    sum(summary.sample_count for summary in item_summaries),
-                    sum(summary.candidate_count for summary in item_summaries),
-                    (),
-                    (),
-                    (
-                        "available"
-                        if combined is not None
-                        else (
-                            "blocked"
-                            if any(
-                                summary.collection_status == "blocked"
-                                for summary in item_summaries
-                            )
+            if include_combined:
+                combined = self._calculator.combined_average(item_summaries)
+                summaries.append(
+                    PlatformPriceSummary(
+                        "combined",
+                        entry.item_code,
+                        entry.kind_code,
+                        combined,
+                        sum(summary.sample_count for summary in item_summaries),
+                        sum(summary.candidate_count for summary in item_summaries),
+                        (),
+                        (),
+                        (
+                            "available"
+                            if combined is not None
                             else (
-                                "collection_failed"
+                                "blocked"
                                 if any(
-                                    summary.collection_status == "collection_failed"
+                                    summary.collection_status == "blocked"
                                     for summary in item_summaries
                                 )
-                                else "unavailable"
+                                else (
+                                    "collection_failed"
+                                    if any(
+                                        summary.collection_status == "collection_failed"
+                                        for summary in item_summaries
+                                    )
+                                    else "unavailable"
+                                )
                             )
-                        )
-                    ),
+                        ),
+                    )
                 )
-            )
         self._repository.save_daily(offers, summaries, observed_date, run_id)
         self._logger.info(  # noqa: PLE1205
             "online.collection.completed",

@@ -145,3 +145,19 @@ def test_online_collection_stops_platform_after_access_block(tmp_path: Path) -> 
     summaries = repository.search_summaries()
     assert all(row["collection_status"] == "blocked" for row in summaries)
     assert service.has_collected_date([ENTRY, other], date(2026, 9, 25)) is False
+
+
+def test_single_platform_collection_does_not_write_combined_summary(
+    tmp_path: Path,
+) -> None:
+    repository = OnlinePriceRepository(tmp_path, app_logger)
+    service = OnlineCollectionService(
+        [Source("naver")], repository, OnlinePriceCalculator(), app_logger
+    )
+
+    result = service.collect(
+        [ENTRY], date(2026, 9, 25), "run-naver", include_combined=False
+    )
+
+    assert result.summary_count == 1
+    assert {row["platform"] for row in repository.search_summaries()} == {"naver"}
