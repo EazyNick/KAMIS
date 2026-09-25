@@ -66,21 +66,36 @@ def chart_from_frame(
     mode: AnalysisMode,
     frame: pd.DataFrame,
     core_series: tuple[str, ...],
+    raw_frame: pd.DataFrame | None = None,
 ) -> dict[str, Any]:
     all_columns = list(dict.fromkeys([*core_series, *frame.columns]))
-    series: dict[str, list[float | None]] = {}
-    for column in all_columns:
-        values = (
-            frame[column] if column in frame else pd.Series(np.nan, index=frame.index)
+    raw_source = frame if mode == "raw" and raw_frame is None else raw_frame
+
+    def serialize(source: pd.DataFrame | None) -> dict[str, list[float | None]]:
+        aligned = (
+            source.reindex(frame.index)
+            if source is not None
+            else pd.DataFrame(index=frame.index)
         )
-        series[column] = [
-            None if pd.isna(value) else float(value) for value in values.tolist()
-        ]
+        result: dict[str, list[float | None]] = {}
+        for column in all_columns:
+            values = (
+                aligned[column]
+                if column in aligned
+                else pd.Series(np.nan, index=frame.index)
+            )
+            result[column] = [
+                None if pd.isna(value) else float(value)
+                for value in values.tolist()
+            ]
+        return result
+
     return {
         "item_code": item_code,
         "mode": mode,
         "dates": [timestamp.date().isoformat() for timestamp in frame.index],
-        "series": series,
+        "series": serialize(frame),
+        "raw_series": serialize(raw_source),
     }
 
 
@@ -162,10 +177,11 @@ class ComparisonService:
         end_date: date | None,
         mode: AnalysisMode = "base100",
     ) -> dict[str, Any]:
-        frame = self._analytics.transform(
-            self.build_frame(item_code, start_date, end_date), mode
+        raw_frame = self.build_frame(item_code, start_date, end_date)
+        frame = self._analytics.transform(raw_frame, mode)
+        return chart_from_frame(
+            item_code, mode, frame, self.core_series, raw_frame=raw_frame
         )
-        return chart_from_frame(item_code, mode, frame, self.core_series)
 
     def dashboard_defaults(self) -> dict[str, str | None]:
         price_rows = self._prices.search(PriceFilters())

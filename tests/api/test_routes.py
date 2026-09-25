@@ -184,6 +184,22 @@ def test_dashboard_bootstrap_reads_precomputed_default_chart(tmp_path: Path) -> 
                 "series_id": "kamis_retail",
                 "value": 101.0,
             },
+            {
+                "item_code": "111",
+                "kind_code": "10",
+                "observed_date": "2026-07-02",
+                "mode": "raw",
+                "series_id": "kamis_retail",
+                "value": 2500.0,
+            },
+            {
+                "item_code": "111",
+                "kind_code": "10",
+                "observed_date": "2026-07-03",
+                "mode": "raw",
+                "series_id": "kamis_retail",
+                "value": 2525.0,
+            },
         ],
         "analytics-run",
     )
@@ -201,6 +217,7 @@ def test_dashboard_bootstrap_reads_precomputed_default_chart(tmp_path: Path) -> 
     assert payload["chart"]["dates"] == ["2026-07-02", "2026-07-03"]
     assert payload["chart"]["series"]["kamis_retail"] == [100.0, 101.0]
     assert payload["chart"]["series"]["sp500"] == [100.0, 100.0]
+    assert payload["chart"]["raw_series"]["kamis_retail"] == [2500.0, 2525.0]
 
 
 def test_comparison_api_exposes_every_required_toggle(client: TestClient) -> None:

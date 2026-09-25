@@ -66,6 +66,25 @@ class DashboardBootstrapService:
         start_date = max(frame.index.min().date(), end_date - timedelta(days=89))
         frame = frame.loc[pd.Timestamp(start_date) : pd.Timestamp(end_date)]
         frame = fill_exchange_holidays(frame)
+        raw_rows = self._analytics.read_comparison_series((item_code,), mode="raw")
+        raw_selected = pd.DataFrame(
+            row for row in raw_rows if row.get("item_code") == item_code
+        )
+        raw_frame = pd.DataFrame(index=frame.index)
+        if not raw_selected.empty:
+            raw_selected["observed_date"] = pd.to_datetime(
+                raw_selected["observed_date"]
+            )
+            raw_selected["value"] = pd.to_numeric(
+                raw_selected["value"], errors="coerce"
+            )
+            raw_frame = raw_selected.pivot_table(
+                index="observed_date",
+                columns="series_id",
+                values="value",
+                aggfunc="mean",
+            ).reindex(frame.index)
+            raw_frame = fill_exchange_holidays(raw_frame)
         defaults = {
             "item_code": item_code,
             "start_date": start_date.isoformat(),
@@ -75,7 +94,11 @@ class DashboardBootstrapService:
         return {
             "defaults": defaults,
             "chart": chart_from_frame(
-                item_code, "base100", frame, self._comparison.core_series
+                item_code,
+                "base100",
+                frame,
+                self._comparison.core_series,
+                raw_frame=raw_frame,
             ),
         }
 

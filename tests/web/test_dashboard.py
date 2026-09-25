@@ -48,6 +48,7 @@ def test_dashboard_applies_defaults_and_draws_single_observation() -> None:
                 "mode": "base100",
                 "dates": ["2026-09-24"],
                 "series": {"kamis_retail": [100.0]},
+                "raw_series": {"kamis_retail": [2350.0]},
             },
         },
         "/api/v1/comparison": {
@@ -55,6 +56,7 @@ def test_dashboard_applies_defaults_and_draws_single_observation() -> None:
             "mode": "base100",
             "dates": ["2026-09-24"],
             "series": {"kamis_retail": [100.0]},
+            "raw_series": {"kamis_retail": [2350.0]},
         },
         "/api/v1/correlations": [],
     }
@@ -124,7 +126,8 @@ def test_dashboard_applies_defaults_and_draws_single_observation() -> None:
         assert tooltip.is_visible()
         assert "2026-09-24" in tooltip.inner_text()
         assert "KAMIS 소매" in tooltip.inner_text()
-        assert "100" in tooltip.inner_text()
+        assert "시가 대비 100" in tooltip.inner_text()
+        assert "실제값 2,350" in tooltip.inner_text()
         page.mouse.move(0, 0)
         assert not tooltip.is_visible()
         page.set_viewport_size({"width": 390, "height": 844})

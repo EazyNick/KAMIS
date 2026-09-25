@@ -1,5 +1,7 @@
 from datetime import date
 
+import pytest
+
 from app.services.analytics import AnalyticsService
 from app.services.comparison import ComparisonService
 
@@ -93,6 +95,20 @@ def test_comparison_chart_uses_kamis_observation_dates_and_all_series() -> None:
     assert result["series"]["kamis_retail"] == [1000.0, 1100.0]
     assert result["series"]["online_naver"] == [None, 1200.0]
     assert result["series"]["kospi"] == [2600.0, 2610.0]
+
+
+def test_base100_chart_keeps_raw_values_for_tooltips() -> None:
+    service = ComparisonService(
+        PriceRepo(), OnlineRepo(), MarketRepo(), AnalyticsService()
+    )
+
+    result = service.chart(
+        "111", date(2026, 9, 1), date(2026, 9, 30), "base100"
+    )
+
+    assert result["series"]["kamis_retail"] == pytest.approx([100.0, 110.0])
+    assert result["raw_series"]["kamis_retail"] == [1000.0, 1100.0]
+    assert result["raw_series"]["kospi"] == [2600.0, 2610.0]
 
 
 def test_comparison_fills_exchange_holiday_but_not_missing_open_session() -> None:
