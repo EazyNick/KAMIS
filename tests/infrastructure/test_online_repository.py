@@ -72,3 +72,28 @@ def test_platform_runs_preserve_other_platform_raw_offers(tmp_path: Path) -> Non
         rows = list(csv.DictReader(stream))
 
     assert {row["platform"] for row in rows} == {"naver", "coupang"}
+
+
+def test_repository_reports_completed_platform_keys_and_one_summary(
+    tmp_path: Path,
+) -> None:
+    repository = OnlinePriceRepository(tmp_path, app_logger)
+    observed = date(2026, 9, 26)
+    summary = PlatformPriceSummary(
+        "naver", "111", "01", Decimal("1000"), 1, 1, (), ()
+    )
+    repository.save_daily([], [summary], observed, "run-1")
+
+    assert repository.completed_platform_keys(observed) == {
+        ("naver", "111", "01")
+    }
+    assert repository.summary_for_date(observed, "naver", "111", "01") == {
+        "platform": "naver",
+        "item_code": "111",
+        "kind_code": "01",
+        "average_unit_price": "1000",
+        "sample_count": "1",
+        "candidate_count": "1",
+        "collection_status": "available",
+        "observed_date": "2026-09-26",
+    }

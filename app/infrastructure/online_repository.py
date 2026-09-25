@@ -142,6 +142,37 @@ class OnlinePriceRepository:
             if row.get("observed_date") == expected
         ]
 
+    def completed_platform_keys(
+        self, observed_date: date
+    ) -> set[tuple[str, str, str]]:
+        return {
+            (
+                row.get("platform", ""),
+                row.get("item_code", ""),
+                row.get("kind_code", ""),
+            )
+            for row in self.summaries_for_date(observed_date)
+            if row.get("collection_status") not in {"blocked", "collection_failed"}
+        }
+
+    def summary_for_date(
+        self,
+        observed_date: date,
+        platform: str,
+        item_code: str,
+        kind_code: str,
+    ) -> dict[str, str] | None:
+        return next(
+            (
+                row
+                for row in self.summaries_for_date(observed_date)
+                if row.get("platform") == platform
+                and row.get("item_code") == item_code
+                and row.get("kind_code") == kind_code
+            ),
+            None,
+        )
+
     def search_decisions(
         self, *, item_code: str | None = None, platform: str | None = None
     ) -> list[dict[str, str]]:

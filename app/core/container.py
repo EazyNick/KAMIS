@@ -7,6 +7,9 @@ from app.collectors.kamis import build_kamis_collector
 from app.collectors.market import build_market_collector
 from app.collectors.naver import build_naver_source
 from app.infrastructure.analytics_repository import AnalyticsRepository
+from app.infrastructure.codex_cli import CodexCliRunner
+from app.infrastructure.coupang_agent_csv import CoupangAgentCsvParser
+from app.infrastructure.coupang_agent_source import CoupangAgentSource
 from app.infrastructure.csv_repository import (
     CatalogRepository,
     PriceRepository,
@@ -64,10 +67,28 @@ class ApplicationContainer:
             browser_channel=settings.shopping_browser_channel,
             minimum_interval_seconds=settings.shopping_request_interval_seconds,
         )
-        sources = [
-            build_naver_source(shopping_session),
-            build_coupang_source(shopping_session),
-        ]
+        coupang_fallback = build_coupang_source(shopping_session)
+        coupang_source = (
+            CoupangAgentSource(
+                settings.project_root,
+                settings.coupang_agent_run_dir,
+                CodexCliRunner(
+                    settings.project_root,
+                    settings.codex_executable,
+                    app_logger,
+                ),
+                CoupangAgentCsvParser(),
+                coupang_fallback,
+                app_logger,
+                timeout_seconds=settings.coupang_agent_timeout_seconds,
+                minimum_delay_ms=round(
+                    settings.shopping_request_interval_seconds * 1000
+                ),
+            )
+            if settings.coupang_agent_enabled
+            else coupang_fallback
+        )
+        sources = [build_naver_source(shopping_session), coupang_source]
         online_service = OnlineCollectionService(
             sources,
             online_repository,

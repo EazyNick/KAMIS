@@ -161,3 +161,34 @@ def test_single_platform_collection_does_not_write_combined_summary(
 
     assert result.summary_count == 1
     assert {row["platform"] for row in repository.search_summaries()} == {"naver"}
+
+
+def test_online_collection_skips_completed_platform_item_keys(tmp_path: Path) -> None:
+    repository = OnlinePriceRepository(tmp_path, app_logger)
+    observed = date(2026, 9, 26)
+    existing = Source("naver").search(ENTRY, observed)[0]
+    repository.save_daily(
+        [existing],
+        [
+            OnlinePriceCalculator().summarize(
+                "naver", ENTRY.item_code, ENTRY.kind_code, [existing]
+            )
+        ],
+        observed,
+        "run-1",
+    )
+    naver = Source("naver")
+    coupang = Source("coupang")
+    service = OnlineCollectionService(
+        [naver, coupang], repository, OnlinePriceCalculator(), app_logger
+    )
+
+    service.collect([ENTRY], observed, "run-2")
+
+    assert naver.calls == 0
+    assert coupang.calls == 1
+    combined = repository.summary_for_date(
+        observed, "combined", ENTRY.item_code, ENTRY.kind_code
+    )
+    assert combined is not None
+    assert combined["average_unit_price"] == "1000"

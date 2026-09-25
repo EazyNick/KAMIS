@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from datetime import date
+from decimal import Decimal
 from typing import Protocol
 
 from app.core.errors import ShoppingAccessBlocked
@@ -18,6 +19,15 @@ class ShoppingSourceProtocol(Protocol):
     def search(
         self, entry: ProductCatalogEntry, observed_date: date
     ) -> list[ShoppingOffer]: ...
+
+
+class BatchShoppingSourceProtocol(ShoppingSourceProtocol, Protocol):
+    def prepare(
+        self,
+        entries: list[ProductCatalogEntry],
+        observed_date: date,
+        run_id: str,
+    ) -> None: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -105,9 +115,30 @@ class OnlineCollectionService:
                         for item_code, kind_code in sorted(missing_targets)
                     ),
                 )
+        completed = self._repository.completed_platform_keys(observed_date)
+        for source in self._sources:
+            pending = [
+                entry
+                for entry in selected_catalog
+                if (source.platform, entry.item_code, entry.kind_code) not in completed
+            ]
+            prepare = getattr(source, "prepare", None)
+            if prepare is not None and pending:
+                prepare(pending, observed_date, run_id)
         for entry in selected_catalog:
             item_summaries: list[PlatformPriceSummary] = []
             for source in self._sources:
+                completed_key = (source.platform, entry.item_code, entry.kind_code)
+                if completed_key in completed:
+                    stored = self._repository.summary_for_date(
+                        observed_date,
+                        source.platform,
+                        entry.item_code,
+                        entry.kind_code,
+                    )
+                    if stored is not None:
+                        item_summaries.append(self._stored_summary(stored))
+                        continue
                 source_failed = False
                 source_blocked = source.platform in blocked_sources
                 found: list[ShoppingOffer] = []
@@ -116,7 +147,8 @@ class OnlineCollectionService:
                         found = source.search(entry, observed_date)
                     except ShoppingAccessBlocked as error:
                         source_blocked = True
-                        blocked_sources.add(source.platform)
+                        if getattr(source, "block_is_global", True):
+                            blocked_sources.add(source.platform)
                         scope = f"{source.platform}:{entry.item_code}:{entry.kind_code}"
                         errors.append(f"{scope}:{type(error).__name__}:{error}")
                         self._logger.exception(  # noqa: PLE1205
@@ -202,4 +234,19 @@ class OnlineCollectionService:
         )
         return OnlineCollectionResult(
             len(offers), len(summaries), len(errors), tuple(errors)
+        )
+
+    @staticmethod
+    def _stored_summary(row: dict[str, str]) -> PlatformPriceSummary:
+        average_text = row.get("average_unit_price", "")
+        return PlatformPriceSummary(
+            platform=row["platform"],
+            item_code=row["item_code"],
+            kind_code=row["kind_code"],
+            average_unit_price=(Decimal(average_text) if average_text else None),
+            sample_count=int(row.get("sample_count", "0") or 0),
+            candidate_count=int(row.get("candidate_count", "0") or 0),
+            included_offers=(),
+            excluded_offers=(),
+            collection_status=row.get("collection_status", "available"),
         )
