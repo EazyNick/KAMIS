@@ -19,11 +19,12 @@ from app.services.analytics import AnalyticsBatchService, AnalyticsService
 from app.services.collection_service import KamisCollectionService
 from app.services.comparison import ComparisonService
 from app.services.daily_pipeline import DailyPipeline
+from app.services.dashboard_bootstrap import DashboardBootstrapService
 from app.services.market_history import MarketHistoryService
 from app.services.online_collection import OnlineCollectionService
 from app.services.online_pricing import OnlinePriceCalculator
 from app.services.startup_collection import StartupCollectionService
-from config.server_config import Settings
+from config.server_config import DEFAULT_ONLINE_TARGET_KEYS, Settings
 from log import app_logger
 
 
@@ -42,6 +43,7 @@ class ApplicationContainer:
     comparison_service: ComparisonService | None = None
     daily_pipeline: DailyPipeline | None = None
     startup_collection_service: StartupCollectionService | None = None
+    dashboard_bootstrap_service: DashboardBootstrapService | None = None
 
     @classmethod
     def build(cls, settings: Settings) -> ApplicationContainer:
@@ -76,6 +78,23 @@ class ApplicationContainer:
         analytics = AnalyticsService()
         comparison = ComparisonService(
             prices, online_repository, market_repository, analytics
+        )
+        configured_targets = set(settings.online_target_keys)
+        preferred_item_codes = tuple(
+            dict.fromkeys(
+                item_code
+                for item_code, kind_code in DEFAULT_ONLINE_TARGET_KEYS
+                if (item_code, kind_code) in configured_targets
+            )
+        )
+        if not preferred_item_codes:
+            preferred_item_codes = tuple(
+                sorted({item_code for item_code, _ in configured_targets})
+            )
+        dashboard_bootstrap = DashboardBootstrapService(
+            analytics_repository,
+            comparison,
+            preferred_item_codes,
         )
         analytics_batch = AnalyticsBatchService(
             comparison, analytics, analytics_repository
@@ -121,4 +140,5 @@ class ApplicationContainer:
             comparison,
             pipeline,
             startup_collection,
+            dashboard_bootstrap,
         )

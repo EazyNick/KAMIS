@@ -36,6 +36,20 @@ def test_dashboard_applies_defaults_and_draws_single_observation() -> None:
             "end_date": "2026-09-24",
             "mode": "base100",
         },
+        "/api/v1/dashboard/bootstrap": {
+            "defaults": {
+                "item_code": "222",
+                "start_date": "2026-06-27",
+                "end_date": "2026-09-24",
+                "mode": "base100",
+            },
+            "chart": {
+                "item_code": "222",
+                "mode": "base100",
+                "dates": ["2026-09-24"],
+                "series": {"kamis_retail": [100.0]},
+            },
+        },
         "/api/v1/comparison": {
             "item_code": "222",
             "mode": "base100",
@@ -93,19 +107,14 @@ def test_dashboard_applies_defaults_and_draws_single_observation() -> None:
         assert page.locator("#startDate").input_value() == "2026-06-27"
         assert page.locator("#endDate").input_value() == "2026-09-24"
         assert page.evaluate("window.__arcCount") > 0
-        assert any(
-            "/api/v1/comparison?" in url
-            and "item_code=222" in url
-            and "start_date=2026-06-27" in url
-            and "end_date=2026-09-24" in url
-            for url in requested_urls
-        )
+        assert any("/api/v1/dashboard/bootstrap" in url for url in requested_urls)
+        assert not any("/api/v1/comparison?" in url for url in requested_urls)
         browser.close()
 
 
 def test_dashboard_refreshes_chart_after_startup_collection_finishes() -> None:
     health_calls = 0
-    comparison_calls = 0
+    bootstrap_calls = 0
     catalog_item = {
         "category_code": "100",
         "category_name": "식량작물",
@@ -118,7 +127,7 @@ def test_dashboard_refreshes_chart_after_startup_collection_finishes() -> None:
     }
 
     def handle(route: Route) -> None:
-        nonlocal health_calls, comparison_calls
+        nonlocal health_calls, bootstrap_calls
         parsed = urlparse(route.request.url)
         if parsed.path == "/":
             route.fulfill(
@@ -142,22 +151,23 @@ def test_dashboard_refreshes_chart_after_startup_collection_finishes() -> None:
             payload = {"items": [catalog_item], "total": 1}
         elif parsed.path == "/api/v1/online/summaries":
             payload = {"items": [], "total": 0}
-        elif parsed.path == "/api/v1/dashboard/defaults":
+        elif parsed.path == "/api/v1/dashboard/bootstrap":
+            bootstrap_calls += 1
             payload = {
-                "item_code": "111",
-                "start_date": "2026-06-27",
-                "end_date": "2026-09-24",
-                "mode": "base100",
-            }
-        elif parsed.path == "/api/v1/comparison":
-            comparison_calls += 1
-            payload = {
-                "item_code": "111",
-                "mode": "base100",
-                "dates": ["2026-09-24"],
-                "series": {
-                    "kamis_retail": [100.0],
-                    "kospi": [None if comparison_calls == 1 else 100.0],
+                "defaults": {
+                    "item_code": "111",
+                    "start_date": "2026-06-27",
+                    "end_date": "2026-09-24",
+                    "mode": "base100",
+                },
+                "chart": {
+                    "item_code": "111",
+                    "mode": "base100",
+                    "dates": ["2026-09-24"],
+                    "series": {
+                        "kamis_retail": [100.0],
+                        "kospi": [None if bootstrap_calls == 1 else 100.0],
+                    },
                 },
             }
         elif parsed.path == "/api/v1/correlations":
@@ -196,5 +206,5 @@ def test_dashboard_refreshes_chart_after_startup_collection_finishes() -> None:
         page.goto("http://dashboard.test/")
         page.wait_for_function("window.__arcCount >= 3", timeout=1000)
 
-        assert comparison_calls >= 2
+        assert bootstrap_calls >= 2
         browser.close()

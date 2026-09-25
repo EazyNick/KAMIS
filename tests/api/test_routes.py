@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import date
 from pathlib import Path
 from types import SimpleNamespace
@@ -149,6 +150,57 @@ def test_dashboard_defaults_endpoint_handles_empty_dataset(client: TestClient) -
         "end_date": None,
         "mode": "base100",
     }
+
+
+def test_dashboard_bootstrap_reads_precomputed_default_chart(tmp_path: Path) -> None:
+    settings = replace(Settings.from_env(), data_dir=tmp_path)
+    container = ApplicationContainer.build(settings)
+    container.startup_collection_service = None
+    assert container.analytics_repository is not None
+    container.analytics_repository.save(
+        "comparison_series",
+        [
+            {
+                "item_code": "111",
+                "kind_code": "10",
+                "observed_date": "2026-07-02",
+                "mode": "base100",
+                "series_id": "kamis_retail",
+                "value": 100.0,
+            },
+            {
+                "item_code": "111",
+                "kind_code": "10",
+                "observed_date": "2026-07-02",
+                "mode": "base100",
+                "series_id": "sp500",
+                "value": 100.0,
+            },
+            {
+                "item_code": "111",
+                "kind_code": "10",
+                "observed_date": "2026-07-03",
+                "mode": "base100",
+                "series_id": "kamis_retail",
+                "value": 101.0,
+            },
+        ],
+        "analytics-run",
+    )
+
+    response = TestClient(create_app(container)).get("/api/v1/dashboard/bootstrap")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["defaults"] == {
+        "item_code": "111",
+        "start_date": "2026-07-02",
+        "end_date": "2026-07-03",
+        "mode": "base100",
+    }
+    assert payload["chart"]["dates"] == ["2026-07-02", "2026-07-03"]
+    assert payload["chart"]["series"]["kamis_retail"] == [100.0, 101.0]
+    assert payload["chart"]["series"]["sp500"] == [100.0, 100.0]
 
 
 def test_comparison_api_exposes_every_required_toggle(client: TestClient) -> None:

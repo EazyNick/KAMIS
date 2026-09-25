@@ -134,6 +134,13 @@ def dashboard_defaults(container: ContainerDependency) -> dict[str, str | None]:
     return container.comparison_service.dashboard_defaults()
 
 
+@router.get("/dashboard/bootstrap")
+def dashboard_bootstrap(container: ContainerDependency) -> dict[str, Any]:
+    if container.dashboard_bootstrap_service is None:
+        raise HTTPException(status_code=503, detail="dashboard bootstrap unavailable")
+    return _clean(container.dashboard_bootstrap_service.load())
+
+
 @router.get("/correlations")
 def correlations(
     container: ContainerDependency,
