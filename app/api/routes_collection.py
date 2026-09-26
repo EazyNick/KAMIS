@@ -8,6 +8,7 @@ from pydantic import BaseModel, model_validator
 
 from app.api.dependencies import get_container
 from app.collectors.coupang_agent import collect_coupang_agent
+from app.collectors.naver_agent import collect_naver_agent
 from app.collectors.shopping import parse_target
 from app.core.container import ApplicationContainer
 from app.core.errors import CollectionAlreadyRunning
@@ -32,6 +33,11 @@ class DailyCollectionRequest(BaseModel):
 
 
 class CoupangAgentCollectionRequest(BaseModel):
+    observed_date: date
+    item: str | None = None
+
+
+class NaverAgentCollectionRequest(BaseModel):
     observed_date: date
     item: str | None = None
 
@@ -73,6 +79,32 @@ def collect_coupang_with_agent(
         result = collect_coupang_agent(
             container, request.observed_date, target=target
         )
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    except RuntimeError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+    return {
+        "observed_date": request.observed_date.isoformat(),
+        "target_count": 1 if target else len(container.settings.online_target_keys),
+        "offer_count": result.offer_count,
+        "summary_count": result.summary_count,
+        "error_count": result.error_count,
+        "errors": result.errors,
+    }
+
+
+@router.post("/collections/naver-agent")
+def collect_naver_with_agent(
+    request: NaverAgentCollectionRequest,
+    container: ContainerDependency,
+) -> dict[str, object]:
+    if container.daily_pipeline is not None and container.daily_pipeline.is_running:
+        raise CollectionAlreadyRunning("a unified daily collection is already running")
+    if not container.settings.naver_agent_enabled or container.naver_agent_source is None:
+        raise HTTPException(status_code=503, detail="Naver agent unavailable")
+    try:
+        target = parse_target(request.item) if request.item else None
+        result = collect_naver_agent(container, request.observed_date, target=target)
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
     except RuntimeError as error:

@@ -3,7 +3,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.collectors import coupang, coupang_agent, kamis, market, naver
+from app.collectors import coupang, coupang_agent, kamis, market, naver, naver_agent
 from app.domain.models import RunStatus
 from app.services.online_collection import OnlineCollectionResult
 
@@ -84,6 +84,29 @@ def test_coupang_agent_entrypoint_accepts_date_and_item(
         coupang_agent.main(["--date", "2026-09-26", "--item", "111:10"])
         == 0
     )
+    assert captured == {
+        "observed_date": date(2026, 9, 26),
+        "target": ("111", "10"),
+    }
+
+
+def test_naver_agent_entrypoint_accepts_date_and_item(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, object] = {}
+
+    def run(observed_date, *, target):
+        captured.update(observed_date=observed_date, target=target)
+        return OnlineCollectionResult(1, 1, 0, ())
+
+    monkeypatch.setattr(naver_agent, "run_naver_agent", run)
+    monkeypatch.setattr(
+        naver_agent.Settings,
+        "from_env",
+        staticmethod(lambda: SimpleNamespace(timezone="Asia/Seoul")),
+    )
+
+    assert naver_agent.main(["--date", "2026-09-26", "--item", "111:10"]) == 0
     assert captured == {
         "observed_date": date(2026, 9, 26),
         "target": ("111", "10"),

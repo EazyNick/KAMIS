@@ -324,6 +324,69 @@ def test_coupang_agent_endpoint_returns_collection_result(
     assert response.json()["offer_count"] == 1
 
 
+def test_naver_agent_endpoint_returns_collection_result(
+    client: TestClient, container: ApplicationContainer
+) -> None:
+    entry = ProductCatalogEntry(
+        "100",
+        "식량",
+        "111",
+        "쌀",
+        "10",
+        "10kg",
+        "kg",
+        "10",
+        "kg",
+        "10",
+        None,
+        None,
+        ("04",),
+        ("04",),
+        (),
+    )
+    container.catalog_repository.save_snapshot(
+        [entry], date(2026, 9, 26), "naver-catalog-run"
+    )
+
+    class AgentSource:
+        platform = "naver"
+
+        def prepare(self, entries, observed_date, run_id):
+            self.entries = entries
+
+        def search(self, selected, observed_date):
+            return [
+                ShoppingOffer(
+                    "naver",
+                    "n1",
+                    "쌀 10kg",
+                    "https://example.test/naver",
+                    selected.item_code,
+                    selected.kind_code,
+                    MatchStatus.EXACT,
+                    Decimal(30000),
+                    None,
+                    None,
+                    Decimal(0),
+                    Decimal(1),
+                    "kamis_retail_unit",
+                    True,
+                    observed_date=observed_date,
+                )
+            ]
+
+    container.naver_agent_source = AgentSource()  # type: ignore[assignment]
+
+    response = client.post(
+        "/api/v1/collections/naver-agent",
+        json={"observed_date": "2026-09-26", "item": "111:10"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["target_count"] == 1
+    assert response.json()["offer_count"] == 1
+
+
 def test_built_container_configures_both_agent_sources(tmp_path: Path) -> None:
     configured = replace(
         Settings.from_env(),
