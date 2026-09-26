@@ -1,5 +1,47 @@
 # KAMIS 가격 비교·상관관계 대시보드
 
+## 쿠팡 Codex agent 수집
+
+쿠팡은 저장소 skill과 Codex CLI를 통해, 로그인된 Windows 사용자의 일반 Chrome
+창을 UI Automation으로 조작해 수집합니다. 처음 clone한 뒤 Codex CLI 인증을
+완료하세요.
+
+```powershell
+codex login
+Copy-Item .env.example .env
+.\.venv\Scripts\python.exe app\main.py
+```
+
+서버는 당일 플랫폼·품목별 완료 CSV를 먼저 확인합니다. 이미 완료된 항목은 다시
+요청하지 않고, 빠진 쿠팡 항목들만 한 번의 agent batch로 수집합니다. 직접 한 품목을
+점검하려면 다음 명령을 실행합니다.
+
+```powershell
+.\.venv\Scripts\python.exe -m app.collectors.coupang_agent --date 2026-09-26 --item 111:10
+```
+
+Windows 데스크톱은 로그인된 상태로 잠금 해제되어 있어야 하며, 일반 Chrome 창을
+사용합니다. 화면 좌표 클릭은 사용하지 않습니다. 접근 차단, CAPTCHA 또는 로그인
+요구를 우회하지 않으며 agent 수집이 실패한 품목에만 기존 Playwright 수집기를
+fallback으로 실행합니다. Codex CLI 호출에는 계정 사용량이 발생합니다.
+Windows UI Automation 프로세스 실행 때문에 기본 `CODEX_SANDBOX_MODE`는
+`danger-full-access`입니다. 이 설정은 명시적 `coupang-ui-collector` skill에만 사용하고,
+외부 prompt나 임의 명령 실행에 재사용하지 마세요.
+
+원시 agent 파일은 `data/runs/coupang-agent/<run-id>/` 아래의 `manifest.json`,
+`result-schema.json`, `agent-result.json`, `offers.csv`로 남습니다. 검증을 통과한 결과는
+`data/normalized/online_offers.csv`, 판단 사유는
+`data/normalized/online_offer_decisions.csv`, 일별 평균은
+`data/normalized/online_price_summaries.csv`에서 확인합니다. 실행 원인과 실패 범위는
+`log/logs/`의 `codex_cli.*`, `coupang_agent.*`, `online.collection.*` 이벤트로 추적합니다.
+
+API에서 직접 실행할 때는 `POST /api/v1/collections/coupang-agent`에 다음 JSON을
+전송합니다. `item`을 생략하면 설정된 대표 10개 중 당일 누락 항목만 처리합니다.
+
+```json
+{"observed_date":"2026-09-26","item":"111:10"}
+```
+
 KAMIS 도매·소매가격, 네이버·쿠팡 온라인 판매가격, 원자재 선물과 주요 주가지수를 하루 한 번 수집해 비교·분석하는 FastAPI 프로젝트입니다. 데이터는 CSV에 원본·정규화 형태로 보존하며 웹에서 검색, 필터, 표, 그래프와 상관관계 분석을 제공합니다.
 
 ## 저장소 클론 및 실행
