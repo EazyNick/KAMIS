@@ -1,0 +1,6 @@
+interface:
+  display_name: "Naver Shopping UI Collector"
+  short_description: "Collect Naver prices through ordinary Chrome UI"
+  default_prompt: "Use $naver-ui-collector to collect the supplied manifest into its raw CSV."
+policy:
+  allow_implicit_invocation: false
