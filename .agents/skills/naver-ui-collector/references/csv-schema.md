@@ -12,9 +12,9 @@ writes UTF-8 CSV with these columns in order:
 | `item_code` | KAMIS item code. |
 | `kind_code` | KAMIS kind code. |
 | `query` | Search phrase submitted through the accessible input. |
-| `product_id` | Stable SHA-256-derived ID when no product URL ID is exposed. |
+| `product_id` | Stable SHA-256-derived ID based on the exposed product URL. |
 | `title` | First accessible result line. |
-| `url` | Product URL when exposed, otherwise empty. |
+| `url` | Required HTTPS URL on `naver.com` or one of its subdomains. |
 | `displayed_price` | Digits-only public price when recognized. |
 | `shipping_fee` | Digits-only fee; `0` only for explicit free shipping. |
 | `member_price` | Digits-only member price when recognized. |

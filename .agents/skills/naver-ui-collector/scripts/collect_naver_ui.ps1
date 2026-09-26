@@ -76,41 +76,38 @@ function Get-AccessibleProductRows {
     param([int]$Maximum)
     $document = Find-NaverDocument
     if ($null -eq $document) { return @() }
-    $conditions = @(
-        (New-Object System.Windows.Automation.PropertyCondition(
-            [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
-            [System.Windows.Automation.ControlType]::ListItem
-        )),
-        (New-Object System.Windows.Automation.PropertyCondition(
-            [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
-            [System.Windows.Automation.ControlType]::Hyperlink
-        )),
-        (New-Object System.Windows.Automation.PropertyCondition(
-            [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
-            [System.Windows.Automation.ControlType]::Group
-        ))
+    $condition = New-Object System.Windows.Automation.PropertyCondition(
+        [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
+        [System.Windows.Automation.ControlType]::Hyperlink
     )
-    $condition = New-Object System.Windows.Automation.OrCondition($conditions)
     $items = $document.FindAll([System.Windows.Automation.TreeScope]::Descendants, $condition)
     $result = [System.Collections.Generic.List[object]]::new()
     $seen = [System.Collections.Generic.HashSet[string]]::new()
     foreach ($item in $items) {
         $name = [string]$item.Current.Name
-        if (-not [string]::IsNullOrWhiteSpace($name) -and $name -match '\d[\d,]*\s*\uC6D0' -and $seen.Add($name)) {
-            $result.Add($item)
-            if ($result.Count -ge $Maximum) { break }
+        if ([string]::IsNullOrWhiteSpace($name) -or $name -notmatch '\d[\d,]*\s*\uC6D0') { continue }
+        try {
+            $urlPattern = $item.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern)
+            $url = [string]$urlPattern.Current.Value
         }
+        catch { continue }
+        if ($url -notmatch '^https://[^/]*\.naver\.com/') { continue }
+        if (-not $seen.Add($url)) { continue }
+        $result.Add($item)
+        if ($result.Count -ge $Maximum) { break }
     }
     return $result
 }
 
 function Wait-AccessibleProductRows {
-    param([int]$TimeoutSeconds, [int]$Maximum, [string]$PreviousDocumentName)
+    param([int]$TimeoutSeconds, [int]$Maximum, [string]$PreviousDocumentName, [string]$Query)
     $deadline = [DateTimeOffset]::Now.AddSeconds($TimeoutSeconds)
     while ([DateTimeOffset]::Now -lt $deadline) {
         $document = Find-NaverDocument
         $rows = @(Get-AccessibleProductRows -Maximum $Maximum)
-        if ($null -ne $document -and $document.Current.Name -ne $PreviousDocumentName -and $rows.Count -gt 0) {
+        $titleMatchesQuery = $null -ne $document -and $document.Current.Name -match [regex]::Escape($Query)
+        $documentChanged = $null -ne $document -and $document.Current.Name -ne $PreviousDocumentName
+        if ($rows.Count -gt 0 -and ($documentChanged -or $titleMatchesQuery)) {
             return $rows
         }
         Start-Sleep -Milliseconds 500
@@ -161,12 +158,15 @@ try {
             $valuePattern.SetValue([string]$target.query)
             [System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
             Start-Sleep -Milliseconds ([Math]::Max(500, [int]$manifest.minimum_delay_ms))
-            $accessibleRows = @(Wait-AccessibleProductRows -TimeoutSeconds 25 -Maximum ([Math]::Max(1, [int]$manifest.max_offers_per_target)) -PreviousDocumentName $previousDocumentName)
+            $accessibleRows = @(Wait-AccessibleProductRows -TimeoutSeconds 25 -Maximum ([Math]::Max(1, [int]$manifest.max_offers_per_target)) -PreviousDocumentName $previousDocumentName -Query ([string]$target.query))
 
             foreach ($accessibleRow in $accessibleRows) {
                 $raw = [string]$accessibleRow.Current.Name
+                $urlPattern = $accessibleRow.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern)
+                $url = [string]$urlPattern.Current.Value
                 $lines = @($raw -split "`r?`n" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
                 $priceMatch = [regex]::Match($raw, '(?<![\d,])(\d[\d,]*)\s*\uC6D0')
+                $discountedPriceMatch = [regex]::Match($raw, '\uD560\uC778\s*\uC804\s*\uD310\uB9E4\uAC00\s*(\d[\d,]*)\s*\uC6D0\s*\d+\s*%\s*\uD560\uC778\s*(\d[\d,]*)\s*\uC6D0')
                 $quantityMatch = [regex]::Match($raw, '(\d+(?:\.\d+)?)\s*(kg|g|\uAC1C|\uBD09|\uD329|\uD3EC\uAE30|\uB9C8\uB9AC)')
                 $unitPriceMatch = [regex]::Match($raw, '\([^\r\n]*?\d[\d,]*\s*\uC6D0[^\r\n]*?\)')
                 $shippingMatch = [regex]::Match($raw, '\uBC30\uC1A1\uBE44\s*(\d[\d,]*)\s*\uC6D0')
@@ -181,10 +181,10 @@ try {
                     item_code = Escape-SpreadsheetValue $target.item_code
                     kind_code = Escape-SpreadsheetValue $target.kind_code
                     query = Escape-SpreadsheetValue $target.query
-                    product_id = New-StableProductId -RawName $raw
+                    product_id = New-StableProductId -RawName $url
                     title = Escape-SpreadsheetValue $(if ($lines.Count -gt 0) { $lines[0] } else { '' })
-                    url = ''
-                    displayed_price = $(if ($priceMatch.Success) { $priceMatch.Groups[1].Value.Replace(',', '') } else { '' })
+                    url = Escape-SpreadsheetValue $url
+                    displayed_price = $(if ($discountedPriceMatch.Success) { $discountedPriceMatch.Groups[2].Value.Replace(',', '') } elseif ($priceMatch.Success) { $priceMatch.Groups[1].Value.Replace(',', '') } else { '' })
                     shipping_fee = $(if ($shippingMatch.Success) { $shippingMatch.Groups[1].Value.Replace(',', '') } elseif ($freeShipping) { '0' } else { '' })
                     member_price = ''
                     member_discount_scope = $(if ($restricted) { 'restricted' } elseif ($allMember) { 'all_members' } else { 'unknown' })
