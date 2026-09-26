@@ -42,6 +42,7 @@ class Settings:
     shopping_request_interval_seconds: float = 5.0
     coupang_agent_enabled: bool = True
     codex_executable: str = "codex"
+    codex_sandbox_mode: str = "danger-full-access"
     coupang_agent_timeout_seconds: float = 600.0
     coupang_agent_run_dir: Path = Path("data/runs/coupang-agent")
     online_target_keys: frozenset[tuple[str, str]] = frozenset(
@@ -91,6 +92,9 @@ class Settings:
             not in {"0", "false", "no"},
             codex_executable=os.getenv("CODEX_EXECUTABLE", "codex").strip()
             or "codex",
+            codex_sandbox_mode=os.getenv(
+                "CODEX_SANDBOX_MODE", "danger-full-access"
+            ).strip(),
             coupang_agent_timeout_seconds=float(
                 os.getenv("COUPANG_AGENT_TIMEOUT_SECONDS", "600")
             ),

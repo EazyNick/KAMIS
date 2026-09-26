@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import shutil
 import subprocess
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -12,6 +13,7 @@ from app.core.errors import CodexCliTimeout
 from log import StructuredLogger
 
 ProcessRunner = Callable[..., Any]
+ExecutableResolver = Callable[[str], str | None]
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,11 +42,15 @@ class CodexCliRunner:
         logger: StructuredLogger,
         *,
         process_runner: ProcessRunner = subprocess.run,
+        executable_resolver: ExecutableResolver = shutil.which,
+        sandbox_mode: str = "workspace-write",
     ) -> None:
         self._project_root = project_root.resolve()
         self._executable = executable
         self._logger = logger
         self._process_runner = process_runner
+        self._executable_resolver = executable_resolver
+        self._sandbox_mode = sandbox_mode
 
     def run(
         self,
@@ -53,12 +59,13 @@ class CodexCliRunner:
         output_path: Path,
         timeout_seconds: float,
     ) -> CodexCliResult:
+        resolved_executable = self._executable_resolver(self._executable)
         command = [
-            self._executable,
+            resolved_executable or self._executable,
             "exec",
             "--ephemeral",
             "--sandbox",
-            "workspace-write",
+            self._sandbox_mode,
             "--output-schema",
             str(schema_path),
             "-o",
@@ -66,7 +73,7 @@ class CodexCliRunner:
             prompt,
         ]
         started = perf_counter()
-        self._logger.info(
+        self._logger.info(  # noqa: PLE1205 - custom structured logger
             "codex_cli.started",
             "Codex CLI process started",
             executable=self._executable,
@@ -78,16 +85,17 @@ class CodexCliRunner:
                 command,
                 cwd=self._project_root,
                 capture_output=True,
-                text=True,
+                encoding="utf-8",
+                errors="replace",
                 timeout=timeout_seconds,
                 check=False,
             )
         except subprocess.TimeoutExpired as error:
             duration_ms = round((perf_counter() - started) * 1000)
-            self._logger.exception(
+            self._logger.exception(  # noqa: PLE1205
                 "codex_cli.timeout",
                 "Codex CLI process exceeded its deadline",
-                error,
+                error,  # noqa: TRY401 - custom logger records explicit error metadata
                 duration_ms=duration_ms,
                 output_path=output_path,
                 timeout_seconds=timeout_seconds,

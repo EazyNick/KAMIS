@@ -74,6 +74,7 @@ def test_coupang_agent_settings_have_safe_defaults(
     for name in (
         "COUPANG_AGENT_ENABLED",
         "CODEX_EXECUTABLE",
+        "CODEX_SANDBOX_MODE",
         "COUPANG_AGENT_TIMEOUT_SECONDS",
         "COUPANG_AGENT_RUN_DIR",
     ):
@@ -83,6 +84,7 @@ def test_coupang_agent_settings_have_safe_defaults(
 
     assert configured.coupang_agent_enabled is True
     assert configured.codex_executable == "codex"
+    assert configured.codex_sandbox_mode == "danger-full-access"
     assert configured.coupang_agent_timeout_seconds == 600
     assert configured.coupang_agent_run_dir == (
         configured.project_root / "data/runs/coupang-agent"

@@ -80,7 +80,7 @@ def test_repository_reports_completed_platform_keys_and_one_summary(
     repository = OnlinePriceRepository(tmp_path, app_logger)
     observed = date(2026, 9, 26)
     summary = PlatformPriceSummary(
-        "naver", "111", "01", Decimal("1000"), 1, 1, (), ()
+        "naver", "111", "01", Decimal(1000), 1, 1, (), ()
     )
     repository.save_daily([], [summary], observed, "run-1")
 

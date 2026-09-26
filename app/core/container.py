@@ -77,6 +77,7 @@ class ApplicationContainer:
                     settings.project_root,
                     settings.codex_executable,
                     app_logger,
+                    sandbox_mode=settings.codex_sandbox_mode,
                 ),
                 CoupangAgentCsvParser(),
                 coupang_fallback,

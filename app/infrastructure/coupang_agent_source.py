@@ -64,7 +64,7 @@ class CoupangAgentSource:
         self._errors = {}
         self._prepared_date = observed_date
         catalog = {(entry.item_code, entry.kind_code): entry for entry in entries}
-        run_dir = self._run_root / observed_date.isoformat() / run_id
+        run_dir = self._run_root / run_id
         run_dir.mkdir(parents=True, exist_ok=True)
         manifest_path = run_dir / "manifest.json"
         schema_path = run_dir / "result-schema.json"
@@ -90,7 +90,7 @@ class CoupangAgentSource:
                 parsed = self._parser.parse(csv_path, manifest, catalog)
                 self._offers.update(parsed.offers_by_key)
                 failed_keys = set(parsed.failed_keys)
-                self._logger.info(
+                self._logger.info(  # noqa: PLE1205 - custom structured logger
                     "coupang_agent.parsed",
                     "Coupang agent CSV was parsed",
                     run_id=run_id,
@@ -100,7 +100,7 @@ class CoupangAgentSource:
                     csv_path=csv_path,
                 )
             else:
-                self._logger.error(
+                self._logger.error(  # noqa: PLE1205 - custom structured logger
                     "coupang_agent.failed",
                     "Codex agent collection returned a non-zero exit code",
                     run_id=run_id,
@@ -108,10 +108,10 @@ class CoupangAgentSource:
                     target_count=len(entries),
                 )
         except Exception as error:
-            self._logger.exception(
+            self._logger.exception(  # noqa: PLE1205
                 "coupang_agent.failed",
                 "Codex agent collection failed; Playwright fallback will run",
-                error,
+                error,  # noqa: TRY401 - custom logger records explicit error metadata
                 run_id=run_id,
                 target_count=len(entries),
             )
@@ -122,7 +122,7 @@ class CoupangAgentSource:
                 self._offers.setdefault(key, []).extend(
                     self._fallback.search(entry, observed_date)
                 )
-            except Exception as error:
+            except Exception as error:  # noqa: BLE001 - per-key source boundary
                 self._errors[key] = error
                 self._offers.setdefault(key, [])
 

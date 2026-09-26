@@ -34,7 +34,13 @@ def test_codex_runner_uses_argument_list_and_repository_workdir(
     tmp_path: Path,
 ) -> None:
     process = RecordingProcess(returncode=0)
-    runner = CodexCliRunner(tmp_path, "codex", app_logger, process_runner=process)
+    runner = CodexCliRunner(
+        tmp_path,
+        "codex",
+        app_logger,
+        process_runner=process,
+        executable_resolver=lambda value: value,
+    )
 
     result = runner.run(
         "Use $coupang-ui-collector",
@@ -48,6 +54,8 @@ def test_codex_runner_uses_argument_list_and_repository_workdir(
     assert "workspace-write" in process.command
     assert process.cwd == tmp_path
     assert process.kwargs.get("shell") is None
+    assert process.kwargs["encoding"] == "utf-8"
+    assert process.kwargs["errors"] == "replace"
     assert result.exit_code == 0
     assert result.last_message_path == tmp_path / "out.json"
 
@@ -58,6 +66,7 @@ def test_codex_runner_reports_timeout_without_secrets(tmp_path: Path) -> None:
         "codex",
         app_logger,
         process_runner=TimeoutProcess(),
+        executable_resolver=lambda value: value,
     )
 
     with pytest.raises(CodexCliTimeout, match="1"):
@@ -104,6 +113,7 @@ def test_codex_runner_redacts_and_bounds_logged_stderr(tmp_path: Path) -> None:
         "codex",
         logger,  # type: ignore[arg-type]
         process_runner=secret_process,
+        executable_resolver=lambda value: value,
     ).run("prompt", tmp_path / "schema.json", tmp_path / "out.json", 30)
 
     assert result.exit_code == 1
@@ -111,3 +121,35 @@ def test_codex_runner_redacts_and_bounds_logged_stderr(tmp_path: Path) -> None:
     assert "secret" not in logged_stderr
     assert "token-value" not in logged_stderr
     assert len(logged_stderr) <= 4000
+
+
+def test_codex_runner_resolves_windows_command_shim(tmp_path: Path) -> None:
+    process = RecordingProcess(returncode=0)
+    runner = CodexCliRunner(
+        tmp_path,
+        "codex",
+        app_logger,
+        process_runner=process,
+        executable_resolver=lambda value: r"C:\tools\codex.CMD",
+    )
+
+    runner.run("prompt", tmp_path / "schema.json", tmp_path / "out.json", 30)
+
+    assert process.command[0] == r"C:\tools\codex.CMD"
+
+
+def test_codex_runner_uses_configured_ui_sandbox(tmp_path: Path) -> None:
+    process = RecordingProcess(returncode=0)
+    runner = CodexCliRunner(
+        tmp_path,
+        "codex",
+        app_logger,
+        process_runner=process,
+        executable_resolver=lambda value: value,
+        sandbox_mode="danger-full-access",
+    )
+
+    runner.run("prompt", tmp_path / "schema.json", tmp_path / "out.json", 30)
+
+    sandbox_index = process.command.index("--sandbox")
+    assert process.command[sandbox_index + 1] == "danger-full-access"

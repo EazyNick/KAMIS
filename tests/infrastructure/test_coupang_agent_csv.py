@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import csv
-from datetime import date
 from decimal import Decimal
 from pathlib import Path
 
@@ -131,9 +130,9 @@ def test_parser_normalizes_rice_10kg_to_one_kamis_retail_unit(
     )
 
     offer = result.offers_by_key[("111", "10")][0]
-    assert offer.quantity == Decimal("1")
+    assert offer.quantity == Decimal(1)
     assert offer.unit == "kamis_retail_unit"
-    assert offer.unit_price == Decimal("34900")
+    assert offer.unit_price == Decimal(34900)
 
 
 def test_parser_rejects_seedling_and_nonconvertible_apple_weight(
@@ -189,7 +188,7 @@ def test_parser_uses_public_price_for_restricted_discount_and_rejects_unknown_sh
     )
 
     offers = result.offers_by_key[("111", "10")]
-    assert offers[0].eligible_price == Decimal("34900")
+    assert offers[0].eligible_price == Decimal(34900)
     assert offers[1].match_status is MatchStatus.REJECTED
     assert offers[1].exclusion_reason == "shipping_unknown"
 

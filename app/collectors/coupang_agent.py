@@ -13,7 +13,10 @@ from datetime import date
 from app.collectors.shopping import local_today, parse_target
 from app.core.container import ApplicationContainer
 from app.domain.models import CollectionError, CollectionRun, RunStatus
-from app.services.online_collection import OnlineCollectionResult, OnlineCollectionService
+from app.services.online_collection import (
+    OnlineCollectionResult,
+    OnlineCollectionService,
+)
 from app.services.online_pricing import OnlinePriceCalculator
 from config.server_config import Settings
 from log import app_logger

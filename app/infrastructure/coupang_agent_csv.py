@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
+from typing import ClassVar
 
 from app.core.errors import DataValidationError
 from app.domain.models import ProductCatalogEntry
@@ -26,7 +27,7 @@ class CoupangCsvResult:
 class CoupangAgentCsvParser:
     """Validate untrusted agent CSV and convert it to auditable offers."""
 
-    _required_columns = {
+    _required_columns: ClassVar[set[str]] = {
         "run_id",
         "observed_date",
         "collected_at",
@@ -58,19 +59,19 @@ class CoupangAgentCsvParser:
         "씨앗",
         "종자",
     )
-    _unit_aliases = {
-        "kg": ("weight", Decimal("1000")),
-        "킬로그램": ("weight", Decimal("1000")),
-        "g": ("weight", Decimal("1")),
-        "그램": ("weight", Decimal("1")),
-        "l": ("volume", Decimal("1000")),
-        "리터": ("volume", Decimal("1000")),
-        "ml": ("volume", Decimal("1")),
-        "개": ("count", Decimal("1")),
-        "포기": ("head", Decimal("1")),
-        "마리": ("fish", Decimal("1")),
-        "봉": ("bag", Decimal("1")),
-        "팩": ("pack", Decimal("1")),
+    _unit_aliases: ClassVar[dict[str, tuple[str, Decimal]]] = {
+        "kg": ("weight", Decimal(1000)),
+        "킬로그램": ("weight", Decimal(1000)),
+        "g": ("weight", Decimal(1)),
+        "그램": ("weight", Decimal(1)),
+        "l": ("volume", Decimal(1000)),
+        "리터": ("volume", Decimal(1000)),
+        "ml": ("volume", Decimal(1)),
+        "개": ("count", Decimal(1)),
+        "포기": ("head", Decimal(1)),
+        "마리": ("fish", Decimal(1)),
+        "봉": ("bag", Decimal(1)),
+        "팩": ("pack", Decimal(1)),
     }
 
     def parse(
@@ -216,11 +217,11 @@ class CoupangAgentCsvParser:
         try:
             quantity = self.target_quantity(offered_quantity, row["unit"], entry)
         except DataValidationError:
-            quantity = Decimal("1")
+            quantity = Decimal(1)
             exclusion_reason = exclusion_reason or "incompatible_unit"
 
         if shipping_fee is None:
-            shipping_fee = Decimal("0")
+            shipping_fee = Decimal(0)
             exclusion_reason = exclusion_reason or "shipping_unknown"
         if row["availability"] not in {"available", "sold_out"}:
             exclusion_reason = exclusion_reason or "availability_unknown"

@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from dataclasses import replace
 from datetime import date
+from decimal import Decimal
 from pathlib import Path
 from types import SimpleNamespace
-from decimal import Decimal
 
 import pytest
 from fastapi.testclient import TestClient
@@ -301,11 +301,11 @@ def test_coupang_agent_endpoint_returns_collection_result(
                     selected.item_code,
                     selected.kind_code,
                     MatchStatus.EXACT,
-                    Decimal("30000"),
+                    Decimal(30000),
                     None,
                     None,
-                    Decimal("0"),
-                    Decimal("1"),
+                    Decimal(0),
+                    Decimal(1),
                     "kamis_retail_unit",
                     True,
                     observed_date=observed_date,
