@@ -1,33 +1,40 @@
 # 개발·운영 가이드
 
-## Coupang agent 운영 점검
+## Naver·Coupang agent 운영 점검
 
-저장소의 `.agents/skills/coupang-ui-collector/`는 명시적으로 호출되는 전용 skill입니다.
+저장소의 `.agents/skills/naver-ui-collector/`와
+`.agents/skills/coupang-ui-collector/`는 명시적으로 호출되는 전용 skill입니다.
 FastAPI는 shell 문자열이 아닌 인자 배열로 `codex exec --ephemeral --sandbox
-workspace-write`를 실행하고, 구조화된 최종 상태와 원시 CSV를 분리해 취급합니다.
-agent의 설명 문장은 데이터로 신뢰하지 않으며 `CoupangAgentCsvParser`가 run/date/key,
+danger-full-access`를 실행하고, 구조화된 최종 상태와 원시 CSV를 분리해 취급합니다.
+agent의 설명 문장은 데이터로 신뢰하지 않으며 플랫폼별 CSV parser가 run/date/key,
 품목명, 단위 환산, 배송비, 회원 할인 범위를 검증한 행만 가격 계산에 전달합니다.
 
 운영 전 확인 사항:
 
 1. `codex login`이 완료되어 있어야 합니다.
 2. Windows 세션이 로그인·잠금 해제 상태이고 일반 Chrome을 조작할 수 있어야 합니다.
-3. `.env`의 `COUPANG_AGENT_ENABLED=true`, `CODEX_EXECUTABLE=codex`,
+3. `.env`의 `NAVER_AGENT_ENABLED=true`, `COUPANG_AGENT_ENABLED=true`,
+   `CODEX_EXECUTABLE=codex`,
    `CODEX_SANDBOX_MODE=danger-full-access`,
+   `NAVER_AGENT_RUN_DIR=data/runs/naver-agent`,
    `COUPANG_AGENT_RUN_DIR=data/runs/coupang-agent`를 확인합니다. UI Automation에 필요한
    이 권한은 고정된 repository skill 이외의 prompt에 사용하면 안 됩니다.
-4. 수동 확인은 `.\.venv\Scripts\python.exe -m app.collectors.coupang_agent
-   --date 2026-09-26 --item 111:10`으로 한 품목부터 실행합니다.
+4. 수동 확인은 `.\.venv\Scripts\python.exe -m app.collectors.naver_agent
+   --date 2026-09-26 --item 111:10` 또는 `app.collectors.coupang_agent`로 한 품목부터
+   실행합니다.
 5. 서버는 `.\.venv\Scripts\python.exe app\main.py`로 실행합니다.
 
-각 실행은 `data/runs/coupang-agent/<run-id>/`에 manifest와 raw CSV를 원자적으로
-기록합니다. `codex_cli.started/completed/timeout`, `coupang_agent.parsed/failed`,
+각 실행은 `data/runs/naver-agent/<run-id>/` 또는
+`data/runs/coupang-agent/<run-id>/`에 manifest와 raw CSV를 원자적으로 기록합니다.
+`codex_cli.started/completed/timeout`, `naver_agent.parsed/failed`,
+`coupang_agent.parsed/failed`,
 `shopping.search.*`, `online.collection.*` 로그를 같은 run ID와 품목 키로 연결해
 원인을 확인할 수 있습니다. agent가 만들지 못했거나 검증에서 탈락한 품목만 기존
 Playwright source로 재시도합니다. 이 fallback도 접근 차단을 우회하지 않습니다.
 
 로컬 UI 수집은 무인 Linux/macOS 서버에서 동작하지 않습니다. 그런 환경에서는
-`COUPANG_AGENT_ENABLED=false`로 끄고, API는 503으로 기능 비활성 상태를 알립니다.
+`NAVER_AGENT_ENABLED=false`와 `COUPANG_AGENT_ENABLED=false`로 끄고, API는 503으로
+기능 비활성 상태를 알립니다.
 
 ## 시작 시 과거 시장 데이터 보충
 
