@@ -41,10 +41,12 @@ class Settings:
     shopping_browser_channel: str | None = "chrome"
     shopping_request_interval_seconds: float = 5.0
     coupang_agent_enabled: bool = True
+    naver_agent_enabled: bool = True
     codex_executable: str = "codex"
     codex_sandbox_mode: str = "danger-full-access"
     coupang_agent_timeout_seconds: float = 600.0
     coupang_agent_run_dir: Path = Path("data/runs/coupang-agent")
+    naver_agent_run_dir: Path = Path("data/runs/naver-agent")
     online_target_keys: frozenset[tuple[str, str]] = frozenset(
         DEFAULT_ONLINE_TARGET_KEYS
     )
@@ -90,6 +92,10 @@ class Settings:
                 "COUPANG_AGENT_ENABLED", "true"
             ).casefold()
             not in {"0", "false", "no"},
+            naver_agent_enabled=os.getenv(
+                "NAVER_AGENT_ENABLED", "true"
+            ).casefold()
+            not in {"0", "false", "no"},
             codex_executable=os.getenv("CODEX_EXECUTABLE", "codex").strip()
             or "codex",
             codex_sandbox_mode=os.getenv(
@@ -103,6 +109,11 @@ class Settings:
             ).resolve()
             if (value := os.getenv("COUPANG_AGENT_RUN_DIR", "data/runs/coupang-agent"))
             else (project_root / "data/runs/coupang-agent").resolve(),
+            naver_agent_run_dir=(
+                Path(value) if Path(value).is_absolute() else project_root / value
+            ).resolve()
+            if (value := os.getenv("NAVER_AGENT_RUN_DIR", "data/runs/naver-agent"))
+            else (project_root / "data/runs/naver-agent").resolve(),
             online_target_keys=online_target_keys,
         )
 

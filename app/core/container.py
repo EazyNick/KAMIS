@@ -16,6 +16,8 @@ from app.infrastructure.csv_repository import (
     RunRepository,
 )
 from app.infrastructure.market_data import MarketDataClient, MarketRepository
+from app.infrastructure.naver_agent_csv import NaverAgentCsvParser
+from app.infrastructure.naver_agent_source import NaverAgentSource
 from app.infrastructure.online_repository import OnlinePriceRepository
 from app.infrastructure.shopping_sources import PlaywrightShoppingSession
 from app.services.analytics import AnalyticsBatchService, AnalyticsService
@@ -48,6 +50,7 @@ class ApplicationContainer:
     startup_collection_service: StartupCollectionService | None = None
     dashboard_bootstrap_service: DashboardBootstrapService | None = None
     coupang_agent_source: CoupangAgentSource | None = None
+    naver_agent_source: NaverAgentSource | None = None
 
     @classmethod
     def build(cls, settings: Settings) -> ApplicationContainer:
@@ -69,16 +72,18 @@ class ApplicationContainer:
             minimum_interval_seconds=settings.shopping_request_interval_seconds,
         )
         coupang_fallback = build_coupang_source(shopping_session)
+        naver_fallback = build_naver_source(shopping_session)
+        codex_runner = CodexCliRunner(
+            settings.project_root,
+            settings.codex_executable,
+            app_logger,
+            sandbox_mode=settings.codex_sandbox_mode,
+        )
         coupang_source = (
             CoupangAgentSource(
                 settings.project_root,
                 settings.coupang_agent_run_dir,
-                CodexCliRunner(
-                    settings.project_root,
-                    settings.codex_executable,
-                    app_logger,
-                    sandbox_mode=settings.codex_sandbox_mode,
-                ),
+                codex_runner,
                 CoupangAgentCsvParser(),
                 coupang_fallback,
                 app_logger,
@@ -90,7 +95,23 @@ class ApplicationContainer:
             if settings.coupang_agent_enabled
             else coupang_fallback
         )
-        sources = [build_naver_source(shopping_session), coupang_source]
+        naver_source = (
+            NaverAgentSource(
+                settings.project_root,
+                settings.naver_agent_run_dir,
+                codex_runner,
+                NaverAgentCsvParser(),
+                naver_fallback,
+                app_logger,
+                timeout_seconds=settings.coupang_agent_timeout_seconds,
+                minimum_delay_ms=round(
+                    settings.shopping_request_interval_seconds * 1000
+                ),
+            )
+            if settings.naver_agent_enabled
+            else naver_fallback
+        )
+        sources = [naver_source, coupang_source]
         online_service = OnlineCollectionService(
             sources,
             online_repository,
@@ -169,5 +190,8 @@ class ApplicationContainer:
                 coupang_source
                 if isinstance(coupang_source, CoupangAgentSource)
                 else None
+            ),
+            naver_agent_source=(
+                naver_source if isinstance(naver_source, NaverAgentSource) else None
             ),
         )

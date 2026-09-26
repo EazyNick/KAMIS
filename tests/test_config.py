@@ -89,3 +89,17 @@ def test_coupang_agent_settings_have_safe_defaults(
     assert configured.coupang_agent_run_dir == (
         configured.project_root / "data/runs/coupang-agent"
     ).resolve()
+
+
+def test_naver_agent_settings_have_enabled_run_directory_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("NAVER_AGENT_ENABLED", raising=False)
+    monkeypatch.delenv("NAVER_AGENT_RUN_DIR", raising=False)
+
+    configured = Settings.from_env(load_environment_file=False)
+
+    assert configured.naver_agent_enabled is True
+    assert configured.naver_agent_run_dir == (
+        configured.project_root / "data/runs/naver-agent"
+    ).resolve()

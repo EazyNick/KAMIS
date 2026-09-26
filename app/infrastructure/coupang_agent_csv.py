@@ -24,8 +24,8 @@ class CoupangCsvResult:
     errors: Sequence[str]
 
 
-class CoupangAgentCsvParser:
-    """Validate untrusted agent CSV and convert it to auditable offers."""
+class ShoppingAgentCsvParser:
+    """Validate untrusted shopping-agent CSV into auditable offers."""
 
     _required_columns: ClassVar[set[str]] = {
         "run_id",
@@ -73,6 +73,9 @@ class CoupangAgentCsvParser:
         "봉": ("bag", Decimal(1)),
         "팩": ("pack", Decimal(1)),
     }
+
+    def __init__(self, platform: str) -> None:
+        self._platform = platform
 
     def parse(
         self,
@@ -178,7 +181,7 @@ class CoupangAgentCsvParser:
         if (
             row["run_id"] != run_id
             or row["observed_date"] != observed_date
-            or row["platform"] != "coupang"
+            or row["platform"] != self._platform
             or key not in target_keys
         ):
             raise DataValidationError(f"row {row_number} does not match manifest")
@@ -235,7 +238,7 @@ class CoupangAgentCsvParser:
             raise DataValidationError("collected_at is invalid") from error
 
         return ShoppingOffer(
-            platform="coupang",
+            platform=self._platform,
             product_id=row["product_id"].strip(),
             title=title,
             url=row["url"].strip(),
@@ -314,3 +317,10 @@ class CoupangAgentCsvParser:
         if parsed is None or parsed <= 0:
             raise DataValidationError(f"{field} must be positive")
         return parsed
+
+
+class CoupangAgentCsvParser(ShoppingAgentCsvParser):
+    """Backward-compatible Coupang validation policy."""
+
+    def __init__(self) -> None:
+        super().__init__("coupang")

@@ -322,3 +322,17 @@ def test_coupang_agent_endpoint_returns_collection_result(
     assert response.status_code == 200
     assert response.json()["target_count"] == 1
     assert response.json()["offer_count"] == 1
+
+
+def test_built_container_configures_both_agent_sources(tmp_path: Path) -> None:
+    configured = replace(
+        Settings.from_env(),
+        data_dir=tmp_path,
+        coupang_agent_run_dir=tmp_path / "coupang-agent",
+        naver_agent_run_dir=tmp_path / "naver-agent",
+    )
+
+    built = ApplicationContainer.build(configured)
+
+    assert built.coupang_agent_source is not None
+    assert built.naver_agent_source is not None

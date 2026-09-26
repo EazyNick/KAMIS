@@ -10,31 +10,34 @@ from uuid import uuid4
 from app.domain.models import ProductCatalogEntry
 from app.domain.online_models import ShoppingOffer
 from app.infrastructure.codex_cli import CodexCliRunner
-from app.infrastructure.coupang_agent_csv import CoupangAgentCsvParser
-from app.infrastructure.shopping_sources import CoupangShoppingSource
+from app.infrastructure.coupang_agent_csv import ShoppingAgentCsvParser
+from app.infrastructure.shopping_sources import HtmlShoppingSource
 from log.logger import StructuredLogger
 
 
-class CoupangAgentSource:
+class ShoppingAgentSource:
     """Collect one bounded agent batch, then expose the cached source interface."""
 
-    platform = "coupang"
     block_is_global = False
     _safe_run_id = re.compile(r"^[A-Za-z0-9_-]+$")
 
     def __init__(
         self,
+        platform: str,
+        skill_name: str,
         project_root: Path,
         run_root: Path,
         runner: CodexCliRunner,
-        parser: CoupangAgentCsvParser,
-        fallback: CoupangShoppingSource,
+        parser: ShoppingAgentCsvParser,
+        fallback: HtmlShoppingSource,
         logger: StructuredLogger,
         *,
         timeout_seconds: float,
         minimum_delay_ms: int = 2000,
         max_offers_per_target: int = 8,
     ) -> None:
+        self.platform = platform
+        self._skill_name = skill_name
         self._project_root = project_root.resolve()
         self._run_root = run_root.resolve()
         self._runner = runner
@@ -57,7 +60,7 @@ class CoupangAgentSource:
         if not entries:
             return
         if len(entries) > 10:
-            raise ValueError("Coupang agent batch cannot exceed 10 targets")
+            raise ValueError(f"{self.platform} agent batch cannot exceed 10 targets")
         if not self._safe_run_id.fullmatch(run_id):
             raise ValueError("run_id contains unsupported path characters")
         self._offers = {}
@@ -78,7 +81,7 @@ class CoupangAgentSource:
         try:
             result = self._runner.run(
                 (
-                    "Use $coupang-ui-collector to collect the manifest at "
+                    f"Use ${self._skill_name} to collect the manifest at "
                     f'"{manifest_path}". Execute its deterministic script exactly once '
                     "and return only the required final JSON status."
                 ),
@@ -91,8 +94,8 @@ class CoupangAgentSource:
                 self._offers.update(parsed.offers_by_key)
                 failed_keys = set(parsed.failed_keys)
                 self._logger.info(  # noqa: PLE1205 - custom structured logger
-                    "coupang_agent.parsed",
-                    "Coupang agent CSV was parsed",
+                    f"{self.platform}_agent.parsed",
+                    f"{self.platform} agent CSV was parsed",
                     run_id=run_id,
                     target_count=len(entries),
                     failed_count=len(failed_keys),
@@ -101,16 +104,16 @@ class CoupangAgentSource:
                 )
             else:
                 self._logger.error(  # noqa: PLE1205 - custom structured logger
-                    "coupang_agent.failed",
-                    "Codex agent collection returned a non-zero exit code",
+                    f"{self.platform}_agent.failed",
+                    f"{self.platform} Codex agent returned a non-zero exit code",
                     run_id=run_id,
                     exit_code=result.exit_code,
                     target_count=len(entries),
                 )
         except Exception as error:
             self._logger.exception(  # noqa: PLE1205
-                "coupang_agent.failed",
-                "Codex agent collection failed; Playwright fallback will run",
+                f"{self.platform}_agent.failed",
+                f"{self.platform} agent failed; Playwright fallback will run",
                 error,  # noqa: TRY401 - custom logger records explicit error metadata
                 run_id=run_id,
                 target_count=len(entries),
@@ -131,7 +134,7 @@ class CoupangAgentSource:
     ) -> list[ShoppingOffer]:
         key = (entry.item_code, entry.kind_code)
         if self._prepared_date != observed_date or key not in self._offers:
-            raise RuntimeError(f"Coupang agent source was not prepared for {key}")
+            raise RuntimeError(f"{self.platform} agent source was not prepared for {key}")
         if key in self._errors:
             raise self._errors[key]
         return list(self._offers[key])
@@ -198,3 +201,34 @@ class CoupangAgentSource:
             temporary.replace(path)
         finally:
             temporary.unlink(missing_ok=True)
+
+
+class CoupangAgentSource(ShoppingAgentSource):
+    """Backward-compatible Coupang agent source."""
+
+    def __init__(
+        self,
+        project_root: Path,
+        run_root: Path,
+        runner: CodexCliRunner,
+        parser: ShoppingAgentCsvParser,
+        fallback: HtmlShoppingSource,
+        logger: StructuredLogger,
+        *,
+        timeout_seconds: float,
+        minimum_delay_ms: int = 2000,
+        max_offers_per_target: int = 8,
+    ) -> None:
+        super().__init__(
+            "coupang",
+            "coupang-ui-collector",
+            project_root,
+            run_root,
+            runner,
+            parser,
+            fallback,
+            logger,
+            timeout_seconds=timeout_seconds,
+            minimum_delay_ms=minimum_delay_ms,
+            max_offers_per_target=max_offers_per_target,
+        )
