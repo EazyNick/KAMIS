@@ -115,6 +115,14 @@ class OnlineCollectionService:
                         for item_code, kind_code in sorted(missing_targets)
                     ),
                 )
+        self._logger.info(  # noqa: PLE1205 - structured logger
+            "online.collection.started",
+            "Online price collection started",
+            run_id=run_id,
+            observed_date=observed_date,
+            platforms=",".join(source.platform for source in self._sources),
+            target_count=len(selected_catalog),
+        )
         completed = self._repository.completed_platform_keys(observed_date)
         for source in self._sources:
             pending = [
@@ -143,8 +151,27 @@ class OnlineCollectionService:
                 source_blocked = source.platform in blocked_sources
                 found: list[ShoppingOffer] = []
                 if not source_blocked:
+                    self._logger.debug(  # noqa: PLE1205 - structured logger
+                        "online.collection.item.started",
+                        "Searching online product prices",
+                        run_id=run_id,
+                        observed_date=observed_date,
+                        source=source.platform,
+                        item_code=entry.item_code,
+                        kind_code=entry.kind_code,
+                        item_name=entry.item_name,
+                    )
                     try:
                         found = source.search(entry, observed_date)
+                        self._logger.debug(  # noqa: PLE1205 - structured logger
+                            "online.collection.item.completed",
+                            "Online product price search completed",
+                            run_id=run_id,
+                            source=source.platform,
+                            item_code=entry.item_code,
+                            kind_code=entry.kind_code,
+                            offer_count=len(found),
+                        )
                     except ShoppingAccessBlocked as error:
                         source_blocked = True
                         if getattr(source, "block_is_global", True):

@@ -82,6 +82,7 @@ class DailyPipeline:
         if self._source_completed("kamis", observed_date, run.run_id):
             self._log_source_skipped("kamis", observed_date, run.run_id)
         else:
+            self._log_source_started("kamis", observed_date, run.run_id)
             try:
                 kamis_run = self._kamis.collect(observed_date, observed_date)
                 record_count += int(getattr(kamis_run, "record_count", 0))
@@ -114,6 +115,12 @@ class DailyPipeline:
                 "online", observed_date, observed_date
             )
             self._runs.save(online_checkpoint)
+            self._log_source_started(
+                "online",
+                observed_date,
+                run.run_id,
+                catalog_count=len(catalog),
+            )
             try:
                 online_result = self._online.collect(catalog, observed_date, run.run_id)
                 online_count = int(getattr(online_result, "offer_count", 0))
@@ -152,6 +159,13 @@ class DailyPipeline:
                 "market", observed_date, observed_date
             )
             self._runs.save(market_checkpoint)
+            symbols = getattr(self._market, "symbols", {})
+            self._log_source_started(
+                "market",
+                observed_date,
+                run.run_id,
+                series_count=len(symbols) if symbols else None,
+            )
             try:
                 market_rows = self._market.fetch(observed_date, observed_date)
                 self._market_repository.upsert(market_rows, run.run_id)
@@ -244,6 +258,22 @@ class DailyPipeline:
             source=source,
             observed_date=observed_date,
             reason="successful_checkpoint_exists",
+        )
+
+    def _log_source_started(
+        self,
+        source: str,
+        observed_date: date,
+        run_id: str,
+        **context: object,
+    ) -> None:
+        self._logger.info(
+            "daily_pipeline.source.started",
+            "Daily source collection started",
+            run_id=run_id,
+            source=source,
+            observed_date=observed_date,
+            **{key: value for key, value in context.items() if value is not None},
         )
 
     def _save_failed_checkpoint(

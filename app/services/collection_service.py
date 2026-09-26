@@ -86,6 +86,14 @@ class KamisCollectionService:
                 end_date=end_date,
             )
             catalog = self._client.fetch_catalog()
+            self._logger.info(  # noqa: PLE1205 - structured logger
+                "collection.catalog.loaded",
+                "KAMIS catalog loaded for price collection",
+                run_id=run.run_id,
+                catalog_count=len(catalog),
+                start_date=start_date,
+                end_date=end_date,
+            )
             self._catalog_repository.save_snapshot(catalog, end_date, run.run_id)
             observations, errors = self._collect_catalog_prices(
                 catalog, start_date, end_date, run.run_id
@@ -164,8 +172,31 @@ class KamisCollectionService:
                             catalog_entry=entry,
                             rank_code=rank_code,
                         )
+                        self._logger.debug(  # noqa: PLE1205 - structured logger
+                            "collection.query.started",
+                            "Collecting KAMIS item prices",
+                            run_id=run_id,
+                            item_code=entry.item_code,
+                            kind_code=entry.kind_code,
+                            item_name=entry.item_name,
+                            price_type=price_type.value,
+                            rank_code=rank_code,
+                            start_date=date_range.start,
+                            end_date=date_range.end,
+                        )
                         try:
-                            observations.extend(self._client.fetch_prices(query))
+                            fetched = self._client.fetch_prices(query)
+                            observations.extend(fetched)
+                            self._logger.debug(  # noqa: PLE1205 - structured logger
+                                "collection.query.completed",
+                                "KAMIS item price collection completed",
+                                run_id=run_id,
+                                item_code=entry.item_code,
+                                kind_code=entry.kind_code,
+                                price_type=price_type.value,
+                                rank_code=rank_code,
+                                record_count=len(fetched),
+                            )
                         except Exception as error:
                             scope = (
                                 f"{entry.item_code}:{entry.kind_code}:"

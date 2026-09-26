@@ -149,3 +149,36 @@ def test_daily_pipeline_recovers_checkpoints_from_existing_dated_data() -> None:
 
     assert result.status is RunStatus.SUCCESS
     assert {"online", "market"}.issubset(runs.successful_sources)
+
+
+def test_daily_pipeline_logs_each_source_before_collection() -> None:
+    class RecordingLogger:
+        def __init__(self):
+            self.entries = []
+
+        def info(self, event, message, **context):
+            self.entries.append((event, context))
+
+        def exception(self, event, message, error, **context):
+            self.entries.append((event, context))
+
+    logger = RecordingLogger()
+    pipeline = DailyPipeline(
+        Kamis(),
+        Online(),
+        Market(),
+        MarketRepo(),
+        Runs(),
+        lambda: [SimpleNamespace(item_code="111")],
+        None,
+        logger,
+    )
+
+    pipeline.collect(date(2026, 9, 24))
+
+    started_sources = [
+        context["source"]
+        for event, context in logger.entries
+        if event == "daily_pipeline.source.started"
+    ]
+    assert started_sources == ["kamis", "online", "market"]
