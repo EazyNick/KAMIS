@@ -93,7 +93,7 @@ class ShoppingAgentSource:
                 parsed = self._parser.parse(csv_path, manifest, catalog)
                 self._offers.update(parsed.offers_by_key)
                 failed_keys = set(parsed.failed_keys)
-                self._logger.info(  # noqa: PLE1205 - custom structured logger
+                self._logger.info(
                     f"{self.platform}_agent.parsed",
                     f"{self.platform} agent CSV was parsed",
                     run_id=run_id,
@@ -103,7 +103,7 @@ class ShoppingAgentSource:
                     csv_path=csv_path,
                 )
             else:
-                self._logger.error(  # noqa: PLE1205 - custom structured logger
+                self._logger.error(
                     f"{self.platform}_agent.failed",
                     f"{self.platform} Codex agent returned a non-zero exit code",
                     run_id=run_id,
@@ -111,7 +111,7 @@ class ShoppingAgentSource:
                     target_count=len(entries),
                 )
         except Exception as error:
-            self._logger.exception(  # noqa: PLE1205
+            self._logger.exception(
                 f"{self.platform}_agent.failed",
                 f"{self.platform} agent failed; Playwright fallback will run",
                 error,  # noqa: TRY401 - custom logger records explicit error metadata
