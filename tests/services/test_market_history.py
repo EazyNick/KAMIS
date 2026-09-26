@@ -9,7 +9,9 @@ from app.services.market_history import MarketHistoryService
 from log import app_logger
 
 
-def build_service(tmp_path, downloader, start, end, symbols=None):
+def build_service(
+    tmp_path, downloader, start, end, symbols=None, *, on_collected=None
+):
     prices = SimpleNamespace(
         observed_date_range=lambda: (start, end) if start else None
     )
@@ -18,7 +20,18 @@ def build_service(tmp_path, downloader, start, end, symbols=None):
     client = MarketDataClient(
         downloader, app_logger, symbols=symbols or {"kospi": "^KS11", "sp500": "^GSPC"}
     )
-    return MarketHistoryService(prices, market, client, runs, app_logger), market, runs
+    return (
+        MarketHistoryService(
+            prices,
+            market,
+            client,
+            runs,
+            app_logger,
+            on_collected=on_collected,
+        ),
+        market,
+        runs,
+    )
 
 
 def test_backfill_matches_kamis_range_and_skips_existing_on_restart(tmp_path):
@@ -43,6 +56,29 @@ def test_backfill_matches_kamis_range_and_skips_existing_on_restart(tmp_path):
     assert runs.latest()["status"] == "success"
     assert service.collect() == 0
     assert len(calls) == 2
+
+
+def test_backfill_rechecks_analytics_after_restart_when_market_is_complete(tmp_path):
+    analytics_checks: list[str] = []
+
+    def downloader(**kwargs):
+        return pd.DataFrame(
+            {"Close": [10]}, index=pd.to_datetime(["2026-09-22"])
+        )
+
+    service, _, _ = build_service(
+        tmp_path,
+        downloader,
+        date(2026, 9, 22),
+        date(2026, 9, 22),
+        on_collected=analytics_checks.append,
+    )
+
+    assert service.collect() == 2
+    analytics_checks.clear()
+
+    assert service.collect() == 0
+    assert len(analytics_checks) == 1
 
 
 def test_backfill_repairs_internal_gap_and_retries_empty_series(tmp_path):

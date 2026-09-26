@@ -142,7 +142,7 @@ class ApplicationContainer:
             preferred_item_codes,
         )
         analytics_batch = AnalyticsBatchService(
-            comparison, analytics, analytics_repository
+            comparison, analytics, analytics_repository, app_logger
         )
         pipeline = DailyPipeline(
             service,
@@ -160,8 +160,8 @@ class ApplicationContainer:
             market_client,
             runs,
             app_logger,
-            on_collected=lambda run_id: analytics_batch.refresh(
-                catalog.entries(), run_id
+            on_collected=lambda run_id: analytics_batch.refresh_if_stale(
+                catalog.entries(), run_id, (market_repository.path,)
             ),
         )
         startup_collection = StartupCollectionService(

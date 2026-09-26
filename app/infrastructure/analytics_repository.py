@@ -26,10 +26,25 @@ class AnalyticsRepository:
         self._comparison_cache_key: tuple[object, ...] | None = None
         self._comparison_cache: list[dict[str, Any]] = []
 
+    def table_path(self, table: str) -> Path:
+        if table not in self._allowed_tables:
+            raise ValueError(f"unsupported analytics table: {table}")
+        return self._data_dir / f"{table}.csv"
+
+    def comparison_is_stale(self, source_paths: tuple[Path, ...]) -> bool:
+        target = self.table_path("comparison_series")
+        if not target.exists() or target.stat().st_size == 0:
+            return True
+        target_mtime = target.stat().st_mtime_ns
+        return any(
+            path.exists() and path.stat().st_mtime_ns > target_mtime
+            for path in source_paths
+        )
+
     def save(self, table: str, rows: list[dict[str, Any]], run_id: str) -> Path:
         if table not in self._allowed_tables:
             raise ValueError(f"unsupported analytics table: {table}")
-        storage = _AtomicCsvRepository(self._data_dir / f"{table}.csv", self._logger)
+        storage = _AtomicCsvRepository(self.table_path(table), self._logger)
         storage._atomic_write(rows, run_id)
         return storage.path
 

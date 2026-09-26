@@ -1,8 +1,11 @@
 import math
+import os
 
 import pandas as pd
 
-from app.services.analytics import AnalyticsService
+from app.infrastructure.analytics_repository import AnalyticsRepository
+from app.services.analytics import AnalyticsBatchService, AnalyticsService
+from log import app_logger
 
 
 def sample_frame() -> pd.DataFrame:
@@ -49,3 +52,24 @@ def test_lag_correlation_reports_best_lag_in_requested_range() -> None:
 
     assert {row["lag"] for row in rows} == {-2, -1, 0, 1, 2}
     assert all(row["observations"] >= 4 for row in rows)
+
+
+def test_batch_refresh_skips_when_comparison_cache_is_current(tmp_path) -> None:
+    repository = AnalyticsRepository(tmp_path, app_logger)
+    repository.save(
+        "comparison_series",
+        [{"item_code": "111", "mode": "raw", "value": 100.0}],
+        "existing-run",
+    )
+    source = tmp_path / "normalized" / "market_observations.csv"
+    source.parent.mkdir(parents=True, exist_ok=True)
+    source.write_text("market", encoding="utf-8")
+    target = repository.table_path("comparison_series")
+    os.utime(source, ns=(1_000_000_000, 1_000_000_000))
+    os.utime(target, ns=(2_000_000_000, 2_000_000_000))
+    batch = AnalyticsBatchService(None, AnalyticsService(), repository, app_logger)
+
+    assert batch.refresh_if_stale([], "startup-check", (source,)) == 0
+    assert repository.read("comparison_series") == [
+        {"item_code": "111", "mode": "raw", "value": "100.0"}
+    ]

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+from time import perf_counter
 from typing import Any, Literal
 
 import numpy as np
@@ -8,6 +10,7 @@ from scipy.stats import pearsonr, spearmanr
 
 from app.domain.models import ProductCatalogEntry
 from app.infrastructure.analytics_repository import AnalyticsRepository
+from log.logger import StructuredLogger
 
 AnalysisMode = Literal["raw", "base100", "return_1d", "return_7d"]
 
@@ -190,20 +193,62 @@ class AnalyticsBatchService:
         comparison_service: Any,
         analytics: AnalyticsService,
         repository: AnalyticsRepository,
+        logger: StructuredLogger,
     ) -> None:
         self._comparison = comparison_service
         self._analytics = analytics
         self._repository = repository
+        self._logger = logger
+
+    def refresh_if_stale(
+        self,
+        catalog: list[ProductCatalogEntry],
+        run_id: str,
+        source_paths: tuple[Path, ...],
+    ) -> int:
+        if not self._repository.comparison_is_stale(source_paths):
+            self._logger.info(  # noqa: PLE1205 - structured logger
+                "analytics.refresh.skipped",
+                "Analytics cache is current",
+                run_id=run_id,
+                reason="source_not_newer",
+                source_count=len(source_paths),
+            )
+            return 0
+        return self.refresh(catalog, run_id)
 
     def refresh(self, catalog: list[ProductCatalogEntry], run_id: str) -> int:
+        started = perf_counter()
+        self._logger.info(  # noqa: PLE1205 - structured logger
+            "analytics.refresh.started",
+            "Analytics cache refresh started",
+            run_id=run_id,
+            catalog_count=len(catalog),
+        )
         comparison_rows: list[dict[str, Any]] = []
         correlation_rows: list[dict[str, Any]] = []
         lag_rows: list[dict[str, Any]] = []
         rolling_rows: list[dict[str, Any]] = []
         spread_rows: list[dict[str, Any]] = []
         for entry in catalog:
+            self._logger.debug(  # noqa: PLE1205 - structured logger
+                "analytics.refresh.item.started",
+                "Building analytics for catalog item",
+                run_id=run_id,
+                item_code=entry.item_code,
+                kind_code=entry.kind_code,
+                item_name=entry.item_name,
+            )
             frame = self._comparison.build_frame(entry.item_code, None, None)
             if frame.empty:
+                self._logger.debug(  # noqa: PLE1205 - structured logger
+                    "analytics.refresh.item.skipped",
+                    "Catalog item has no comparison data",
+                    run_id=run_id,
+                    item_code=entry.item_code,
+                    kind_code=entry.kind_code,
+                    reason="empty_frame",
+                )
                 continue
             for mode in ("raw", "base100", "return_1d", "return_7d"):
                 transformed = self._analytics.transform(frame, mode)
@@ -274,5 +319,21 @@ class AnalyticsBatchService:
             "spreads_volatility": spread_rows,
         }
         for table, rows in tables.items():
+            self._logger.info(  # noqa: PLE1205 - structured logger
+                "analytics.refresh.table.writing",
+                "Writing analytics table",
+                run_id=run_id,
+                table=table,
+                record_count=len(rows),
+            )
             self._repository.save(table, rows, run_id)
-        return sum(len(rows) for rows in tables.values())
+        total = sum(len(rows) for rows in tables.values())
+        self._logger.info(  # noqa: PLE1205 - structured logger
+            "analytics.refresh.completed",
+            "Analytics cache refresh completed",
+            run_id=run_id,
+            catalog_count=len(catalog),
+            record_count=total,
+            duration_ms=round((perf_counter() - started) * 1000),
+        )
+        return total

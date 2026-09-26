@@ -72,6 +72,16 @@ class MarketDataClient:
             if series_ids is None or series_id in series_ids
         }
         tickers = list(selected.values())
+        self._logger.info(  # noqa: PLE1205 - structured logger
+            "market.collection.started",
+            "Market data collection started",
+            source="yfinance",
+            series_count=len(selected),
+            series_ids=",".join(sorted(selected)),
+            tickers=",".join(tickers),
+            requested_start=start_date,
+            requested_end=end_date,
+        )
         try:
             korean_tickers = [
                 ticker for ticker in tickers if ticker in {"^KS11", "^KQ11"}
@@ -121,6 +131,9 @@ class MarketDataClient:
                 "Market data collection completed",
                 source="yfinance",
                 series_count=len(selected),
+                series_ids=",".join(sorted(selected)),
+                requested_start=start_date,
+                requested_end=end_date,
                 skipped_series_count=len(korean_tickers) if closed_dates else 0,
                 record_count=len(rows),
                 duration_ms=round((perf_counter() - started) * 1000),
@@ -216,6 +229,10 @@ class MarketRepository:
         self._storage = _AtomicCsvRepository(
             data_dir / "normalized" / "market_observations.csv", logger
         )
+
+    @property
+    def path(self) -> Path:
+        return self._storage.path
 
     def upsert(self, rows: list[MarketObservation], run_id: str) -> None:
         with self._storage._lock:
