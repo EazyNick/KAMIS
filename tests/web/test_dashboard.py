@@ -251,3 +251,77 @@ def test_dashboard_refreshes_chart_after_startup_collection_finishes() -> None:
 
         assert bootstrap_calls >= 2
         browser.close()
+
+
+def test_dashboard_draws_isolated_market_value_after_missing_date() -> None:
+    chart_payload = {
+        "item_code": "111",
+        "mode": "base100",
+        "dates": ["2026-09-21", "2026-09-22", "2026-09-23"],
+        "series": {"sp500": [100.0, None, 102.0]},
+        "raw_series": {"sp500": [6600.0, None, 6732.0]},
+    }
+
+    def handle(route: Route) -> None:
+        parsed = urlparse(route.request.url)
+        if parsed.path == "/":
+            route.fulfill(
+                status=200,
+                content_type="text/html; charset=utf-8",
+                body=DASHBOARD.read_text(encoding="utf-8"),
+            )
+            return
+        responses = {
+            "/health": {
+                "status": "ok",
+                "collection_running": False,
+                "latest_run": {"requested_end": "2026-09-23", "status": "success"},
+            },
+            "/api/v1/catalog": {"items": [], "total": 0},
+            "/api/v1/online/summaries": {"items": [], "total": 0},
+            "/api/v1/dashboard/bootstrap": {
+                "defaults": {
+                    "item_code": "111",
+                    "start_date": "2026-09-21",
+                    "end_date": "2026-09-23",
+                    "mode": "base100",
+                },
+                "chart": chart_payload,
+            },
+            "/api/v1/correlations": [],
+        }
+        payload = responses.get(parsed.path)
+        if payload is None:
+            route.fulfill(status=404, body="not found")
+            return
+        route.fulfill(
+            status=200,
+            content_type="application/json",
+            body=json.dumps(payload),
+        )
+
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch(headless=True)
+        page = browser.new_page(viewport={"width": 1200, "height": 900})
+        page.add_init_script(
+            """
+            window.__chartArcs = [];
+            const nativeGetContext = HTMLCanvasElement.prototype.getContext;
+            HTMLCanvasElement.prototype.getContext = function (...args) {
+              const context = nativeGetContext.apply(this, args);
+              const nativeArc = context.arc.bind(context);
+              context.arc = function (x, y, radius, ...arcArgs) {
+                window.__chartArcs.push({x, y, radius});
+                return nativeArc(x, y, radius, ...arcArgs);
+              };
+              return context;
+            };
+            """
+        )
+        page.route("**/*", handle)
+        page.goto("http://dashboard.test/")
+        page.wait_for_timeout(200)
+
+        arcs = page.evaluate("window.__chartArcs")
+        assert any(arc["radius"] == 3.5 for arc in arcs)
+        browser.close()
