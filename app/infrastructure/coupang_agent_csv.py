@@ -204,7 +204,7 @@ class ShoppingAgentCsvParser:
         exclusion_reason: str | None = None
         if any(keyword in title for keyword in self._forbidden_product_keywords):
             exclusion_reason = "forbidden_product_type"
-        elif self._normalized(entry.item_name) not in self._normalized(title):
+        elif not self._matches_item(title, entry.item_name):
             exclusion_reason = "item_name_mismatch"
 
         if displayed_price is None:
@@ -293,11 +293,21 @@ class ShoppingAgentCsvParser:
         return re.sub(r"\s+", "", value).casefold()
 
     @classmethod
+    def _matches_item(cls, title: str, item_name: str) -> bool:
+        normalized = cls._normalized(title)
+        if item_name.endswith("(국산)"):
+            return (
+                cls._normalized(item_name.removesuffix("(국산)")) in normalized
+                and re.search(r"(?<![가-힣])(?:국산|국내산)", title) is not None
+            )
+        return cls._normalized(item_name) in normalized
+
+    @classmethod
     def _match_status(
         cls, title: str, entry: ProductCatalogEntry
     ) -> MatchStatus:
         normalized = cls._normalized(title)
-        if cls._normalized(entry.item_name) not in normalized:
+        if not cls._matches_item(title, entry.item_name):
             return MatchStatus.REJECTED
         variety = cls._normalized(entry.variety)
         return MatchStatus.EXACT if variety and variety in normalized else MatchStatus.COMPATIBLE

@@ -69,6 +69,21 @@ CATALOG = {
     ("211", "03"): entry("211", "03", "배추", "가을", "포기", "1"),
     ("411", "05"): entry("411", "05", "사과", "후지", "개", "10"),
 }
+
+
+@pytest.mark.parametrize(
+    ("title", "expected"),
+    [("국내산 창녕 깐마늘 1kg", True), ("중국산 깐마늘 1kg", False)],
+)
+def test_domestic_garlic_matches_name_and_requires_origin(title, expected):
+    garlic = entry("258", "01", "깐마늘(국산)", "깐마늘(국산)", "kg", "1")
+    from datetime import date
+
+    offer = CoupangAgentCsvParser()._to_offer(
+        row("258", "01", title, quantity="1"), entry=garlic,
+        observed_date=date(2026, 9, 27),
+    )
+    assert offer.is_comparable is expected
 MANIFEST = {
     "run_id": RUN_ID,
     "observed_date": OBSERVED_DATE,

@@ -72,6 +72,37 @@ function Wait-NaverSearchBox {
     throw 'Naver Shopping accessible search box was not found before timeout'
 }
 
+function Invoke-NaverSearch {
+    $document = Find-NaverDocument
+    if ($null -eq $document) { throw 'Naver Shopping document not found' }
+    $condition = New-Object System.Windows.Automation.PropertyCondition(
+        [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
+        [System.Windows.Automation.ControlType]::Button
+    )
+    foreach ($button in $document.FindAll([System.Windows.Automation.TreeScope]::Descendants, $condition)) {
+        if ($button.Current.Name -match '^(\uAC80\uC0C9|\uAC80\uC0C9\uD558\uAE30)$') {
+            $button.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+            return
+        }
+    }
+    [System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
+}
+
+function Get-NaverQuantity {
+    param([string]$RawName, [string]$ComparisonUnit)
+    $prefix = ($RawName -split '\([^)]*\uB2F9')[0]
+    $weight = [regex]::Matches($prefix, '(?i)(\d+(?:\.\d+)?)\s*(kg|g)')
+    if ($ComparisonUnit -match '(?i)kg|g') {
+        if ($weight.Count -gt 0) { return $weight[$weight.Count - 1] }
+    }
+    elseif ($ComparisonUnit -match '\uAC1C' -and $weight.Count -gt 0) {
+        $count = [regex]::Match($prefix, '(?<![\d~\-])(\d+)\s*(\uAC1C)')
+        if ($count.Success -and [decimal]$count.Groups[1].Value -gt 1) { return $count }
+        return [regex]::Match('', 'a')
+    }
+    return [regex]::Match($prefix, '(?i)(\d+(?:\.\d+)?)\s*(kg|g|\uAC1C|\uBD09|\uD329|\uD3EC\uAE30|\uB9C8\uB9AC)')
+}
+
 function Get-AccessibleProductRows {
     param([int]$Maximum)
     $document = Find-NaverDocument
@@ -106,8 +137,7 @@ function Wait-AccessibleProductRows {
         $document = Find-NaverDocument
         $rows = @(Get-AccessibleProductRows -Maximum $Maximum)
         $titleMatchesQuery = $null -ne $document -and $document.Current.Name -match [regex]::Escape($Query)
-        $documentChanged = $null -ne $document -and $document.Current.Name -ne $PreviousDocumentName
-        if ($rows.Count -gt 0 -and ($documentChanged -or $titleMatchesQuery)) {
+        if ($rows.Count -gt 0 -and $titleMatchesQuery) {
             return $rows
         }
         Start-Sleep -Milliseconds 500
@@ -156,7 +186,7 @@ try {
             $valuePattern = $searchBox.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern)
             $searchBox.SetFocus()
             $valuePattern.SetValue([string]$target.query)
-            [System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
+            Invoke-NaverSearch
             Start-Sleep -Milliseconds ([Math]::Max(500, [int]$manifest.minimum_delay_ms))
             $accessibleRows = @(Wait-AccessibleProductRows -TimeoutSeconds 25 -Maximum ([Math]::Max(1, [int]$manifest.max_offers_per_target)) -PreviousDocumentName $previousDocumentName -Query ([string]$target.query))
 
@@ -167,7 +197,7 @@ try {
                 $lines = @($raw -split "`r?`n" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
                 $priceMatch = [regex]::Match($raw, '(?<![\d,])(\d[\d,]*)\s*\uC6D0')
                 $discountedPriceMatch = [regex]::Match($raw, '\uD560\uC778\s*\uC804\s*\uD310\uB9E4\uAC00\s*(\d[\d,]*)\s*\uC6D0\s*\d+\s*%\s*\uD560\uC778\s*(\d[\d,]*)\s*\uC6D0')
-                $quantityMatch = [regex]::Match($raw, '(\d+(?:\.\d+)?)\s*(kg|g|\uAC1C|\uBD09|\uD329|\uD3EC\uAE30|\uB9C8\uB9AC)')
+                $quantityMatch = Get-NaverQuantity -RawName $raw -ComparisonUnit ([string]$target.comparison_unit)
                 $unitPriceMatch = [regex]::Match($raw, '\([^\r\n]*?\d[\d,]*\s*\uC6D0[^\r\n]*?\)')
                 $shippingMatch = [regex]::Match($raw, '\uBC30\uC1A1\uBE44\s*(\d[\d,]*)\s*\uC6D0')
                 $freeShipping = $raw -match '\uBB34\uB8CC\s*\uBC30\uC1A1'
@@ -198,7 +228,10 @@ try {
             }
             if ($accessibleRows.Count -gt 0) { $completedCount += 1 }
         }
-        catch { $failedKeys.Add($key) }
+        catch {
+            Write-Warning "Naver target ${key}: $($_.Exception.Message)"
+            $failedKeys.Add($key)
+        }
     }
 
     if ($allRows.Count -gt 0) {

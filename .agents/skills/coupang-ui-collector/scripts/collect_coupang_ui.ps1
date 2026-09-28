@@ -26,9 +26,63 @@ function Escape-SpreadsheetValue {
     return $text
 }
 
+function Find-CoupangDocument {
+    $condition = New-Object System.Windows.Automation.PropertyCondition(
+        [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
+        [System.Windows.Automation.ControlType]::Document
+    )
+    foreach ($document in [System.Windows.Automation.AutomationElement]::RootElement.FindAll([System.Windows.Automation.TreeScope]::Descendants, $condition)) {
+        if ($document.Current.Name -match '\uCFE0\uD321|Coupang') { return $document }
+    }
+    return $null
+}
+
+function Invoke-CoupangSearch {
+    $document = Find-CoupangDocument
+    if ($null -eq $document) { throw 'Coupang document not found' }
+    $condition = New-Object System.Windows.Automation.PropertyCondition(
+        [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
+        [System.Windows.Automation.ControlType]::Button
+    )
+    foreach ($button in $document.FindAll([System.Windows.Automation.TreeScope]::Descendants, $condition)) {
+        if ($button.Current.Name -match '^\uAC80\uC0C9$') {
+            $button.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+            return
+        }
+    }
+    throw 'Coupang search button not found'
+}
+
+function Get-CoupangDisplayedPrice {
+    param([string]$RawName)
+    # Unit prices, delivery charges and rewards follow the sale price.
+    $prefix = ($RawName -split '\([^)]*\uB2F9|\uBC30\uC1A1\uBE44|\uCD5C\uB300')[0]
+    $prices = [regex]::Matches($prefix, '(?<![\d,])(\d[\d,]*)\s*\uC6D0')
+    if ($prices.Count -eq 0) { return '' }
+    return $prices[$prices.Count - 1].Groups[1].Value.Replace(',', '')
+}
+
+function Get-CoupangQuantity {
+    param([string]$RawName, [string]$ComparisonUnit)
+    # Read product options only; never mistake '100g per price' for pack size.
+    $prefix = ($RawName -split '\([^)]*\uB2F9')[0]
+    $weight = [regex]::Matches($prefix, '(?i)(\d+(?:\.\d+)?)\s*(kg|g)')
+    if ($ComparisonUnit -match '(?i)kg|g') {
+        if ($weight.Count -gt 0) { return $weight[$weight.Count - 1] }
+    }
+    elseif ($ComparisonUnit -match '\uAC1C' -and $weight.Count -gt 0) {
+        $count = [regex]::Match($prefix, '(?<![\d~\-])(\d+)\s*(\uAC1C)')
+        if ($count.Success -and [decimal]$count.Groups[1].Value -gt 1) { return $count }
+        # A kg box's '1 item' is not one individual fruit.
+        return [regex]::Match('', 'a')
+    }
+    return [regex]::Match($prefix, '(?i)(\d+(?:\.\d+)?)\s*(kg|g|\uAC1C|\uBD09|\uD329|\uD3EC\uAE30|\uB9C8\uB9AC)')
+}
+
 function Find-CoupangSearchBox {
     $searchName = ([char]0xCFE0).ToString() + [char]0xD321 + ' ' + [char]0xC0C1 + [char]0xD488 + ' ' + [char]0xAC80 + [char]0xC0C9
-    $root = [System.Windows.Automation.AutomationElement]::RootElement
+    $root = Find-CoupangDocument
+    if ($null -eq $root) { return $null }
     $editCondition = New-Object System.Windows.Automation.PropertyCondition(
         [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
         [System.Windows.Automation.ControlType]::Edit
@@ -52,8 +106,9 @@ function Wait-CoupangSearchBox {
 }
 
 function Get-AccessibleProductRows {
-    param([int]$Maximum)
-    $root = [System.Windows.Automation.AutomationElement]::RootElement
+    param([int]$Maximum, [string]$Query)
+    $root = Find-CoupangDocument
+    if ($null -eq $root -or $root.Current.Name -notmatch [regex]::Escape($Query)) { return @() }
     $condition = New-Object System.Windows.Automation.PropertyCondition(
         [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
         [System.Windows.Automation.ControlType]::ListItem
@@ -71,10 +126,10 @@ function Get-AccessibleProductRows {
 }
 
 function Wait-AccessibleProductRows {
-    param([int]$TimeoutSeconds, [int]$Maximum)
+    param([int]$TimeoutSeconds, [int]$Maximum, [string]$Query)
     $deadline = [DateTimeOffset]::Now.AddSeconds($TimeoutSeconds)
     while ([DateTimeOffset]::Now -lt $deadline) {
-        $rows = @(Get-AccessibleProductRows -Maximum $Maximum)
+        $rows = @(Get-AccessibleProductRows -Maximum $Maximum -Query $Query)
         if ($rows.Count -gt 0) { return $rows }
         Start-Sleep -Milliseconds 500
     }
@@ -123,15 +178,15 @@ try {
             $valuePattern = $searchBox.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern)
             $searchBox.SetFocus()
             $valuePattern.SetValue([string]$target.query)
-            [System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
+            Invoke-CoupangSearch
             Start-Sleep -Milliseconds ([Math]::Max(500, [int]$manifest.minimum_delay_ms))
-            $accessibleRows = @(Wait-AccessibleProductRows -TimeoutSeconds 25 -Maximum ([Math]::Max(1, [int]$manifest.max_offers_per_target)))
+            $accessibleRows = @(Wait-AccessibleProductRows -TimeoutSeconds 25 -Maximum ([Math]::Max(1, [int]$manifest.max_offers_per_target)) -Query ([string]$target.query))
 
             foreach ($accessibleRow in $accessibleRows) {
                 $raw = [string]$accessibleRow.Current.Name
                 $lines = @($raw -split "`r?`n" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
-                $priceMatch = [regex]::Match($raw, '(?<![\d,])(\d[\d,]*)\s*\uC6D0')
-                $quantityMatch = [regex]::Match($raw, '(\d+(?:\.\d+)?)\s*(kg|g|\uAC1C|\uBD09|\uD329|\uD3EC\uAE30|\uB9C8\uB9AC)')
+                $displayedPrice = Get-CoupangDisplayedPrice -RawName $raw
+                $quantityMatch = Get-CoupangQuantity -RawName $raw -ComparisonUnit ([string]$target.comparison_unit)
                 $unitPriceMatch = [regex]::Match($raw, '\([^\r\n]*?\d[\d,]*\s*\uC6D0[^\r\n]*?\)')
                 $shippingMatch = [regex]::Match($raw, '\uBC30\uC1A1\uBE44\s*(\d[\d,]*)\s*\uC6D0')
                 $freeShipping = $raw -match '\uBB34\uB8CC\s*\uBC30\uC1A1'
@@ -146,7 +201,7 @@ try {
                     product_id = New-StableProductId -RawName $raw
                     title = Escape-SpreadsheetValue $(if ($lines.Count -gt 0) { $lines[0] } else { '' })
                     url = ''
-                    displayed_price = $(if ($priceMatch.Success) { $priceMatch.Groups[1].Value.Replace(',', '') } else { '' })
+                    displayed_price = $displayedPrice
                     shipping_fee = $(if ($shippingMatch.Success) { $shippingMatch.Groups[1].Value.Replace(',', '') } elseif ($freeShipping) { '0' } else { '' })
                     member_price = ''
                     member_discount_scope = $(if ($raw -match '\uC640\uC6B0\uD68C\uC6D0|\uCFE0\uD398\uC774|\uCE74\uB4DC\uD560\uC778|\uCFE0\uD3F0') { 'restricted' } else { 'unknown' })
@@ -161,6 +216,7 @@ try {
             if ($accessibleRows.Count -gt 0) { $completedCount += 1 }
         }
         catch {
+            Write-Warning "Coupang target ${key}: $($_.Exception.Message)"
             $failedKeys.Add($key)
         }
     }
