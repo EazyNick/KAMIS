@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from uuid import uuid4
 
 from app.collectors.coupang import build_coupang_source
 from app.collectors.kamis import build_kamis_collector
@@ -25,6 +26,7 @@ from app.services.collection_service import KamisCollectionService
 from app.services.comparison import ComparisonService
 from app.services.daily_pipeline import DailyPipeline
 from app.services.dashboard_bootstrap import DashboardBootstrapService
+from app.services.kamis_history import KamisHistoryService
 from app.services.market_history import MarketHistoryService
 from app.services.online_collection import OnlineCollectionService
 from app.services.online_pricing import OnlinePriceCalculator
@@ -155,22 +157,52 @@ class ApplicationContainer:
             analytics_batch,
             app_logger,
         )
-        history = MarketHistoryService(
+        kamis_history = KamisHistoryService(
+            prices,
+            service,
+            app_logger,
+            timezone=settings.timezone,
+            window_days=90,
+        )
+        market_history = MarketHistoryService(
             prices,
             market_repository,
             market_client,
             runs,
             app_logger,
-            on_collected=lambda run_id: analytics_batch.refresh_if_stale(
-                catalog.entries(), run_id, (market_repository.path,)
-            ),
         )
+
+        def collect_startup_history() -> int:
+            total = 0
+            try:
+                total += kamis_history.collect()
+            except Exception as error:  # noqa: BLE001 - independent history source
+                app_logger.exception(
+                    "startup.kamis_history.failed",
+                    "KAMIS history backfill failed; market history will continue",
+                    error,
+                )
+            try:
+                total += market_history.collect()
+            except Exception as error:  # noqa: BLE001 - independent history source
+                app_logger.exception(
+                    "startup.market_history.failed",
+                    "Market history backfill failed; startup will continue",
+                    error,
+                )
+            analytics_batch.refresh_if_stale(
+                catalog.entries(),
+                f"startup-history-{uuid4().hex}",
+                (prices.path, market_repository.path),
+            )
+            return total
+
         startup_collection = StartupCollectionService(
             pipeline,
             runs,
             settings,
             app_logger,
-            history_collector=history.collect,
+            history_collector=collect_startup_history,
         )
         return cls(
             settings,
