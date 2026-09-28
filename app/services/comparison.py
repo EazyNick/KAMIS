@@ -166,6 +166,8 @@ class ComparisonService:
             market = pd.DataFrame(market_rows)
             market["observed_date"] = pd.to_datetime(market["observed_date"])
             market["close"] = pd.to_numeric(market["close"], errors="coerce")
+            market_dates = pd.DatetimeIndex(sorted(market["observed_date"].unique()))
+            frame = frame.reindex(frame.index.union(market_dates))
             for series_id, values in market.groupby("series_id"):
                 frame[str(series_id)] = values.groupby("observed_date")["close"].mean()
         return fill_exchange_holidays(frame.sort_index())
