@@ -6,6 +6,42 @@ from pathlib import Path
 import pytest
 
 
+@pytest.mark.skipif(shutil.which("powershell.exe") is None, reason="Windows PowerShell required")
+@pytest.mark.parametrize("platform", ["naver", "coupang"])
+def test_collection_filters_ads_and_wrong_products_before_limit(platform):
+    script = Path(f".agents/skills/{platform}-ui-collector/scripts/collect_{platform}_ui.ps1").resolve()
+    cases = [
+        ["광고 국산 쌀 10kg 30,000원", "쌀", False],
+        ["AD 국산 쌀 10kg 30,000원", "쌀", False],
+        ["쌀국수 10kg 30,000원", "쌀", False],
+        ["감자 10kg 30,000원", "쌀", False],
+        ["양배추 1포기 3,000원", "배추", False],
+        ["배추김치 1포기 3,000원", "배추", False],
+        ["국산 쌀 10kg 30,000원", "쌀", True],
+        ["해남 배추 1포기 3,000원", "배추", True],
+        ["국내산 깐마늘 1kg 9,000원", "깐마늘(국산)", True],
+        ["중국산 깐마늘 1kg 9,000원", "깐마늘(국산)", False],
+    ]
+    command = r'''
+    $ErrorActionPreference = 'Stop'
+    $data = [Console]::In.ReadToEnd() | ConvertFrom-Json
+    $PSScriptRoot = Split-Path $data.path
+    $tokens = $null; $errors = $null
+    $ast = [System.Management.Automation.Language.Parser]::ParseFile($data.path, [ref]$tokens, [ref]$errors)
+    if ($errors.Count) { throw 'PowerShell syntax error' }
+    $function = $ast.Find({param($node) $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Test-ShoppingProduct'}, $true)
+    # AST extraction loses the original script scope; restore its directory.
+    Invoke-Expression ($function.Extent.Text.Replace('$PSScriptRoot', "'" + (Split-Path $data.path).Replace("'", "''") + "'"))
+    foreach ($case in $data.cases) {
+        if ((Test-ShoppingProduct -RawName $case[0] -ItemName $case[1]) -ne $case[2]) { throw 'Product filtering mismatch' }
+    }
+    '''
+    result = subprocess.run(["powershell.exe", "-NoProfile", "-Command", command], input=json.dumps({"path": str(script), "cases": cases}), text=True, capture_output=True)
+    assert result.returncode == 0, result.stderr
+    source = script.read_text(encoding="utf-8-sig")
+    assert source.index("Test-ShoppingProduct -RawName $name") < source.index("$result.Add($item)")
+
+
 def test_coupang_skill_declares_explicit_manifest_and_csv_contract() -> None:
     root = Path(".agents/skills/coupang-ui-collector")
     assert (root / "SKILL.md").is_file()

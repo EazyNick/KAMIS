@@ -28,6 +28,17 @@ the Coupang homepage first, locates the accessible search box, and submits each 
 Windows UI Automation. Never attempt to evade an access block, CAPTCHA, login requirement, or
 other access control.
 
+## Product exclusions
+
+Exclude product cards marked `광고`, `AD`, or `sponsored`, including labels in
+their accessibility text. Exclude unrelated items and processed products: rice
+noodles/snacks/storage bins are not rice; cabbage kimchi/green cabbage are not
+fresh napa cabbage. A substring match alone does not establish product identity.
+Use the shared rules in `app/domain/shopping_filter_rules.json` through the
+deterministic script and CSV validator. Apply exclusions before the result limit;
+excluded cards must not consume the target's offer quota. Do not count a target
+with only excluded cards as completed. Never invent replacements for excluded rows.
+
 ## Output contract
 
 The script writes only the raw CSV named by `output_csv`; its columns are defined in

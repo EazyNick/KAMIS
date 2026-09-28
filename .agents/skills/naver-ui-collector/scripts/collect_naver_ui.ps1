@@ -1,4 +1,4 @@
-param(
+﻿param(
     [Parameter(Mandatory = $true)]
     [string]$ManifestPath
 )
@@ -103,8 +103,27 @@ function Get-NaverQuantity {
     return [regex]::Match($prefix, '(?i)(\d+(?:\.\d+)?)\s*(kg|g|\uAC1C|\uBD09|\uD329|\uD3EC\uAE30|\uB9C8\uB9AC)')
 }
 
+
+function Test-ShoppingProduct {
+    param([string]$RawName, [string]$ItemName)
+    if ($null -eq $script:ShoppingFilterRules) {
+        $rulesPath = Join-Path $PSScriptRoot '../../../../app/domain/shopping_filter_rules.json'
+        $script:ShoppingFilterRules = Get-Content -LiteralPath $rulesPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    }
+    $rules = $script:ShoppingFilterRules
+    if ($RawName -match $rules.advertisement -or $RawName -match $rules.excluded) { return $false }
+    if ([string]::IsNullOrWhiteSpace($ItemName)) { return $false }
+    $wrong = $rules.wrong_items.PSObject.Properties[$ItemName]
+    if ($null -ne $wrong -and $RawName -match $wrong.Value) { return $false }
+    $required = $rules.required_names.PSObject.Properties[$ItemName]
+    if ($null -ne $required -and $RawName -notmatch $required.Value) { return $false }
+    $name = $ItemName -replace '\(\uAD6D\uC0B0\)', ''
+    if ($ItemName -match '\(\uAD6D\uC0B0\)' -and $RawName -notmatch '(?<![\uAC00-\uD7A3])(?:\uAD6D\uC0B0|\uAD6D\uB0B4\uC0B0)') { return $false }
+    return ($RawName -replace '\s+', '') -match [regex]::Escape(($name -replace '\s+', ''))
+}
+
 function Get-AccessibleProductRows {
-    param([int]$Maximum)
+    param([int]$Maximum, [string]$ItemName)
     $document = Find-NaverDocument
     if ($null -eq $document) { return @() }
     $condition = New-Object System.Windows.Automation.PropertyCondition(
@@ -124,6 +143,7 @@ function Get-AccessibleProductRows {
         catch { continue }
         if ($url -notmatch '^https://[^/]*\.naver\.com/') { continue }
         if (-not $seen.Add($url)) { continue }
+        if (-not (Test-ShoppingProduct -RawName $name -ItemName $ItemName)) { continue }
         $result.Add($item)
         if ($result.Count -ge $Maximum) { break }
     }
@@ -131,11 +151,11 @@ function Get-AccessibleProductRows {
 }
 
 function Wait-AccessibleProductRows {
-    param([int]$TimeoutSeconds, [int]$Maximum, [string]$PreviousDocumentName, [string]$Query)
+    param([int]$TimeoutSeconds, [int]$Maximum, [string]$PreviousDocumentName, [string]$Query, [string]$ItemName)
     $deadline = [DateTimeOffset]::Now.AddSeconds($TimeoutSeconds)
     while ([DateTimeOffset]::Now -lt $deadline) {
         $document = Find-NaverDocument
-        $rows = @(Get-AccessibleProductRows -Maximum $Maximum)
+        $rows = @(Get-AccessibleProductRows -Maximum $Maximum -ItemName $ItemName)
         $titleMatchesQuery = $null -ne $document -and $document.Current.Name -match [regex]::Escape($Query)
         if ($rows.Count -gt 0 -and $titleMatchesQuery) {
             return $rows
@@ -188,7 +208,7 @@ try {
             $valuePattern.SetValue([string]$target.query)
             Invoke-NaverSearch
             Start-Sleep -Milliseconds ([Math]::Max(500, [int]$manifest.minimum_delay_ms))
-            $accessibleRows = @(Wait-AccessibleProductRows -TimeoutSeconds 25 -Maximum ([Math]::Max(1, [int]$manifest.max_offers_per_target)) -PreviousDocumentName $previousDocumentName -Query ([string]$target.query))
+            $accessibleRows = @(Wait-AccessibleProductRows -TimeoutSeconds 25 -Maximum ([Math]::Max(1, [int]$manifest.max_offers_per_target)) -PreviousDocumentName $previousDocumentName -Query ([string]$target.query) -ItemName ([string]$target.item_name))
 
             foreach ($accessibleRow in $accessibleRows) {
                 $raw = [string]$accessibleRow.Current.Name

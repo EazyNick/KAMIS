@@ -1,4 +1,4 @@
-param(
+﻿param(
     [Parameter(Mandatory = $true)]
     [string]$ManifestPath
 )
@@ -105,8 +105,27 @@ function Wait-CoupangSearchBox {
     throw 'Coupang accessible search box was not found before timeout'
 }
 
+
+function Test-ShoppingProduct {
+    param([string]$RawName, [string]$ItemName)
+    if ($null -eq $script:ShoppingFilterRules) {
+        $rulesPath = Join-Path $PSScriptRoot '../../../../app/domain/shopping_filter_rules.json'
+        $script:ShoppingFilterRules = Get-Content -LiteralPath $rulesPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    }
+    $rules = $script:ShoppingFilterRules
+    if ($RawName -match $rules.advertisement -or $RawName -match $rules.excluded) { return $false }
+    if ([string]::IsNullOrWhiteSpace($ItemName)) { return $false }
+    $wrong = $rules.wrong_items.PSObject.Properties[$ItemName]
+    if ($null -ne $wrong -and $RawName -match $wrong.Value) { return $false }
+    $required = $rules.required_names.PSObject.Properties[$ItemName]
+    if ($null -ne $required -and $RawName -notmatch $required.Value) { return $false }
+    $name = $ItemName -replace '\(\uAD6D\uC0B0\)', ''
+    if ($ItemName -match '\(\uAD6D\uC0B0\)' -and $RawName -notmatch '(?<![\uAC00-\uD7A3])(?:\uAD6D\uC0B0|\uAD6D\uB0B4\uC0B0)') { return $false }
+    return ($RawName -replace '\s+', '') -match [regex]::Escape(($name -replace '\s+', ''))
+}
+
 function Get-AccessibleProductRows {
-    param([int]$Maximum, [string]$Query)
+    param([int]$Maximum, [string]$Query, [string]$ItemName)
     $root = Find-CoupangDocument
     if ($null -eq $root -or $root.Current.Name -notmatch [regex]::Escape($Query)) { return @() }
     $condition = New-Object System.Windows.Automation.PropertyCondition(
@@ -118,7 +137,8 @@ function Get-AccessibleProductRows {
     foreach ($item in $items) {
         $name = $item.Current.Name
         if (-not [string]::IsNullOrWhiteSpace($name) -and $name -match '\d[\d,]*\s*\uC6D0') {
-            $result.Add($item)
+            if (-not (Test-ShoppingProduct -RawName $name -ItemName $ItemName)) { continue }
+        $result.Add($item)
             if ($result.Count -ge $Maximum) { break }
         }
     }
@@ -126,10 +146,10 @@ function Get-AccessibleProductRows {
 }
 
 function Wait-AccessibleProductRows {
-    param([int]$TimeoutSeconds, [int]$Maximum, [string]$Query)
+    param([int]$TimeoutSeconds, [int]$Maximum, [string]$Query, [string]$ItemName)
     $deadline = [DateTimeOffset]::Now.AddSeconds($TimeoutSeconds)
     while ([DateTimeOffset]::Now -lt $deadline) {
-        $rows = @(Get-AccessibleProductRows -Maximum $Maximum -Query $Query)
+        $rows = @(Get-AccessibleProductRows -Maximum $Maximum -Query $Query -ItemName $ItemName)
         if ($rows.Count -gt 0) { return $rows }
         Start-Sleep -Milliseconds 500
     }
@@ -180,7 +200,7 @@ try {
             $valuePattern.SetValue([string]$target.query)
             Invoke-CoupangSearch
             Start-Sleep -Milliseconds ([Math]::Max(500, [int]$manifest.minimum_delay_ms))
-            $accessibleRows = @(Wait-AccessibleProductRows -TimeoutSeconds 25 -Maximum ([Math]::Max(1, [int]$manifest.max_offers_per_target)) -Query ([string]$target.query))
+            $accessibleRows = @(Wait-AccessibleProductRows -TimeoutSeconds 25 -Maximum ([Math]::Max(1, [int]$manifest.max_offers_per_target)) -Query ([string]$target.query) -ItemName ([string]$target.item_name))
 
             foreach ($accessibleRow in $accessibleRows) {
                 $raw = [string]$accessibleRow.Current.Name

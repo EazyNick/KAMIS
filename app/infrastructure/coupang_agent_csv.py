@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import json
 import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
@@ -14,6 +15,9 @@ from app.domain.models import ProductCatalogEntry
 from app.domain.online_models import MatchStatus, ShoppingOffer
 
 CatalogKey = tuple[str, str]
+SHOPPING_FILTER_RULES = json.loads(
+    (Path(__file__).resolve().parents[1] / "domain" / "shopping_filter_rules.json").read_text(encoding="utf-8")
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -202,7 +206,11 @@ class ShoppingAgentCsvParser:
         scope = row["member_discount_scope"].strip() or "unknown"
 
         exclusion_reason: str | None = None
-        if any(keyword in title for keyword in self._forbidden_product_keywords):
+        if row.get("advertisement", "").strip().lower() in {"true", "1", "yes"} or re.search(
+            SHOPPING_FILTER_RULES["advertisement"], title + " " + row.get("raw_accessible_name", "")
+        ):
+            exclusion_reason = "advertisement"
+        elif any(keyword in title for keyword in self._forbidden_product_keywords):
             exclusion_reason = "forbidden_product_type"
         elif not self._matches_item(title, entry.item_name):
             exclusion_reason = "item_name_mismatch"
@@ -294,6 +302,14 @@ class ShoppingAgentCsvParser:
 
     @classmethod
     def _matches_item(cls, title: str, item_name: str) -> bool:
+        if re.search(SHOPPING_FILTER_RULES["excluded"], title):
+            return False
+        wrong_items = SHOPPING_FILTER_RULES["wrong_items"].get(item_name)
+        if wrong_items and re.search(wrong_items, title):
+            return False
+        required = SHOPPING_FILTER_RULES["required_names"].get(item_name)
+        if required and not re.search(required, title):
+            return False
         normalized = cls._normalized(title)
         if item_name.endswith("(국산)"):
             return (

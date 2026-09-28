@@ -71,6 +71,34 @@ CATALOG = {
 }
 
 
+@pytest.mark.parametrize("title,advertisement,raw", [
+    ("국산 쌀 10kg", "true", "국산 쌀 10kg"),
+    ("국산 쌀 10kg", "false", "광고 국산 쌀 10kg"),
+    ("쌀국수 10kg", "false", "쌀국수 10kg"),
+    ("쌀과자 10kg", "false", "쌀과자 10kg"),
+    ("쌀 보관통 10kg", "false", "쌀 보관통 10kg"),
+    ("감자 10kg", "false", "감자 10kg"),
+])
+def test_ads_and_unrelated_rice_products_are_excluded(title, advertisement, raw):
+    from datetime import date
+    data = row("111", "10", title, quantity="10")
+    data.update(advertisement=advertisement, raw_accessible_name=raw)
+    offer = CoupangAgentCsvParser()._to_offer(data, entry=CATALOG[("111", "10")], observed_date=date(2026, 9, 28))
+    assert not offer.is_comparable
+
+
+@pytest.mark.parametrize("name,title", [("감자", "고구마 1kg"), ("배추", "양배추 1포기"), ("배추", "배추김치 1포기"), ("무", "무말랭이 1kg"), ("배", "배추 1kg"), ("토마토", "토마토 소스 1kg")])
+def test_related_words_are_not_the_requested_fresh_product(name, title):
+    assert not CoupangAgentCsvParser()._matches_item(title, name)
+
+
+def test_delivery_words_do_not_count_as_radish_or_pear():
+    for name in ("무", "배"):
+        assert not CoupangAgentCsvParser()._matches_item("사과 택배 무료배송 10kg", name)
+    assert CoupangAgentCsvParser()._matches_item("제주 월동무 1kg", "무")
+    assert CoupangAgentCsvParser()._matches_item("나주 신고배 10개", "배")
+
+
 @pytest.mark.parametrize(
     ("title", "expected"),
     [("국내산 창녕 깐마늘 1kg", True), ("중국산 깐마늘 1kg", False)],
