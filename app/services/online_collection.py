@@ -130,6 +130,16 @@ class OnlineCollectionService:
                 for entry in selected_catalog
                 if (source.platform, entry.item_code, entry.kind_code) not in completed
             ]
+            self._logger.info(
+                "online.collection.source.checked",
+                "저장된 온라인 수집 결과를 확인했습니다. 완료 품목은 생략하고 나머지만 수집합니다.",
+                run_id=run_id,
+                observed_date=observed_date,
+                source=source.platform,
+                target_count=len(selected_catalog),
+                skipped_count=len(selected_catalog) - len(pending),
+                pending_count=len(pending),
+            )
             prepare = getattr(source, "prepare", None)
             if prepare is not None and pending:
                 prepare(pending, observed_date, run_id)
@@ -145,6 +155,17 @@ class OnlineCollectionService:
                         entry.kind_code,
                     )
                     if stored is not None:
+                        self._logger.info(
+                            "online.collection.item.skipped",
+                            "해당 날짜의 수집 결과가 이미 있어 재수집하지 않습니다.",
+                            run_id=run_id,
+                            observed_date=observed_date,
+                            source=source.platform,
+                            item_code=entry.item_code,
+                            kind_code=entry.kind_code,
+                            collection_status=stored.get("collection_status"),
+                            reason="already_collected",
+                        )
                         item_summaries.append(self._stored_summary(stored))
                         continue
                 source_failed = False

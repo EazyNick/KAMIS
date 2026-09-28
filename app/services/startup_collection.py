@@ -93,6 +93,14 @@ class StartupCollectionService:
             source="daily_pipeline",
             observed_date=observed_date,
         )
+        self._logger.info(
+            "startup.daily.skipped" if daily_completed else "startup.daily.pending",
+            "오늘 통합 수집의 성공 이력이 있어 재수집하지 않습니다."
+            if daily_completed
+            else "과거 시장 데이터와 분석 캐시 확인 후 오늘 KAMIS·네이버·쿠팡·시장 수집을 시작합니다.",
+            observed_date=observed_date,
+            reason="successful_checkpoint_exists" if daily_completed else "history_check_first",
+        )
         self._task_runner(
             lambda: self._collect(observed_date, daily_completed=daily_completed)
         )

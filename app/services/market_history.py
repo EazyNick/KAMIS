@@ -53,6 +53,17 @@ class MarketHistoryService:
             - existing.get(series, set())
             for series, ticker in self._client.symbols.items()
         }
+        for series, dates in missing.items():
+            if not dates:
+                self._logger.info(
+                    "market.history.series.skipped",
+                    "해당 기간의 시장 데이터가 이미 있어 수집을 생략합니다.",
+                    series_id=series,
+                    start_date=start,
+                    end_date=end,
+                    existing_date_count=len(existing.get(series, set())),
+                    reason="already_collected",
+                )
         missing = {series: dates for series, dates in missing.items() if dates}
         if not missing:
             self._logger.info(  # noqa: PLE1205 - structured logger
@@ -81,7 +92,7 @@ class MarketHistoryService:
         count = 0
         errors: list[CollectionError] = []
         for series, dates in missing.items():
-            self._logger.debug(  # noqa: PLE1205 - structured logger
+            self._logger.info(  # noqa: PLE1205 - structured logger
                 "market.history.series.started",
                 "Collecting missing market series",
                 run_id=run.run_id,
@@ -89,17 +100,22 @@ class MarketHistoryService:
                 start_date=min(dates),
                 end_date=max(dates),
                 missing_date_count=len(dates),
+                missing_dates=",".join(str(day) for day in sorted(dates)),
             )
             try:
                 rows = self._client.fetch(min(dates), max(dates), series_ids={series})
                 self._market.upsert(rows, run.run_id)
                 count += len(rows)
-                self._logger.debug(  # noqa: PLE1205 - structured logger
+                self._logger.info(  # noqa: PLE1205 - structured logger
                     "market.history.series.completed",
                     "Missing market series collection completed",
                     run_id=run.run_id,
                     series_id=series,
                     record_count=len(rows),
+                    recovered_date_count=len(dates & {row.observed_date for row in rows}),
+                    already_stored_date_count=len(
+                        existing.get(series, set()) & {row.observed_date for row in rows}
+                    ),
                 )
                 remaining = dates - {row.observed_date for row in rows}
                 if remaining:
@@ -116,6 +132,7 @@ class MarketHistoryService:
                         run_id=run.run_id,
                         series_id=series,
                         missing_count=len(remaining),
+                        missing_dates=",".join(str(day) for day in sorted(remaining)),
                     )
             except Exception as error:
                 errors.append(CollectionError(series, type(error).__name__, str(error)))
