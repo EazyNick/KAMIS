@@ -113,21 +113,27 @@ class ShoppingAgentSource:
         except Exception as error:
             self._logger.exception(
                 f"{self.platform}_agent.failed",
-                f"{self.platform} agent failed; Playwright fallback will run",
+                f"{self.platform} agent failed; Playwright fallback is disabled",
                 error,  # noqa: TRY401 - custom logger records explicit error metadata
                 run_id=run_id,
                 target_count=len(entries),
             )
 
         for key in failed_keys:
-            entry = catalog[key]
-            try:
-                self._offers.setdefault(key, []).extend(
-                    self._fallback.search(entry, observed_date)
-                )
-            except Exception as error:  # noqa: BLE001 - per-key source boundary
-                self._errors[key] = error
-                self._offers.setdefault(key, [])
+            # Playwright 대비책은 동작하지 않아 비활성화한다. 복구 참고용으로 보존.
+            # entry = catalog[key]
+            # try:
+            #     self._offers.setdefault(key, []).extend(
+            #         self._fallback.search(entry, observed_date)
+            #     )
+            # except Exception as error:
+            #     self._errors[key] = error
+            #     self._offers.setdefault(key, [])
+            self._errors[key] = RuntimeError(
+                f"{self.platform} agent collection failed for {key[0]}:{key[1]}; "
+                "Playwright fallback is disabled"
+            )
+            self._offers.setdefault(key, [])
 
     def search(
         self, entry: ProductCatalogEntry, observed_date: date
@@ -163,11 +169,22 @@ class ShoppingAgentSource:
                     "comparison_unit": (
                         f"{entry.retail_unit_size or ''}{entry.retail_unit or ''}"
                     ),
-                    "query": f"{entry.item_name} {entry.variety}".strip(),
+                    "query": self._query(entry),
                 }
                 for entry in entries
             ],
         }
+
+    def _query(self, entry: ProductCatalogEntry) -> str:
+        name = re.sub(r"[()]", " ", entry.item_name).strip()
+        variety = re.sub(r"[()]", " ", entry.variety).strip()
+        parts = list(dict.fromkeys(name.split()))
+        if variety not in {"봄", "여름", "가을", "겨울", "일반"}:
+            parts.extend(word for word in variety.split() if word not in parts)
+        unit = f"{entry.retail_unit_size or ''}{entry.retail_unit or ''}"
+        if unit and unit not in parts:
+            parts.append(unit)
+        return " ".join(parts)
 
     @staticmethod
     def _result_schema() -> dict[str, Any]:

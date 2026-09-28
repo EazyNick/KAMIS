@@ -6,6 +6,8 @@ from decimal import Decimal
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+
 from app.domain.models import ProductCatalogEntry
 from app.domain.online_models import MatchStatus, ShoppingOffer
 from app.infrastructure.coupang_agent_csv import CoupangCsvResult
@@ -124,7 +126,7 @@ def test_agent_source_invokes_codex_once_for_ten_entries(tmp_path: Path) -> None
     assert runner.calls == 1
 
 
-def test_agent_source_falls_back_only_for_failed_keys(tmp_path: Path) -> None:
+def test_agent_source_reports_failed_keys_without_playwright(tmp_path: Path) -> None:
     failed = {
         (TEN_ENTRIES[2].item_code, TEN_ENTRIES[2].kind_code),
         (TEN_ENTRIES[4].item_code, TEN_ENTRIES[4].kind_code),
@@ -133,6 +135,20 @@ def test_agent_source_falls_back_only_for_failed_keys(tmp_path: Path) -> None:
 
     source.prepare(TEN_ENTRIES, TODAY, "run-1")
 
-    assert fallback.searched_keys == failed
+    assert fallback.searched_keys == set()
     for entry in TEN_ENTRIES:
-        assert source.search(entry, TODAY)
+        if (entry.item_code, entry.kind_code) in failed:
+            with pytest.raises(RuntimeError, match="Playwright fallback is disabled"):
+                source.search(entry, TODAY)
+        else:
+            assert source.search(entry, TODAY)
+
+
+def test_coupang_manifest_queries_include_comparison_unit(tmp_path: Path) -> None:
+    import json
+
+    source, _, _ = build_source(tmp_path, set())
+    cabbage = replace(BASE_ENTRY, item_name="배추", variety="가을", retail_unit="포기", retail_unit_size="1")
+    source.prepare([cabbage], TODAY, "query-run")
+    manifest = json.loads((tmp_path / "runs/query-run/manifest.json").read_text(encoding="utf-8"))
+    assert manifest["targets"][0]["query"] == "배추 1포기"
