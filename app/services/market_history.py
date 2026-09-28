@@ -198,11 +198,25 @@ class MarketHistoryService:
         exchange = None
         if ticker in {"^KS11", "^KQ11"}:
             exchange = "XKRX"
-        elif ticker in {"^GSPC", "^IXIC", "^DJI"}:
+        elif ticker in {
+            "^GSPC",
+            "^IXIC",
+            "^DJI",
+            "ZC=F",
+            "ZW=F",
+            "ZS=F",
+            "ZR=F",
+            "KC=F",
+            "SB=F",
+            "CT=F",
+            "OJ=F",
+        }:
+            # The Yahoo futures used by this project follow U.S. holiday closures
+            # for the dates we treat as expected observations. Without this,
+            # holidays such as Independence Day and Labor Day are retried forever.
             exchange = "XNYS"
         calendar = financial_holidays(exchange) if exchange else {}
-        # FX/futures have distinct sessions. Keep missing weekdays retryable rather
-        # than declaring their missing quotes successful based on a stock calendar.
+        # FX has its own session calendar, so keep missing FX weekdays retryable.
         return {
             observed
             for offset in range((end - start).days + 1)
