@@ -124,6 +124,26 @@ def test_backfill_respects_korean_and_us_holidays(tmp_path):
     assert calls == [["^GSPC"]]
 
 
+def test_backfill_respects_us_holidays_for_futures(tmp_path):
+    calls = []
+
+    def downloader(**kwargs):
+        calls.append(kwargs["tickers"])
+        raise AssertionError("U.S. futures holiday should not be downloaded")
+
+    service, _, runs = build_service(
+        tmp_path,
+        downloader,
+        date(2026, 7, 3),
+        date(2026, 7, 3),
+        {"corn_futures": "ZC=F", "wheat_futures": "ZW=F"},
+    )
+
+    assert service.collect() == 0
+    assert calls == []
+    assert runs.latest() is None
+
+
 def test_backfill_without_kamis_does_not_download(tmp_path):
     def downloader(**kwargs):
         raise AssertionError("No KAMIS period exists")
