@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timedelta
+from types import SimpleNamespace
 from uuid import uuid4
+from zoneinfo import ZoneInfo
 
 from app.collectors.coupang import build_coupang_source
 from app.collectors.kamis import build_kamis_collector
@@ -124,7 +127,10 @@ class ApplicationContainer:
         market_client = build_market_collector()
         analytics = AnalyticsService()
         comparison = ComparisonService(
-            prices, online_repository, market_repository, analytics,
+            prices,
+            online_repository,
+            market_repository,
+            analytics,
             target_keys=settings.online_target_keys,
         )
         configured_targets = set(settings.online_target_keys)
@@ -164,8 +170,14 @@ class ApplicationContainer:
             timezone=settings.timezone,
             window_days=90,
         )
+
+        def recent_market_range():
+            today = datetime.now(ZoneInfo(settings.timezone)).date()
+            return today - timedelta(days=89), today - timedelta(days=1)
+
+        recent_market_period = SimpleNamespace(observed_date_range=recent_market_range)
         market_history = MarketHistoryService(
-            prices,
+            recent_market_period,
             market_repository,
             market_client,
             runs,
