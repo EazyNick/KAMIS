@@ -5,6 +5,8 @@ from typing import Any
 
 import pandas as pd
 
+from app.services.analytics import AnalyticsService
+
 from app.infrastructure.analytics_repository import AnalyticsRepository
 from app.services.comparison import (
     ComparisonService,
@@ -62,6 +64,8 @@ class DashboardBootstrapService:
             values="value",
             aggfunc="mean",
         ).sort_index()
+        online = self._comparison.online_frame(item_code)
+        frame = frame.reindex(frame.index.union(online.index)).sort_index()
         end_date = frame.index.max().date()
         start_date = max(frame.index.min().date(), end_date - timedelta(days=89))
         frame = frame.loc[pd.Timestamp(start_date) : pd.Timestamp(end_date)]
@@ -85,12 +89,27 @@ class DashboardBootstrapService:
                 aggfunc="mean",
             ).reindex(frame.index)
             raw_frame = fill_exchange_holidays(raw_frame)
+        # Read the small online CSV afresh; full analytics may predate agent runs.
+        online = online.reindex(frame.index)
+        frame = frame.drop(columns=[key for key in frame if key.startswith("online_")])
+        raw_frame = raw_frame.drop(columns=[key for key in raw_frame if key.startswith("online_")])
+        online_base100 = AnalyticsService().transform(online, "base100")
+        for column in online:
+            frame[column] = online_base100[column]
+            raw_frame[column] = online[column]
         defaults = {
             "item_code": item_code,
             "start_date": start_date.isoformat(),
             "end_date": end_date.isoformat(),
             "mode": "base100",
         }
+        if item_code in self._comparison.comparison_kinds:
+            # Old analysis caches aggregate varieties; never use them for a
+            # comparison constrained to the configured shopping package size.
+            return {
+                "defaults": defaults,
+                "chart": self._comparison.chart(item_code, start_date, end_date, "base100"),
+            }
         return {
             "defaults": defaults,
             "chart": chart_from_frame(

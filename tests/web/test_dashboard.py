@@ -4,12 +4,16 @@ import json
 from pathlib import Path
 from urllib.parse import urlparse
 
+import pytest
 from playwright.sync_api import Route, sync_playwright
 
 DASHBOARD = Path(__file__).resolve().parents[2] / "app" / "web" / "dashboard.html"
 
 
-def test_dashboard_applies_defaults_and_features_most_volatile_future() -> None:
+@pytest.mark.parametrize("has_kamis_commodities", [True, False])
+def test_dashboard_defaults_to_kamis_futures_and_preserves_manual_selection(
+    has_kamis_commodities: bool,
+) -> None:
     requested_urls: list[str] = []
     page_errors: list[str] = []
     catalog_item = {
@@ -23,6 +27,7 @@ def test_dashboard_applies_defaults_and_features_most_volatile_future() -> None:
         "retail_rank_codes": "04",
     }
     chart_payload = {
+        "comparison_kinds": {"111": "10"},
         "item_code": "222",
         "mode": "base100",
         "dates": ["2026-09-24", "2026-09-25"],
@@ -37,6 +42,9 @@ def test_dashboard_applies_defaults_and_features_most_volatile_future() -> None:
             "sp500": [100.0, 100.0],
             "nasdaq": [100.0, 100.0],
             "dow_jones": [100.0, 100.0],
+            "rough_rice_futures": [100.0, 100.0],
+            "soybean_futures": [100.0, 100.0],
+            "wheat_futures": [100.0, 100.0],
             "coffee_futures": [100.0, 100.0],
             "orange_juice_futures": [100.0, 100.0],
         },
@@ -52,7 +60,14 @@ def test_dashboard_applies_defaults_and_features_most_volatile_future() -> None:
             "collection_running": False,
             "latest_run": {"requested_end": "2026-09-24", "status": "success"},
         },
-        "/api/v1/catalog": {"items": [catalog_item], "total": 1},
+        "/api/v1/catalog": {
+            "items": [catalog_item] + ([
+                {**catalog_item, "item_code": "111", "item_name": "쌀", "kind_code": "01", "variety": "20kg"},
+                {**catalog_item, "item_code": "111", "item_name": "쌀", "kind_code": "10", "variety": "10kg"},
+                {**catalog_item, "item_code": "141", "item_name": "콩"},
+            ] if has_kamis_commodities else []),
+            "total": 3 if has_kamis_commodities else 1,
+        },
         "/api/v1/online/summaries": {"items": [], "total": 0},
         "/api/v1/dashboard/defaults": {
             "item_code": "222",
@@ -118,6 +133,8 @@ def test_dashboard_applies_defaults_and_features_most_volatile_future() -> None:
 
         assert page_errors == []
         assert page.locator("#itemSelect").input_value() == "222"
+        if has_kamis_commodities:
+            assert page.locator('#itemSelect option[value="111"]').inner_text() == "쌀 · 10kg"
         assert page.locator("#startDate").input_value() == "2026-06-27"
         assert page.locator("#endDate").input_value() == "2026-09-24"
         assert page.locator("#comparisonChart").evaluate("canvas => canvas.width") > 0
@@ -133,10 +150,21 @@ def test_dashboard_applies_defaults_and_features_most_volatile_future() -> None:
         assert dashboard_box["y"] < overview_box["y"]
         assert dashboard_box["width"] >= 1800
         assert chart_box["height"] >= 560
-        first_chip = page.locator("#legend .chip").first
-        assert first_chip.get_attribute("data-key") == "orange_juice_futures"
-        assert "주목" in first_chip.inner_text()
-        assert "off" not in (first_chip.get_attribute("class") or "")
+        assert page.locator(".featured-badge").count() == 0
+        for key in ("rough_rice_futures", "soybean_futures"):
+            is_off = "off" in page.locator(f'[data-key="{key}"]').get_attribute("class")
+            assert is_off == (not has_kamis_commodities)
+        for key in ("orange_juice_futures", "coffee_futures", "wheat_futures"):
+            assert "off" in page.locator(f'[data-key="{key}"]').get_attribute("class")
+        orange = page.locator('[data-key="orange_juice_futures"]')
+        orange.click()
+        assert "off" not in orange.get_attribute("class")
+        page.evaluate("applyBootstrap", responses["/api/v1/dashboard/bootstrap"])
+        assert "off" not in orange.get_attribute("class")
+        page.locator("#legend .chip:not(.off)").evaluate_all("chips => chips.forEach(chip => chip.click())")
+        page.evaluate("applyBootstrap", responses["/api/v1/dashboard/bootstrap"])
+        assert page.locator("#legend .chip:not(.off)").count() == 0
+        page.locator('[data-key="kamis_retail"]').click()
         page.mouse.move(chart_box["x"] + 74, chart_box["y"] + chart_box["height"] / 2)
         tooltip = page.locator("#chartTooltip")
         assert tooltip.is_visible()

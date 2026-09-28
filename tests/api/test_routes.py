@@ -154,7 +154,7 @@ def test_dashboard_defaults_endpoint_handles_empty_dataset(client: TestClient) -
     }
 
 
-def test_dashboard_bootstrap_reads_precomputed_default_chart(tmp_path: Path) -> None:
+def test_dashboard_bootstrap_does_not_use_unverified_variety_cache(tmp_path: Path) -> None:
     settings = replace(Settings.from_env(), data_dir=tmp_path)
     container = ApplicationContainer.build(settings)
     container.startup_collection_service = None
@@ -216,10 +216,10 @@ def test_dashboard_bootstrap_reads_precomputed_default_chart(tmp_path: Path) -> 
         "end_date": "2026-07-03",
         "mode": "base100",
     }
-    assert payload["chart"]["dates"] == ["2026-07-02", "2026-07-03"]
-    assert payload["chart"]["series"]["kamis_retail"] == [100.0, 101.0]
-    assert payload["chart"]["series"]["sp500"] == [100.0, 100.0]
-    assert payload["chart"]["raw_series"]["kamis_retail"] == [2500.0, 2525.0]
+    # No matching source prices exist. A legacy cache must not manufacture them.
+    assert payload["chart"]["dates"] == []
+    assert payload["chart"]["series"]["kamis_retail"] == []
+    assert payload["chart"]["comparison_kinds"]["111"] == "10"
 
 
 def test_comparison_api_exposes_every_required_toggle(client: TestClient) -> None:

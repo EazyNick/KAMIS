@@ -119,11 +119,14 @@ class ComparisonService:
         online_repository: OnlineRepositoryProtocol,
         market_repository: MarketRepositoryProtocol,
         analytics: AnalyticsService,
+        *,
+        target_keys: set[tuple[str, str]] | frozenset[tuple[str, str]] = frozenset(),
     ) -> None:
         self._prices = price_repository
         self._online = online_repository
         self._market = market_repository
         self._analytics = analytics
+        self.comparison_kinds = dict(sorted(target_keys))
 
     def build_frame(
         self, item_code: str, start_date: date | None, end_date: date | None
@@ -131,6 +134,9 @@ class ComparisonService:
         price_rows = self._prices.search(
             PriceFilters(item_code=item_code, start_date=start_date, end_date=end_date)
         )
+        kind = self.comparison_kinds.get(item_code)
+        if kind is not None:
+            price_rows = [row for row in price_rows if row.get("kind_code") == kind]
         kamis_dates = sorted(
             {
                 pd.Timestamp(row["observed_date"])
@@ -151,16 +157,10 @@ class ComparisonService:
                     frame[f"kamis_{price_type}"] = grouped.xs(
                         price_type, level="price_type"
                     )
-        online_rows = self._online.search_summaries(item_code=item_code)
-        if online_rows:
-            online = pd.DataFrame(online_rows)
-            online["observed_date"] = pd.to_datetime(online["observed_date"])
-            online["average_unit_price"] = pd.to_numeric(
-                online["average_unit_price"], errors="coerce"
-            )
-            for platform, values in online.groupby("platform"):
-                series = values.groupby("observed_date")["average_unit_price"].mean()
-                frame[f"online_{platform}"] = series
+        online = self.online_frame(item_code, start_date, end_date)
+        frame = frame.reindex(frame.index.union(online.index))
+        for column in online:
+            frame[column] = online[column]
         market_rows = self._market.search(start_date=start_date, end_date=end_date)
         if market_rows:
             market = pd.DataFrame(market_rows)
@@ -169,6 +169,30 @@ class ComparisonService:
             for series_id, values in market.groupby("series_id"):
                 frame[str(series_id)] = values.groupby("observed_date")["close"].mean()
         return fill_exchange_holidays(frame.sort_index())
+
+    def online_frame(
+        self, item_code: str, start_date: date | None = None, end_date: date | None = None
+    ) -> pd.DataFrame:
+        rows = self._online.search_summaries(item_code=item_code)
+        kind = self.comparison_kinds.get(item_code)
+        if kind is not None:
+            rows = [row for row in rows if row.get("kind_code") == kind]
+        if not rows:
+            return pd.DataFrame(index=pd.DatetimeIndex([]))
+        online = pd.DataFrame(rows)
+        online["observed_date"] = pd.to_datetime(online["observed_date"])
+        online["average_unit_price"] = pd.to_numeric(online["average_unit_price"], errors="coerce")
+        online = online.dropna(subset=["average_unit_price"])
+        if start_date:
+            online = online[online["observed_date"] >= pd.Timestamp(start_date)]
+        if end_date:
+            online = online[online["observed_date"] <= pd.Timestamp(end_date)]
+        frame = online.pivot_table(index="observed_date", columns="platform", values="average_unit_price", aggfunc="mean")
+        # Agent-only collection updates platform summaries before the combined cache.
+        platforms = [column for column in ("naver", "coupang") if column in frame]
+        if platforms:
+            frame["combined"] = frame[platforms].mean(axis=1)
+        return frame.rename(columns=lambda column: f"online_{column}").sort_index()
 
     def chart(
         self,
@@ -179,9 +203,11 @@ class ComparisonService:
     ) -> dict[str, Any]:
         raw_frame = self.build_frame(item_code, start_date, end_date)
         frame = self._analytics.transform(raw_frame, mode)
-        return chart_from_frame(
+        result = chart_from_frame(
             item_code, mode, frame, self.core_series, raw_frame=raw_frame
         )
+        result["comparison_kinds"] = self.comparison_kinds
+        return result
 
     def dashboard_defaults(self) -> dict[str, str | None]:
         price_rows = self._prices.search(PriceFilters())
@@ -195,6 +221,10 @@ class ComparisonService:
                 date.fromisoformat(str(observed_date))
             )
 
+        online_rows = self._online.search_summaries()
+        for row in online_rows:
+            if row.get("item_code") and row.get("observed_date") and row.get("average_unit_price") not in {None, ""}:
+                dates_by_item.setdefault(str(row["item_code"]), []).append(date.fromisoformat(str(row["observed_date"])))
         if not dates_by_item:
             return {
                 "item_code": None,
@@ -205,7 +235,7 @@ class ComparisonService:
 
         online_item_codes = {
             str(row.get("item_code"))
-            for row in self._online.search_summaries()
+            for row in online_rows
             if row.get("item_code") and row.get("average_unit_price") not in {None, ""}
         }
         item_code = max(

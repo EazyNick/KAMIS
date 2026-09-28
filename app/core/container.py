@@ -122,7 +122,8 @@ class ApplicationContainer:
         market_client = build_market_collector()
         analytics = AnalyticsService()
         comparison = ComparisonService(
-            prices, online_repository, market_repository, analytics
+            prices, online_repository, market_repository, analytics,
+            target_keys=settings.online_target_keys,
         )
         configured_targets = set(settings.online_target_keys)
         preferred_item_codes = tuple(
