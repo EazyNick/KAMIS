@@ -11,7 +11,6 @@ from app.domain.models import ProductCatalogEntry
 from app.domain.online_models import ShoppingOffer
 from app.infrastructure.codex_cli import CodexCliRunner
 from app.infrastructure.coupang_agent_csv import ShoppingAgentCsvParser
-from app.infrastructure.shopping_sources import HtmlShoppingSource
 from log.logger import StructuredLogger
 
 
@@ -29,7 +28,6 @@ class ShoppingAgentSource:
         run_root: Path,
         runner: CodexCliRunner,
         parser: ShoppingAgentCsvParser,
-        fallback: HtmlShoppingSource,
         logger: StructuredLogger,
         *,
         timeout_seconds: float,
@@ -42,7 +40,6 @@ class ShoppingAgentSource:
         self._run_root = run_root.resolve()
         self._runner = runner
         self._parser = parser
-        self._fallback = fallback
         self._logger = logger
         self._timeout_seconds = timeout_seconds
         self._minimum_delay_ms = minimum_delay_ms
@@ -113,25 +110,15 @@ class ShoppingAgentSource:
         except Exception as error:
             self._logger.exception(
                 f"{self.platform}_agent.failed",
-                f"{self.platform} agent failed; Playwright fallback is disabled",
+                f"{self.platform} agent collection failed",
                 error,  # noqa: TRY401 - custom logger records explicit error metadata
                 run_id=run_id,
                 target_count=len(entries),
             )
 
         for key in failed_keys:
-            # Playwright 대비책은 동작하지 않아 비활성화한다. 복구 참고용으로 보존.
-            # entry = catalog[key]
-            # try:
-            #     self._offers.setdefault(key, []).extend(
-            #         self._fallback.search(entry, observed_date)
-            #     )
-            # except Exception as error:
-            #     self._errors[key] = error
-            #     self._offers.setdefault(key, [])
             self._errors[key] = RuntimeError(
-                f"{self.platform} agent collection failed for {key[0]}:{key[1]}; "
-                "Playwright fallback is disabled"
+                f"{self.platform} agent collection failed for {key[0]}:{key[1]}"
             )
             self._offers.setdefault(key, [])
 
@@ -229,7 +216,6 @@ class CoupangAgentSource(ShoppingAgentSource):
         run_root: Path,
         runner: CodexCliRunner,
         parser: ShoppingAgentCsvParser,
-        fallback: HtmlShoppingSource,
         logger: StructuredLogger,
         *,
         timeout_seconds: float,
@@ -243,7 +229,6 @@ class CoupangAgentSource(ShoppingAgentSource):
             run_root,
             runner,
             parser,
-            fallback,
             logger,
             timeout_seconds=timeout_seconds,
             minimum_delay_ms=minimum_delay_ms,
