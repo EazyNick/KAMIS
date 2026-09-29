@@ -88,36 +88,23 @@ class Parser:
         )
 
 
-class Fallback:
-    platform = "coupang"
-
-    def __init__(self) -> None:
-        self.searched_keys: set[tuple[str, str]] = set()
-
-    def search(self, entry: ProductCatalogEntry, observed_date: date):
-        self.searched_keys.add((entry.item_code, entry.kind_code))
-        return [offer(entry)]
-
-
 def build_source(
     tmp_path: Path, failed_keys: set[tuple[str, str]]
-) -> tuple[CoupangAgentSource, Runner, Fallback]:
+) -> tuple[CoupangAgentSource, Runner]:
     runner = Runner()
-    fallback = Fallback()
     source = CoupangAgentSource(
         tmp_path,
         tmp_path / "runs",
         runner,  # type: ignore[arg-type]
         Parser(failed_keys),  # type: ignore[arg-type]
-        fallback,  # type: ignore[arg-type]
         app_logger,
         timeout_seconds=30,
     )
-    return source, runner, fallback
+    return source, runner
 
 
 def test_agent_source_invokes_codex_once_for_ten_entries(tmp_path: Path) -> None:
-    source, runner, _ = build_source(tmp_path, set())
+    source, runner = build_source(tmp_path, set())
 
     source.prepare(TEN_ENTRIES, TODAY, "run-1")
     for entry in TEN_ENTRIES:
@@ -126,19 +113,18 @@ def test_agent_source_invokes_codex_once_for_ten_entries(tmp_path: Path) -> None
     assert runner.calls == 1
 
 
-def test_agent_source_reports_failed_keys_without_playwright(tmp_path: Path) -> None:
+def test_agent_source_reports_failed_keys_without_fallback(tmp_path: Path) -> None:
     failed = {
         (TEN_ENTRIES[2].item_code, TEN_ENTRIES[2].kind_code),
         (TEN_ENTRIES[4].item_code, TEN_ENTRIES[4].kind_code),
     }
-    source, _, fallback = build_source(tmp_path, failed)
+    source, _ = build_source(tmp_path, failed)
 
     source.prepare(TEN_ENTRIES, TODAY, "run-1")
 
-    assert fallback.searched_keys == set()
     for entry in TEN_ENTRIES:
         if (entry.item_code, entry.kind_code) in failed:
-            with pytest.raises(RuntimeError, match="Playwright fallback is disabled"):
+            with pytest.raises(RuntimeError, match="agent collection failed"):
                 source.search(entry, TODAY)
         else:
             assert source.search(entry, TODAY)
@@ -147,8 +133,16 @@ def test_agent_source_reports_failed_keys_without_playwright(tmp_path: Path) -> 
 def test_coupang_manifest_queries_include_comparison_unit(tmp_path: Path) -> None:
     import json
 
-    source, _, _ = build_source(tmp_path, set())
-    cabbage = replace(BASE_ENTRY, item_name="배추", variety="가을", retail_unit="포기", retail_unit_size="1")
+    source, _ = build_source(tmp_path, set())
+    cabbage = replace(
+        BASE_ENTRY,
+        item_name="배추",
+        variety="가을",
+        retail_unit="포기",
+        retail_unit_size="1",
+    )
     source.prepare([cabbage], TODAY, "query-run")
-    manifest = json.loads((tmp_path / "runs/query-run/manifest.json").read_text(encoding="utf-8"))
+    manifest = json.loads(
+        (tmp_path / "runs/query-run/manifest.json").read_text(encoding="utf-8")
+    )
     assert manifest["targets"][0]["query"] == "배추 1포기"
