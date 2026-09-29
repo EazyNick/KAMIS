@@ -28,6 +28,20 @@ the Coupang homepage first, locates the accessible search box, and submits each 
 Windows UI Automation. Never attempt to evade an access block, CAPTCHA, login requirement, or
 other access control.
 
+## Browser cleanup
+
+Browser cleanup is mandatory after the collection attempt finishes, including success,
+partial success, script failure, parsing failure, timeout, or any other exception.
+
+- Close the Coupang tab or browser window used for this collection run before returning the
+  final JSON status.
+- Close only the tab/window used by this run. Do not close unrelated user tabs or unrelated
+  Chrome windows.
+- Do not leave a collection tab, popup, or browser window open after the run completes.
+- Cleanup must still be attempted when collection fails. A cleanup failure must not be
+  reported as successful collection; preserve the underlying collection result honestly.
+- Return the final JSON only after the cleanup attempt has completed.
+
 ## Product exclusions
 
 Exclude product cards marked `광고`, `AD`, or `sponsored`, including labels in
