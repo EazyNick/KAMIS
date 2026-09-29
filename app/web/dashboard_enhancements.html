@@ -1,10 +1,18 @@
 <style>
-  button.control:disabled{cursor:wait;opacity:.72;filter:none}
+  button.control:disabled,.control:disabled{cursor:wait;opacity:.72;filter:none}
   .chart-loading{position:absolute;inset:0;z-index:8;display:none;align-items:center;justify-content:center;background:rgba(255,253,248,.82);backdrop-filter:blur(2px)}
   .chart-loading.visible{display:flex}
   .chart-loading-card{display:flex;align-items:center;gap:13px;padding:14px 18px;border:1px solid rgba(16,35,29,.12);border-radius:14px;background:#fffdf8;box-shadow:0 12px 35px rgba(37,48,42,.13);color:#345c43;font-weight:700}
   .chart-loading-card small{display:block;margin-top:2px;color:#7c8984;font-weight:500}
   .chart-spinner{width:24px;height:24px;border:3px solid #d8e5dc;border-top-color:#0c6b4f;border-radius:50%;animation:dashboard-spin .75s linear infinite;flex:none}
+  .dashboard-startup-loading{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:rgba(244,240,231,.92);backdrop-filter:blur(5px);transition:opacity .2s ease,visibility .2s ease}
+  .dashboard-startup-loading.done{opacity:0;visibility:hidden;pointer-events:none}
+  .dashboard-startup-card{min-width:min(420px,calc(100vw - 36px));padding:28px 30px;border:1px solid rgba(16,35,29,.12);border-radius:22px;background:#fffdf8;box-shadow:0 22px 65px rgba(37,48,42,.16);text-align:center;color:#345c43}
+  .dashboard-startup-card .chart-spinner{width:34px;height:34px;margin:0 auto 16px;border-width:4px}
+  .dashboard-startup-card strong{display:block;font-size:17px;color:#10231d}
+  .dashboard-startup-card span{display:block;margin-top:6px;color:#6e7d77;font-size:12px}
+  .dashboard-startup-card.error .chart-spinner{display:none}
+  .dashboard-startup-card.error strong{color:#a44432}
   @keyframes dashboard-spin{to{transform:rotate(360deg)}}
 </style>
 <script>
@@ -12,6 +20,61 @@
   const refreshButton=document.querySelector('#refresh');
   const chartWrap=document.querySelector('.chart-wrap');
   if(!refreshButton||!chartWrap)return;
+
+  const startup=document.createElement('div');
+  startup.className='dashboard-startup-loading';
+  startup.setAttribute('role','status');
+  startup.setAttribute('aria-live','polite');
+  startup.innerHTML='<div class="dashboard-startup-card"><i class="chart-spinner" aria-hidden="true"></i><strong>초기 데이터를 불러오는 중입니다</strong><span>품목·가격·시장 데이터와 분석 결과를 준비하고 있습니다.</span></div>';
+  document.body.appendChild(startup);
+
+  const startupControls=[...document.querySelectorAll('#dashboard .control')];
+  startupControls.forEach(control=>control.disabled=true);
+
+  function finishStartup(success=true){
+    if(startup.classList.contains('done'))return;
+    if(!success){
+      const card=startup.querySelector('.dashboard-startup-card');
+      card.classList.add('error');
+      card.querySelector('strong').textContent='초기 데이터를 불러오지 못했습니다';
+      card.querySelector('span').textContent='서버 상태를 확인한 뒤 페이지를 새로고침해 주세요.';
+      startupControls.forEach(control=>control.disabled=false);
+      return;
+    }
+    startupControls.forEach(control=>control.disabled=false);
+    startup.classList.add('done');
+    setTimeout(()=>startup.remove(),250);
+  }
+
+  function initialViewReady(){
+    const systemStatus=document.querySelector('#systemStatus')?.textContent?.trim();
+    const catalogCount=document.querySelector('#catalogCount')?.textContent?.trim();
+    const itemOptions=document.querySelector('#itemSelect')?.options?.length||0;
+    const correlations=document.querySelector('#correlations')?.textContent?.trim()||'';
+    const chartReady=Boolean(chartData&&Array.isArray(chartData.dates)&&chartData.series);
+    const baseReady=systemStatus&&systemStatus!=='시스템 확인 중'&&catalogCount&&catalogCount!=='—'&&itemOptions>1&&chartReady;
+    const correlationReady=!correlations.includes('품목을 선택하면 분석 결과가 표시됩니다.');
+    return Boolean(baseReady&&correlationReady);
+  }
+
+  const startupStartedAt=Date.now();
+  const startupWatcher=setInterval(()=>{
+    const systemStatus=document.querySelector('#systemStatus')?.textContent?.trim();
+    if(systemStatus==='데이터 연결 오류'){
+      clearInterval(startupWatcher);
+      finishStartup(false);
+      return;
+    }
+    if(initialViewReady()){
+      clearInterval(startupWatcher);
+      requestAnimationFrame(()=>requestAnimationFrame(()=>finishStartup(true)));
+      return;
+    }
+    if(Date.now()-startupStartedAt>30000){
+      clearInterval(startupWatcher);
+      finishStartup(false);
+    }
+  },100);
 
   const loading=document.createElement('div');
   loading.className='chart-loading';
