@@ -1,0 +1,75 @@
+<style>
+  button.control:disabled{cursor:wait;opacity:.72;filter:none}
+  .chart-loading{position:absolute;inset:0;z-index:8;display:none;align-items:center;justify-content:center;background:rgba(255,253,248,.82);backdrop-filter:blur(2px)}
+  .chart-loading.visible{display:flex}
+  .chart-loading-card{display:flex;align-items:center;gap:13px;padding:14px 18px;border:1px solid rgba(16,35,29,.12);border-radius:14px;background:#fffdf8;box-shadow:0 12px 35px rgba(37,48,42,.13);color:#345c43;font-weight:700}
+  .chart-loading-card small{display:block;margin-top:2px;color:#7c8984;font-weight:500}
+  .chart-spinner{width:24px;height:24px;border:3px solid #d8e5dc;border-top-color:#0c6b4f;border-radius:50%;animation:dashboard-spin .75s linear infinite;flex:none}
+  @keyframes dashboard-spin{to{transform:rotate(360deg)}}
+</style>
+<script>
+(() => {
+  const refreshButton=document.querySelector('#refresh');
+  const chartWrap=document.querySelector('.chart-wrap');
+  if(!refreshButton||!chartWrap)return;
+
+  const loading=document.createElement('div');
+  loading.className='chart-loading';
+  loading.setAttribute('role','status');
+  loading.setAttribute('aria-live','polite');
+  loading.innerHTML='<div class="chart-loading-card"><i class="chart-spinner" aria-hidden="true"></i><div>데이터를 불러오는 중입니다<small>선택한 기간의 가격·시장 데이터를 적용하고 있습니다.</small></div></div>';
+  chartWrap.appendChild(loading);
+
+  function setLoading(active){
+    loading.classList.toggle('visible',active);
+    refreshButton.disabled=active;
+    refreshButton.textContent=active?'조회 중...':'조회';
+    refreshButton.setAttribute('aria-busy',active?'true':'false');
+  }
+
+  const onlineSeries=new Set(['online_naver','online_coupang','online_combined']);
+  function carryWeekendValues(source){
+    if(!source||!chartData?.dates)return;
+    Object.entries(source).forEach(([key,values])=>{
+      if(onlineSeries.has(key)||!Array.isArray(values))return;
+      for(let i=1;i<values.length;i++){
+        if(values[i]!=null)continue;
+        const observed=new Date(`${chartData.dates[i]}T00:00:00`);
+        const day=observed.getDay();
+        if((day===0||day===6)&&values[i-1]!=null)values[i]=values[i-1];
+      }
+    });
+  }
+
+  function applyNormalClosureContinuity(){
+    if(!chartData)return;
+    carryWeekendValues(chartData.series);
+    carryWeekendValues(chartData.raw_series);
+  }
+
+  if(typeof draw==='function'){
+    const originalDraw=draw;
+    draw=function(){
+      applyNormalClosureContinuity();
+      return originalDraw();
+    };
+  }
+
+  if(typeof loadChart==='function'){
+    const originalLoadChart=loadChart;
+    loadChart=async function(){
+      setLoading(true);
+      try{
+        await originalLoadChart();
+        applyNormalClosureContinuity();
+        if(typeof renderLegend==='function')renderLegend();
+        if(typeof draw==='function')draw();
+        await new Promise(resolve=>requestAnimationFrame(()=>resolve()));
+      }finally{
+        setLoading(false);
+      }
+    };
+    refreshButton.onclick=loadChart;
+  }
+})();
+</script>
