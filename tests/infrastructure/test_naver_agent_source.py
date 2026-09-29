@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
@@ -74,26 +75,22 @@ class Parser:
         )
 
 
-class Fallback:
-    platform = "naver"
-
-    def search(self, entry: ProductCatalogEntry, observed_date: date):
-        raise AssertionError("fallback should not run")
+def build_source(tmp_path: Path, runner=None) -> NaverAgentSource:
+    return NaverAgentSource(
+        tmp_path,
+        tmp_path / "runs",
+        runner or Runner(),  # type: ignore[arg-type]
+        Parser(),  # type: ignore[arg-type]
+        app_logger,
+        timeout_seconds=30,
+    )
 
 
 def test_naver_agent_source_invokes_naver_skill_once_and_caches_rows(
     tmp_path: Path,
 ) -> None:
     runner = Runner()
-    source = NaverAgentSource(
-        tmp_path,
-        tmp_path / "runs",
-        runner,  # type: ignore[arg-type]
-        Parser(),  # type: ignore[arg-type]
-        Fallback(),  # type: ignore[arg-type]
-        app_logger,
-        timeout_seconds=30,
-    )
+    source = build_source(tmp_path, runner)
 
     source.prepare([ENTRY], TODAY, "run-1")
 
@@ -102,17 +99,9 @@ def test_naver_agent_source_invokes_naver_skill_once_and_caches_rows(
     assert source.search(ENTRY, TODAY)[0].platform == "naver"
 
 
-def test_naver_agent_failure_does_not_run_playwright(tmp_path: Path) -> None:
+def test_naver_agent_failure_has_no_fallback(tmp_path: Path) -> None:
     runner = SimpleNamespace(run=lambda *args: SimpleNamespace(exit_code=1))
-    source = NaverAgentSource(
-        tmp_path,
-        tmp_path / "runs",
-        runner,  # type: ignore[arg-type]
-        Parser(),  # type: ignore[arg-type]
-        Fallback(),  # type: ignore[arg-type]
-        app_logger,
-        timeout_seconds=30,
-    )
+    source = build_source(tmp_path, runner)
 
     source.prepare([ENTRY], TODAY, "failed-run")
 
@@ -121,10 +110,23 @@ def test_naver_agent_failure_does_not_run_playwright(tmp_path: Path) -> None:
 
 
 def test_naver_query_uses_food_name_and_comparison_unit(tmp_path: Path):
-    from dataclasses import replace
     import json
 
-    source = NaverAgentSource(tmp_path, tmp_path / "runs", Runner(), Parser(), Fallback(), app_logger, timeout_seconds=30)
-    source.prepare([replace(ENTRY, item_name="배추", variety="가을", retail_unit="포기", retail_unit_size="1")], TODAY, "query-run")
-    manifest = json.loads((tmp_path / "runs/query-run/manifest.json").read_text(encoding="utf-8"))
+    source = build_source(tmp_path)
+    source.prepare(
+        [
+            replace(
+                ENTRY,
+                item_name="배추",
+                variety="가을",
+                retail_unit="포기",
+                retail_unit_size="1",
+            )
+        ],
+        TODAY,
+        "query-run",
+    )
+    manifest = json.loads(
+        (tmp_path / "runs/query-run/manifest.json").read_text(encoding="utf-8")
+    )
     assert manifest["targets"][0]["query"] == "배추 1포기"
