@@ -1,0 +1,58 @@
+{
+  "run_id": "b1189d36e84d4906bb50a11b913e97cf",
+  "observed_date": "2026-09-27",
+  "run_dir": "D:\\Python\\KAMIS\\data\\runs\\coupang-agent\\b1189d36e84d4906bb50a11b913e97cf",
+  "output_csv": "D:\\Python\\KAMIS\\data\\runs\\coupang-agent\\b1189d36e84d4906bb50a11b913e97cf\\offers.csv",
+  "minimum_delay_ms": 5000,
+  "max_offers_per_target": 8,
+  "targets": [
+    {
+      "item_code": "111",
+      "kind_code": "10",
+      "item_name": "쌀",
+      "variety": "10kg",
+      "comparison_unit": "10kg",
+      "query": "쌀 10kg"
+    },
+    {
+      "item_code": "152",
+      "kind_code": "00",
+      "item_name": "감자",
+      "variety": "감자",
+      "comparison_unit": "1kg",
+      "query": "감자 1kg"
+    },
+    {
+      "item_code": "225",
+      "kind_code": "00",
+      "item_name": "토마토",
+      "variety": "토마토",
+      "comparison_unit": "1kg",
+      "query": "토마토 1kg"
+    },
+    {
+      "item_code": "231",
+      "kind_code": "03",
+      "item_name": "무",
+      "variety": "가을",
+      "comparison_unit": "1개",
+      "query": "무 1개"
+    },
+    {
+      "item_code": "245",
+      "kind_code": "00",
+      "item_name": "양파",
+      "variety": "양파",
+      "comparison_unit": "1kg",
+      "query": "양파 1kg"
+    },
+    {
+      "item_code": "412",
+      "kind_code": "01",
+      "item_name": "배",
+      "variety": "신고",
+      "comparison_unit": "10개",
+      "query": "배 신고 10개"
+    }
+  ]
+}

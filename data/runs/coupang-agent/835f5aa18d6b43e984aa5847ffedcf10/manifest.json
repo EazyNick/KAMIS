@@ -1,0 +1,50 @@
+{
+  "run_id": "835f5aa18d6b43e984aa5847ffedcf10",
+  "observed_date": "2026-09-28",
+  "run_dir": "D:\\Python\\KAMIS\\data\\runs\\coupang-agent\\835f5aa18d6b43e984aa5847ffedcf10",
+  "output_csv": "D:\\Python\\KAMIS\\data\\runs\\coupang-agent\\835f5aa18d6b43e984aa5847ffedcf10\\offers.csv",
+  "minimum_delay_ms": 5000,
+  "max_offers_per_target": 8,
+  "targets": [
+    {
+      "item_code": "245",
+      "kind_code": "00",
+      "item_name": "양파",
+      "variety": "양파",
+      "comparison_unit": "1kg",
+      "query": "양파 1kg"
+    },
+    {
+      "item_code": "258",
+      "kind_code": "01",
+      "item_name": "깐마늘(국산)",
+      "variety": "깐마늘(국산)",
+      "comparison_unit": "1kg",
+      "query": "깐마늘 국산 1kg"
+    },
+    {
+      "item_code": "411",
+      "kind_code": "05",
+      "item_name": "사과",
+      "variety": "후지",
+      "comparison_unit": "10개",
+      "query": "사과 후지 10개"
+    },
+    {
+      "item_code": "412",
+      "kind_code": "01",
+      "item_name": "배",
+      "variety": "신고",
+      "comparison_unit": "10개",
+      "query": "배 신고 10개"
+    },
+    {
+      "item_code": "611",
+      "kind_code": "05",
+      "item_name": "고등어",
+      "variety": "국산(신선 냉장)",
+      "comparison_unit": "1마리",
+      "query": "고등어 국산 신선 냉장 1마리"
+    }
+  ]
+}

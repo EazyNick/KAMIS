@@ -12,13 +12,16 @@ __pycache__/
 log/logs/
 debug.log
 
-# Runtime data (CSV is the local source of truth, not repository content)
-data/raw/
-data/normalized/
-data/runs/
-data/analytics/
+# Preserve CSV/JSON datasets and provenance; exclude browser state and temporary files.
+data/**/*
+!data/**/
+!data/**/*.csv
+!data/**/*.json
 data/browser-profile/
+data/**/result-schema.json
+data/**/*.tmp
 !data/.gitkeep
+tmp/
 
 # Isolated implementation worktrees
 .worktrees/

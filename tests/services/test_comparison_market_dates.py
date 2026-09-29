@@ -4,6 +4,32 @@ from app.services.analytics import AnalyticsService
 from app.services.comparison import ComparisonService
 
 
+def test_kamis_holidays_continue_prices_but_open_day_gaps_remain():
+    import pandas as pd
+
+    from app.services.comparison import fill_exchange_holidays
+
+    dates = pd.to_datetime([
+        "2026-07-16", "2026-07-17", "2026-07-20",
+        "2026-08-14", "2026-08-17", "2026-08-18",
+        "2026-09-23", "2026-09-24", "2026-09-25",
+        "2026-09-26", "2026-09-27", "2026-09-28",
+    ])
+    frame = pd.DataFrame({
+        "kamis_retail": [100, None, None, 110, None, 120, 130, None, None, None, None, 140],
+        "kamis_wholesale": [90, 91, None, 100, None, 110, 120, None, None, None, None, 130],
+        "online_naver": [None] * 12,
+    }, index=dates)
+    result = fill_exchange_holidays(frame)
+    assert result.loc["2026-07-17", "kamis_retail"] == 100
+    assert result.loc["2026-07-17", "kamis_wholesale"] == 91
+    assert pd.isna(result.loc["2026-07-20", "kamis_retail"])
+    assert result.loc["2026-08-17", "kamis_retail"] == 110
+    assert result.loc["2026-09-24":"2026-09-27", "kamis_retail"].tolist() == [130] * 4
+    assert result["online_naver"].isna().all()
+    assert pd.isna(frame.loc["2026-07-17", "kamis_retail"])
+
+
 class OneDayPriceRepo:
     def search(self, filters):
         return [

@@ -1,0 +1,18 @@
+{
+  "run_id": "0690c9da505c485dbae9a91b2f9ae1dd",
+  "observed_date": "2026-09-27",
+  "run_dir": "D:\\Python\\KAMIS\\data\\runs\\coupang-agent\\0690c9da505c485dbae9a91b2f9ae1dd",
+  "output_csv": "D:\\Python\\KAMIS\\data\\runs\\coupang-agent\\0690c9da505c485dbae9a91b2f9ae1dd\\offers.csv",
+  "minimum_delay_ms": 5000,
+  "max_offers_per_target": 8,
+  "targets": [
+    {
+      "item_code": "111",
+      "kind_code": "10",
+      "item_name": "쌀",
+      "variety": "10kg",
+      "comparison_unit": "10kg",
+      "query": "쌀 10kg"
+    }
+  ]
+}

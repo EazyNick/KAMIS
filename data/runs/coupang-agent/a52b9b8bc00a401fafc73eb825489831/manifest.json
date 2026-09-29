@@ -1,0 +1,18 @@
+{
+  "run_id": "a52b9b8bc00a401fafc73eb825489831",
+  "observed_date": "2026-09-27",
+  "run_dir": "D:\\Python\\KAMIS\\data\\runs\\coupang-agent\\a52b9b8bc00a401fafc73eb825489831",
+  "output_csv": "D:\\Python\\KAMIS\\data\\runs\\coupang-agent\\a52b9b8bc00a401fafc73eb825489831\\offers.csv",
+  "minimum_delay_ms": 5000,
+  "max_offers_per_target": 8,
+  "targets": [
+    {
+      "item_code": "412",
+      "kind_code": "01",
+      "item_name": "배",
+      "variety": "신고",
+      "comparison_unit": "10개",
+      "query": "배 신고 10개"
+    }
+  ]
+}

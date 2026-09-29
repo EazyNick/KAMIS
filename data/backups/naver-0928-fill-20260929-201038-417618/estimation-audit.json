@@ -1,0 +1,452 @@
+[
+  {
+    "before": {
+      "platform": "naver",
+      "item_code": "111",
+      "kind_code": "10",
+      "average_unit_price": "",
+      "sample_count": "0",
+      "candidate_count": "0",
+      "collection_status": "collection_failed",
+      "observed_date": "2026-09-28"
+    },
+    "sources": [
+      {
+        "platform": "naver",
+        "item_code": "111",
+        "kind_code": "10",
+        "average_unit_price": "42420",
+        "sample_count": "5",
+        "candidate_count": "8",
+        "collection_status": "available",
+        "observed_date": "2026-09-27"
+      },
+      {
+        "platform": "naver",
+        "item_code": "111",
+        "kind_code": "10",
+        "average_unit_price": "41320",
+        "sample_count": "5",
+        "candidate_count": "8",
+        "collection_status": "available",
+        "observed_date": "2026-09-29"
+      }
+    ],
+    "method": "adjacent_naver_mean"
+  },
+  {
+    "before": {
+      "platform": "naver",
+      "item_code": "152",
+      "kind_code": "00",
+      "average_unit_price": "",
+      "sample_count": "0",
+      "candidate_count": "0",
+      "collection_status": "collection_failed",
+      "observed_date": "2026-09-28"
+    },
+    "sources": [
+      {
+        "platform": "naver",
+        "item_code": "152",
+        "kind_code": "00",
+        "average_unit_price": "8000",
+        "sample_count": "1",
+        "candidate_count": "8",
+        "collection_status": "available",
+        "observed_date": "2026-09-27"
+      },
+      {
+        "platform": "naver",
+        "item_code": "152",
+        "kind_code": "00",
+        "average_unit_price": "6900",
+        "sample_count": "3",
+        "candidate_count": "8",
+        "collection_status": "available",
+        "observed_date": "2026-09-29"
+      }
+    ],
+    "method": "adjacent_naver_mean"
+  },
+  {
+    "before": {
+      "platform": "naver",
+      "item_code": "211",
+      "kind_code": "03",
+      "average_unit_price": "",
+      "sample_count": "0",
+      "candidate_count": "0",
+      "collection_status": "collection_failed",
+      "observed_date": "2026-09-28"
+    },
+    "sources": [
+      {
+        "platform": "naver",
+        "item_code": "211",
+        "kind_code": "03",
+        "average_unit_price": "9200.00000000000000000000000",
+        "sample_count": "5",
+        "candidate_count": "8",
+        "collection_status": "available",
+        "observed_date": "2026-09-27"
+      },
+      {
+        "platform": "naver",
+        "item_code": "211",
+        "kind_code": "03",
+        "average_unit_price": "14900",
+        "sample_count": "1",
+        "candidate_count": "8",
+        "collection_status": "available",
+        "observed_date": "2026-09-29"
+      }
+    ],
+    "method": "adjacent_naver_mean"
+  },
+  {
+    "before": {
+      "platform": "naver",
+      "item_code": "225",
+      "kind_code": "00",
+      "average_unit_price": "",
+      "sample_count": "0",
+      "candidate_count": "0",
+      "collection_status": "collection_failed",
+      "observed_date": "2026-09-28"
+    },
+    "sources": [
+      {
+        "platform": "naver",
+        "item_code": "225",
+        "kind_code": "00",
+        "average_unit_price": "10200",
+        "sample_count": "2",
+        "candidate_count": "7",
+        "collection_status": "available",
+        "observed_date": "2026-09-27"
+      },
+      {
+        "platform": "naver",
+        "item_code": "225",
+        "kind_code": "00",
+        "average_unit_price": "31900",
+        "sample_count": "1",
+        "candidate_count": "7",
+        "collection_status": "available",
+        "observed_date": "2026-09-29"
+      }
+    ],
+    "method": "adjacent_naver_mean"
+  },
+  {
+    "before": {
+      "platform": "naver",
+      "item_code": "231",
+      "kind_code": "03",
+      "average_unit_price": "",
+      "sample_count": "0",
+      "candidate_count": "0",
+      "collection_status": "collection_failed",
+      "observed_date": "2026-09-28"
+    },
+    "sources": [
+      {
+        "platform": "naver",
+        "item_code": "231",
+        "kind_code": "03",
+        "average_unit_price": "5600",
+        "sample_count": "1",
+        "candidate_count": "1",
+        "collection_status": "available",
+        "observed_date": "2026-09-27"
+      },
+      {
+        "platform": "naver",
+        "item_code": "231",
+        "kind_code": "03",
+        "average_unit_price": "5600",
+        "sample_count": "1",
+        "candidate_count": "1",
+        "collection_status": "available",
+        "observed_date": "2026-09-29"
+      }
+    ],
+    "method": "adjacent_naver_mean"
+  },
+  {
+    "before": {
+      "platform": "naver",
+      "item_code": "245",
+      "kind_code": "00",
+      "average_unit_price": "",
+      "sample_count": "0",
+      "candidate_count": "0",
+      "collection_status": "collection_failed",
+      "observed_date": "2026-09-28"
+    },
+    "sources": [
+      {
+        "platform": "naver",
+        "item_code": "245",
+        "kind_code": "00",
+        "average_unit_price": "67000",
+        "sample_count": "1",
+        "candidate_count": "8",
+        "collection_status": "available",
+        "observed_date": "2026-09-27"
+      },
+      {
+        "platform": "naver",
+        "item_code": "245",
+        "kind_code": "00",
+        "average_unit_price": "11000",
+        "sample_count": "1",
+        "candidate_count": "7",
+        "collection_status": "available",
+        "observed_date": "2026-09-29"
+      }
+    ],
+    "method": "adjacent_naver_mean"
+  },
+  {
+    "before": {
+      "platform": "naver",
+      "item_code": "258",
+      "kind_code": "01",
+      "average_unit_price": "",
+      "sample_count": "0",
+      "candidate_count": "0",
+      "collection_status": "collection_failed",
+      "observed_date": "2026-09-28"
+    },
+    "sources": [
+      {
+        "platform": "naver",
+        "item_code": "258",
+        "kind_code": "01",
+        "average_unit_price": "18000",
+        "sample_count": "1",
+        "candidate_count": "8",
+        "collection_status": "available",
+        "observed_date": "2026-09-27"
+      },
+      {
+        "platform": "naver",
+        "item_code": "258",
+        "kind_code": "01",
+        "average_unit_price": "21000",
+        "sample_count": "1",
+        "candidate_count": "8",
+        "collection_status": "available",
+        "observed_date": "2026-09-29"
+      }
+    ],
+    "method": "adjacent_naver_mean"
+  },
+  {
+    "before": {
+      "platform": "naver",
+      "item_code": "411",
+      "kind_code": "05",
+      "average_unit_price": "",
+      "sample_count": "0",
+      "candidate_count": "0",
+      "collection_status": "collection_failed",
+      "observed_date": "2026-09-28"
+    },
+    "sources": [
+      {
+        "platform": "coupang",
+        "item_code": "411",
+        "kind_code": "05",
+        "average_unit_price": "28600",
+        "sample_count": "1",
+        "candidate_count": "2",
+        "collection_status": "available",
+        "observed_date": "2026-09-28"
+      }
+    ],
+    "method": "nearest_coupang_price"
+  },
+  {
+    "before": {
+      "platform": "naver",
+      "item_code": "412",
+      "kind_code": "01",
+      "average_unit_price": "",
+      "sample_count": "0",
+      "candidate_count": "0",
+      "collection_status": "collection_failed",
+      "observed_date": "2026-09-28"
+    },
+    "sources": [
+      {
+        "platform": "coupang",
+        "item_code": "412",
+        "kind_code": "01",
+        "average_unit_price": "86900",
+        "sample_count": "1",
+        "candidate_count": "1",
+        "collection_status": "available",
+        "observed_date": "2026-09-28"
+      }
+    ],
+    "method": "nearest_coupang_price"
+  },
+  {
+    "before": {
+      "platform": "naver",
+      "item_code": "611",
+      "kind_code": "05",
+      "average_unit_price": "",
+      "sample_count": "0",
+      "candidate_count": "0",
+      "collection_status": "collection_failed",
+      "observed_date": "2026-09-28"
+    },
+    "sources": [
+      {
+        "platform": "coupang",
+        "item_code": "611",
+        "kind_code": "05",
+        "average_unit_price": "1791",
+        "sample_count": "1",
+        "candidate_count": "6",
+        "collection_status": "available",
+        "observed_date": "2026-09-27"
+      }
+    ],
+    "method": "nearest_coupang_price"
+  },
+  {
+    "before": {
+      "platform": "combined",
+      "item_code": "111",
+      "kind_code": "10",
+      "average_unit_price": "61700",
+      "sample_count": "1",
+      "candidate_count": "8",
+      "collection_status": "available",
+      "observed_date": "2026-09-28"
+    },
+    "method": "mean_of_available_platform_prices_including_estimates"
+  },
+  {
+    "before": {
+      "platform": "combined",
+      "item_code": "152",
+      "kind_code": "00",
+      "average_unit_price": "5783.333333333333333333333335",
+      "sample_count": "2",
+      "candidate_count": "8",
+      "collection_status": "available",
+      "observed_date": "2026-09-28"
+    },
+    "method": "mean_of_available_platform_prices_including_estimates"
+  },
+  {
+    "before": {
+      "platform": "combined",
+      "item_code": "211",
+      "kind_code": "03",
+      "average_unit_price": "18250",
+      "sample_count": "2",
+      "candidate_count": "8",
+      "collection_status": "available",
+      "observed_date": "2026-09-28"
+    },
+    "method": "mean_of_available_platform_prices_including_estimates"
+  },
+  {
+    "before": {
+      "platform": "combined",
+      "item_code": "225",
+      "kind_code": "00",
+      "average_unit_price": "13995",
+      "sample_count": "2",
+      "candidate_count": "8",
+      "collection_status": "available",
+      "observed_date": "2026-09-28"
+    },
+    "method": "mean_of_available_platform_prices_including_estimates"
+  },
+  {
+    "before": {
+      "platform": "combined",
+      "item_code": "231",
+      "kind_code": "03",
+      "average_unit_price": "14395",
+      "sample_count": "1",
+      "candidate_count": "4",
+      "collection_status": "available",
+      "observed_date": "2026-09-28"
+    },
+    "method": "mean_of_available_platform_prices_including_estimates"
+  },
+  {
+    "before": {
+      "platform": "combined",
+      "item_code": "245",
+      "kind_code": "00",
+      "average_unit_price": "6700",
+      "sample_count": "2",
+      "candidate_count": "8",
+      "collection_status": "available",
+      "observed_date": "2026-09-28"
+    },
+    "method": "mean_of_available_platform_prices_including_estimates"
+  },
+  {
+    "before": {
+      "platform": "combined",
+      "item_code": "258",
+      "kind_code": "01",
+      "average_unit_price": "14600",
+      "sample_count": "2",
+      "candidate_count": "8",
+      "collection_status": "available",
+      "observed_date": "2026-09-28"
+    },
+    "method": "mean_of_available_platform_prices_including_estimates"
+  },
+  {
+    "before": {
+      "platform": "combined",
+      "item_code": "411",
+      "kind_code": "05",
+      "average_unit_price": "28600",
+      "sample_count": "1",
+      "candidate_count": "2",
+      "collection_status": "available",
+      "observed_date": "2026-09-28"
+    },
+    "method": "mean_of_available_platform_prices_including_estimates"
+  },
+  {
+    "before": {
+      "platform": "combined",
+      "item_code": "412",
+      "kind_code": "01",
+      "average_unit_price": "86900",
+      "sample_count": "1",
+      "candidate_count": "1",
+      "collection_status": "available",
+      "observed_date": "2026-09-28"
+    },
+    "method": "mean_of_available_platform_prices_including_estimates"
+  },
+  {
+    "before": {
+      "platform": "combined",
+      "item_code": "611",
+      "kind_code": "05",
+      "average_unit_price": "",
+      "sample_count": "0",
+      "candidate_count": "0",
+      "collection_status": "collection_failed",
+      "observed_date": "2026-09-28"
+    },
+    "method": "mean_of_available_platform_prices_including_estimates"
+  }
+]

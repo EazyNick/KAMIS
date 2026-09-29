@@ -1,0 +1,42 @@
+{
+  "run_id": "55caead58b6346d7bb2b680880192d43",
+  "observed_date": "2026-09-27",
+  "run_dir": "D:\\Python\\KAMIS\\data\\runs\\coupang-agent\\55caead58b6346d7bb2b680880192d43",
+  "output_csv": "D:\\Python\\KAMIS\\data\\runs\\coupang-agent\\55caead58b6346d7bb2b680880192d43\\offers.csv",
+  "minimum_delay_ms": 5000,
+  "max_offers_per_target": 8,
+  "targets": [
+    {
+      "item_code": "211",
+      "kind_code": "03",
+      "item_name": "배추",
+      "variety": "가을",
+      "comparison_unit": "1포기",
+      "query": "배추 1포기"
+    },
+    {
+      "item_code": "258",
+      "kind_code": "01",
+      "item_name": "깐마늘(국산)",
+      "variety": "깐마늘(국산)",
+      "comparison_unit": "1kg",
+      "query": "깐마늘 국산 1kg"
+    },
+    {
+      "item_code": "411",
+      "kind_code": "05",
+      "item_name": "사과",
+      "variety": "후지",
+      "comparison_unit": "10개",
+      "query": "사과 후지 10개"
+    },
+    {
+      "item_code": "611",
+      "kind_code": "05",
+      "item_name": "고등어",
+      "variety": "국산(신선 냉장)",
+      "comparison_unit": "1마리",
+      "query": "고등어 국산 신선 냉장 1마리"
+    }
+  ]
+}

@@ -237,7 +237,7 @@ def test_online_weekend_prices_remain_visible_and_respect_date_filter():
     assert result["series"]["online_naver"][-1] == 42420
     assert result["series"]["online_coupang"][-1] == 35930
     assert result["series"]["online_combined"][-1] == 39175
-    assert result["series"]["kamis_retail"][-1] is None
+    assert result["series"]["kamis_retail"][-1] == 1100
     earlier = service.chart("111", None, date(2026, 9, 24), "raw")
     assert "2026-09-27" not in earlier["dates"]
 

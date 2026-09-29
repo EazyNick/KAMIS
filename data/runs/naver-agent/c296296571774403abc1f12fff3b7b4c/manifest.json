@@ -1,0 +1,18 @@
+{
+  "run_id": "c296296571774403abc1f12fff3b7b4c",
+  "observed_date": "2026-09-27",
+  "run_dir": "D:\\Python\\KAMIS\\data\\runs\\naver-agent\\c296296571774403abc1f12fff3b7b4c",
+  "output_csv": "D:\\Python\\KAMIS\\data\\runs\\naver-agent\\c296296571774403abc1f12fff3b7b4c\\offers.csv",
+  "minimum_delay_ms": 5000,
+  "max_offers_per_target": 8,
+  "targets": [
+    {
+      "item_code": "111",
+      "kind_code": "10",
+      "item_name": "쌀",
+      "variety": "10kg",
+      "comparison_unit": "10kg",
+      "query": "쌀 10kg"
+    }
+  ]
+}

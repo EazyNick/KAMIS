@@ -1,0 +1,90 @@
+{
+  "run_id": "7f4e4ed4f789482fbf4539f854a9bb06",
+  "observed_date": "2026-09-28",
+  "run_dir": "D:\\Python\\KAMIS\\data\\runs\\naver-agent\\7f4e4ed4f789482fbf4539f854a9bb06",
+  "output_csv": "D:\\Python\\KAMIS\\data\\runs\\naver-agent\\7f4e4ed4f789482fbf4539f854a9bb06\\offers.csv",
+  "minimum_delay_ms": 5000,
+  "max_offers_per_target": 8,
+  "targets": [
+    {
+      "item_code": "111",
+      "kind_code": "10",
+      "item_name": "쌀",
+      "variety": "10kg",
+      "comparison_unit": "10kg",
+      "query": "쌀 10kg"
+    },
+    {
+      "item_code": "152",
+      "kind_code": "00",
+      "item_name": "감자",
+      "variety": "감자",
+      "comparison_unit": "1kg",
+      "query": "감자 1kg"
+    },
+    {
+      "item_code": "211",
+      "kind_code": "03",
+      "item_name": "배추",
+      "variety": "가을",
+      "comparison_unit": "1포기",
+      "query": "배추 1포기"
+    },
+    {
+      "item_code": "225",
+      "kind_code": "00",
+      "item_name": "토마토",
+      "variety": "토마토",
+      "comparison_unit": "1kg",
+      "query": "토마토 1kg"
+    },
+    {
+      "item_code": "231",
+      "kind_code": "03",
+      "item_name": "무",
+      "variety": "가을",
+      "comparison_unit": "1개",
+      "query": "무 1개"
+    },
+    {
+      "item_code": "245",
+      "kind_code": "00",
+      "item_name": "양파",
+      "variety": "양파",
+      "comparison_unit": "1kg",
+      "query": "양파 1kg"
+    },
+    {
+      "item_code": "258",
+      "kind_code": "01",
+      "item_name": "깐마늘(국산)",
+      "variety": "깐마늘(국산)",
+      "comparison_unit": "1kg",
+      "query": "깐마늘 국산 1kg"
+    },
+    {
+      "item_code": "411",
+      "kind_code": "05",
+      "item_name": "사과",
+      "variety": "후지",
+      "comparison_unit": "10개",
+      "query": "사과 후지 10개"
+    },
+    {
+      "item_code": "412",
+      "kind_code": "01",
+      "item_name": "배",
+      "variety": "신고",
+      "comparison_unit": "10개",
+      "query": "배 신고 10개"
+    },
+    {
+      "item_code": "611",
+      "kind_code": "05",
+      "item_name": "고등어",
+      "variety": "국산(신선 냉장)",
+      "comparison_unit": "1마리",
+      "query": "고등어 국산 신선 냉장 1마리"
+    }
+  ]
+}

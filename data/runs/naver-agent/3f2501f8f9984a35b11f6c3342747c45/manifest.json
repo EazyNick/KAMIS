@@ -1,0 +1,58 @@
+{
+  "run_id": "3f2501f8f9984a35b11f6c3342747c45",
+  "observed_date": "2026-09-27",
+  "run_dir": "D:\\Python\\KAMIS\\data\\runs\\naver-agent\\3f2501f8f9984a35b11f6c3342747c45",
+  "output_csv": "D:\\Python\\KAMIS\\data\\runs\\naver-agent\\3f2501f8f9984a35b11f6c3342747c45\\offers.csv",
+  "minimum_delay_ms": 5000,
+  "max_offers_per_target": 8,
+  "targets": [
+    {
+      "item_code": "152",
+      "kind_code": "00",
+      "item_name": "감자",
+      "variety": "감자",
+      "comparison_unit": "1kg",
+      "query": "감자 1kg"
+    },
+    {
+      "item_code": "211",
+      "kind_code": "03",
+      "item_name": "배추",
+      "variety": "가을",
+      "comparison_unit": "1포기",
+      "query": "배추 1포기"
+    },
+    {
+      "item_code": "231",
+      "kind_code": "03",
+      "item_name": "무",
+      "variety": "가을",
+      "comparison_unit": "1개",
+      "query": "무 1개"
+    },
+    {
+      "item_code": "411",
+      "kind_code": "05",
+      "item_name": "사과",
+      "variety": "후지",
+      "comparison_unit": "10개",
+      "query": "사과 후지 10개"
+    },
+    {
+      "item_code": "412",
+      "kind_code": "01",
+      "item_name": "배",
+      "variety": "신고",
+      "comparison_unit": "10개",
+      "query": "배 신고 10개"
+    },
+    {
+      "item_code": "611",
+      "kind_code": "05",
+      "item_name": "고등어",
+      "variety": "국산(신선 냉장)",
+      "comparison_unit": "1마리",
+      "query": "고등어 국산 신선 냉장 1마리"
+    }
+  ]
+}

@@ -5,7 +5,7 @@ from typing import Any, Protocol
 
 import numpy as np
 import pandas as pd
-from holidays import financial_holidays
+from holidays import country_holidays, financial_holidays
 
 from app.infrastructure.csv_repository import PriceFilters
 from app.services.analytics import AnalysisMode, AnalyticsService
@@ -45,8 +45,17 @@ MARKET_EXCHANGES = {
 
 
 def fill_exchange_holidays(frame: pd.DataFrame) -> pd.DataFrame:
-    """Forward-fill market values only on dates their exchange was closed."""
+    """Carry prices over normal closures without inventing open-day observations."""
     result = frame.copy()
+    calendar = country_holidays("KR")
+    closed = pd.Series(
+        [timestamp.weekday() >= 5 or timestamp.date() in calendar for timestamp in result.index],
+        index=result.index, dtype=bool,
+    )
+    for column in ("kamis_wholesale", "kamis_retail"):
+        if column in result:
+            fillable = result[column].isna() & closed
+            result.loc[fillable, column] = result[column].ffill().loc[fillable]
     for series_id, exchange in MARKET_EXCHANGES.items():
         if series_id not in result:
             continue
@@ -221,6 +230,9 @@ class ComparisonService:
         )
         result["comparison_kinds"] = self.comparison_kinds
         result["comparison_notes"] = raw_frame.attrs.get("comparison_notes", [])
+        if any(column.startswith("kamis_") for column in raw_frame):
+            result["comparison_notes"] = [*result["comparison_notes"],
+                "KAMIS 주말·공휴일은 직전 관측 가격을 이어 표시합니다. 해당 날짜의 실측 가격은 아닙니다."]
         return result
 
     def dashboard_defaults(self) -> dict[str, str | None]:
