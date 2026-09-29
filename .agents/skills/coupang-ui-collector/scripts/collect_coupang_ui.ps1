@@ -1,4 +1,4 @@
-﻿param(
+param(
     [Parameter(Mandatory = $true)]
     [string]$ManifestPath
 )
@@ -35,6 +35,20 @@ function Find-CoupangDocument {
         if ($document.Current.Name -match '\uCFE0\uD321|Coupang') { return $document }
     }
     return $null
+}
+
+function Close-CoupangCollectionTab {
+    try {
+        $document = Find-CoupangDocument
+        if ($null -eq $document) { return }
+        $document.SetFocus()
+        Start-Sleep -Milliseconds 150
+        [System.Windows.Forms.SendKeys]::SendWait('^w')
+        Start-Sleep -Milliseconds 150
+    }
+    catch {
+        Write-Warning "Coupang cleanup failed: $($_.Exception.Message)"
+    }
 }
 
 function Invoke-CoupangSearch {
@@ -105,7 +119,6 @@ function Wait-CoupangSearchBox {
     throw 'Coupang accessible search box was not found before timeout'
 }
 
-
 function Test-ShoppingProduct {
     param([string]$RawName, [string]$ItemName)
     if ($null -eq $script:ShoppingFilterRules) {
@@ -138,7 +151,7 @@ function Get-AccessibleProductRows {
         $name = $item.Current.Name
         if (-not [string]::IsNullOrWhiteSpace($name) -and $name -match '\d[\d,]*\s*\uC6D0') {
             if (-not (Test-ShoppingProduct -RawName $name -ItemName $ItemName)) { continue }
-        $result.Add($item)
+            $result.Add($item)
             if ($result.Count -ge $Maximum) { break }
         }
     }
@@ -183,11 +196,13 @@ $temporaryCsv = "$outputCsv.$([Guid]::NewGuid().ToString('N')).tmp"
 $allRows = [System.Collections.Generic.List[object]]::new()
 $failedKeys = [System.Collections.Generic.List[string]]::new()
 $completedCount = 0
+$openedChromeForRun = $false
 
 try {
     $searchBox = Find-CoupangSearchBox
     if ($null -eq $searchBox) {
         Start-Process 'chrome.exe' -ArgumentList 'https://www.coupang.com/' | Out-Null
+        $openedChromeForRun = $true
         $searchBox = Wait-CoupangSearchBox -TimeoutSeconds 30
     }
 
@@ -252,6 +267,7 @@ try {
 }
 finally {
     if (Test-Path -LiteralPath $temporaryCsv) { Remove-Item -LiteralPath $temporaryCsv -Force }
+    if ($openedChromeForRun) { Close-CoupangCollectionTab }
 }
 
 $status = if ($completedCount -eq $targets.Count) { 'success' } elseif ($completedCount -gt 0) { 'partial' } else { 'failed' }
