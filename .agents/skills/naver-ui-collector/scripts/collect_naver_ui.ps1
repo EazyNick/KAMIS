@@ -1,4 +1,4 @@
-﻿param(
+param(
     [Parameter(Mandatory = $true)]
     [string]$ManifestPath
 )
@@ -37,6 +37,20 @@ function Find-NaverDocument {
         if ($document.Current.Name -match '\uB124\uC774\uBC84|NAVER') { return $document }
     }
     return $null
+}
+
+function Close-NaverCollectionTab {
+    try {
+        $document = Find-NaverDocument
+        if ($null -eq $document) { return }
+        $document.SetFocus()
+        Start-Sleep -Milliseconds 150
+        [System.Windows.Forms.SendKeys]::SendWait('^w')
+        Start-Sleep -Milliseconds 150
+    }
+    catch {
+        Write-Warning "Naver cleanup failed: $($_.Exception.Message)"
+    }
 }
 
 function Find-NaverSearchBox {
@@ -102,7 +116,6 @@ function Get-NaverQuantity {
     }
     return [regex]::Match($prefix, '(?i)(\d+(?:\.\d+)?)\s*(kg|g|\uAC1C|\uBD09|\uD329|\uD3EC\uAE30|\uB9C8\uB9AC)')
 }
-
 
 function Test-ShoppingProduct {
     param([string]$RawName, [string]$ItemName)
@@ -190,11 +203,13 @@ $temporaryCsv = "$outputCsv.$([Guid]::NewGuid().ToString('N')).tmp"
 $allRows = [System.Collections.Generic.List[object]]::new()
 $failedKeys = [System.Collections.Generic.List[string]]::new()
 $completedCount = 0
+$openedChromeForRun = $false
 
 try {
     $searchBox = Find-NaverSearchBox
     if ($null -eq $searchBox) {
         Start-Process 'chrome.exe' -ArgumentList 'https://shopping.naver.com/' | Out-Null
+        $openedChromeForRun = $true
         $searchBox = Wait-NaverSearchBox -TimeoutSeconds 30
     }
     foreach ($target in $targets) {
@@ -265,6 +280,7 @@ try {
 }
 finally {
     if (Test-Path -LiteralPath $temporaryCsv) { Remove-Item -LiteralPath $temporaryCsv -Force }
+    if ($openedChromeForRun) { Close-NaverCollectionTab }
 }
 
 $status = if ($completedCount -eq $targets.Count) { 'success' } elseif ($completedCount -gt 0) { 'partial' } else { 'failed' }
