@@ -3,7 +3,6 @@ from pathlib import Path
 from app.infrastructure.codex_cli import CodexCliRunner
 from app.infrastructure.coupang_agent_csv import ShoppingAgentCsvParser
 from app.infrastructure.coupang_agent_source import ShoppingAgentSource
-from app.infrastructure.shopping_sources import HtmlShoppingSource
 from log.logger import StructuredLogger
 
 
@@ -16,7 +15,6 @@ class NaverAgentSource(ShoppingAgentSource):
         run_root: Path,
         runner: CodexCliRunner,
         parser: ShoppingAgentCsvParser,
-        fallback: HtmlShoppingSource,
         logger: StructuredLogger,
         *,
         timeout_seconds: float,
@@ -30,7 +28,6 @@ class NaverAgentSource(ShoppingAgentSource):
             run_root,
             runner,
             parser,
-            fallback,
             logger,
             timeout_seconds=timeout_seconds,
             minimum_delay_ms=minimum_delay_ms,
