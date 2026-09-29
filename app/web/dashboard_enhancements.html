@@ -91,6 +91,9 @@
   }
 
   const onlineSeries=new Set(['online_naver','online_coupang','online_combined']);
+  const comparisonNotes=document.createElement('div');
+  comparisonNotes.style.cssText='padding:8px 18px;color:#6e7d77;font-size:12px';
+  chartWrap.insertAdjacentElement('afterend',comparisonNotes);
   function carryWeekendValues(source){
     if(!source||!chartData?.dates)return;
     Object.entries(source).forEach(([key,values])=>{
@@ -106,6 +109,7 @@
 
   function applyNormalClosureContinuity(){
     if(!chartData)return;
+    comparisonNotes.textContent=(chartData.comparison_notes||[]).join(' ');
     carryWeekendValues(chartData.series);
     carryWeekendValues(chartData.raw_series);
   }

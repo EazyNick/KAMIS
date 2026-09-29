@@ -117,6 +117,7 @@ class ApplicationContainer:
             market_repository,
             analytics,
             target_keys=settings.online_target_keys,
+            catalog_repository=catalog,
         )
         configured_targets = set(settings.online_target_keys)
         preferred_item_codes = tuple(

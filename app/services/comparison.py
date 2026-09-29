@@ -9,6 +9,7 @@ from holidays import financial_holidays
 
 from app.infrastructure.csv_repository import PriceFilters
 from app.services.analytics import AnalysisMode, AnalyticsService
+from app.services.comparison_units import comparable_kamis_rows
 
 
 class PriceRepositoryProtocol(Protocol):
@@ -121,12 +122,14 @@ class ComparisonService:
         analytics: AnalyticsService,
         *,
         target_keys: set[tuple[str, str]] | frozenset[tuple[str, str]] = frozenset(),
+        catalog_repository=None,
     ) -> None:
         self._prices = price_repository
         self._online = online_repository
         self._market = market_repository
         self._analytics = analytics
         self.comparison_kinds = dict(sorted(target_keys))
+        self._catalog = catalog_repository
 
     def build_frame(
         self, item_code: str, start_date: date | None, end_date: date | None
@@ -135,7 +138,13 @@ class ComparisonService:
             PriceFilters(item_code=item_code, start_date=start_date, end_date=end_date)
         )
         kind = self.comparison_kinds.get(item_code)
-        if kind is not None:
+        notes = []
+        if kind is not None and self._catalog is not None:
+            price_rows, notes = comparable_kamis_rows(
+                price_rows, item_code, kind,
+                [entry.to_dict() for entry in self._catalog.entries()],
+            )
+        elif kind is not None:
             price_rows = [row for row in price_rows if row.get("kind_code") == kind]
         kamis_dates = sorted(
             {
@@ -170,7 +179,9 @@ class ComparisonService:
             frame = frame.reindex(frame.index.union(market_dates))
             for series_id, values in market.groupby("series_id"):
                 frame[str(series_id)] = values.groupby("observed_date")["close"].mean()
-        return fill_exchange_holidays(frame.sort_index())
+        result = fill_exchange_holidays(frame.sort_index())
+        result.attrs["comparison_notes"] = notes
+        return result
 
     def online_frame(
         self, item_code: str, start_date: date | None = None, end_date: date | None = None
@@ -209,6 +220,7 @@ class ComparisonService:
             item_code, mode, frame, self.core_series, raw_frame=raw_frame
         )
         result["comparison_kinds"] = self.comparison_kinds
+        result["comparison_notes"] = raw_frame.attrs.get("comparison_notes", [])
         return result
 
     def dashboard_defaults(self) -> dict[str, str | None]:
