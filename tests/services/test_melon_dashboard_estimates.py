@@ -1,4 +1,6 @@
-from datetime import date
+import csv
+from datetime import date, timedelta
+from pathlib import Path
 
 from app.services.analytics import AnalyticsService
 from app.services.comparison import ComparisonService
@@ -75,6 +77,22 @@ def test_melon_chart_fills_all_online_gaps_and_preserves_existing_values() -> No
     assert result["series"]["online_naver"][6] == 9050.0
     assert result["series"]["online_coupang"][7] == 6650.0
     assert any("추정치" in note for note in result["comparison_notes"])
+
+
+def test_melon_seed_estimates_cover_every_day_from_sep_23_to_sep_30() -> None:
+    path = Path(__file__).resolve().parents[2] / "data" / "normalized" / "online_price_summaries.csv"
+    with path.open(encoding="utf-8-sig", newline="") as handle:
+        rows = [row for row in csv.DictReader(handle) if row["item_code"] == "257"]
+
+    expected_dates = {
+        (date(2026, 9, 23) + timedelta(days=offset)).isoformat()
+        for offset in range(8)
+    }
+    for platform in ("naver", "coupang", "combined"):
+        platform_rows = [row for row in rows if row["platform"] == platform]
+        assert {row["observed_date"] for row in platform_rows} == expected_dates
+        assert all(row["average_unit_price"] for row in platform_rows)
+        assert all(row["collection_status"] == "estimated" for row in platform_rows)
 
 
 def test_melon_correlations_exclude_dashboard_estimates() -> None:
