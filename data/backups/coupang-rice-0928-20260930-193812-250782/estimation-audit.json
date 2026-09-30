@@ -1,0 +1,69 @@
+{
+  "method": "arithmetic_mean_of_adjacent_dates",
+  "sources": [
+    {
+      "platform": "coupang",
+      "item_code": "111",
+      "kind_code": "10",
+      "average_unit_price": "35930",
+      "sample_count": "3",
+      "candidate_count": "8",
+      "collection_status": "available",
+      "observed_date": "2026-09-27"
+    },
+    {
+      "platform": "coupang",
+      "item_code": "111",
+      "kind_code": "10",
+      "average_unit_price": "46400",
+      "sample_count": "2",
+      "candidate_count": "8",
+      "collection_status": "available",
+      "observed_date": "2026-09-29"
+    }
+  ],
+  "before": [
+    {
+      "platform": "coupang",
+      "item_code": "111",
+      "kind_code": "10",
+      "average_unit_price": "61700",
+      "sample_count": "1",
+      "candidate_count": "8",
+      "collection_status": "available",
+      "observed_date": "2026-09-28"
+    },
+    {
+      "platform": "combined",
+      "item_code": "111",
+      "kind_code": "10",
+      "average_unit_price": "51785",
+      "sample_count": "1",
+      "candidate_count": "8",
+      "collection_status": "estimated",
+      "observed_date": "2026-09-28"
+    }
+  ],
+  "after": [
+    {
+      "platform": "coupang",
+      "item_code": "111",
+      "kind_code": "10",
+      "average_unit_price": "41165",
+      "sample_count": "0",
+      "candidate_count": "0",
+      "collection_status": "estimated",
+      "observed_date": "2026-09-28"
+    },
+    {
+      "platform": "combined",
+      "item_code": "111",
+      "kind_code": "10",
+      "average_unit_price": "41517.5",
+      "sample_count": "0",
+      "candidate_count": "0",
+      "collection_status": "estimated",
+      "observed_date": "2026-09-28"
+    }
+  ]
+}
