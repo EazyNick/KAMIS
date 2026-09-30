@@ -7,9 +7,10 @@ from app.services.comparison import ComparisonService
 class MelonPriceRepo:
     def search(self, filters):
         return [
-            {"item_code": "257", "kind_code": "00", "observed_date": "2026-09-24", "price_type": "retail", "price_krw": 9800},
-            {"item_code": "257", "kind_code": "00", "observed_date": "2026-09-25", "price_type": "retail", "price_krw": 9600},
-            {"item_code": "257", "kind_code": "00", "observed_date": "2026-09-28", "price_type": "retail", "price_krw": 9900},
+            {"item_code": "257", "kind_code": "00", "observed_date": "2026-09-23", "price_type": "retail", "price_krw": 9200},
+            {"item_code": "257", "kind_code": "00", "observed_date": "2026-09-24", "price_type": "retail", "price_krw": 9350},
+            {"item_code": "257", "kind_code": "00", "observed_date": "2026-09-25", "price_type": "retail", "price_krw": 9400},
+            {"item_code": "257", "kind_code": "00", "observed_date": "2026-09-28", "price_type": "retail", "price_krw": 9569},
             {"item_code": "257", "kind_code": "00", "observed_date": "2026-09-29", "price_type": "retail", "price_krw": 9400},
             {"item_code": "257", "kind_code": "00", "observed_date": "2026-09-30", "price_type": "retail", "price_krw": 9169.85},
         ]
@@ -20,33 +21,59 @@ class EmptyOnlineRepo:
         return []
 
 
+class PartialMelonOnlineRepo:
+    def search_summaries(self, **kwargs):
+        if kwargs.get("item_code") not in {None, "257"}:
+            return []
+        return [
+            {
+                "item_code": "257",
+                "kind_code": "00",
+                "platform": "naver",
+                "average_unit_price": "9050",
+                "observed_date": "2026-09-29",
+            },
+            {
+                "item_code": "257",
+                "kind_code": "00",
+                "platform": "coupang",
+                "average_unit_price": "6650",
+                "observed_date": "2026-09-30",
+            },
+        ]
+
+
 class EmptyMarketRepo:
     def search(self, **kwargs):
         return []
 
 
-def test_melon_chart_generates_lagged_dashboard_only_online_estimates() -> None:
+def test_melon_chart_fills_all_online_gaps_and_preserves_existing_values() -> None:
     service = ComparisonService(
-        MelonPriceRepo(), EmptyOnlineRepo(), EmptyMarketRepo(), AnalyticsService()
+        MelonPriceRepo(), PartialMelonOnlineRepo(), EmptyMarketRepo(), AnalyticsService()
     )
 
-    result = service.chart("257", date(2026, 9, 24), date(2026, 9, 30), "raw")
+    result = service.chart("257", date(2026, 9, 23), date(2026, 9, 30), "raw")
 
+    assert result["dates"] == [
+        "2026-09-23",
+        "2026-09-24",
+        "2026-09-25",
+        "2026-09-26",
+        "2026-09-27",
+        "2026-09-28",
+        "2026-09-29",
+        "2026-09-30",
+    ]
     assert result["estimated_series"] == [
         "online_naver",
         "online_coupang",
         "online_combined",
     ]
-    assert result["series"]["online_naver"][0] is None
-    assert result["series"]["online_coupang"][:2] == [None, None]
-
-    # Naver follows the previous KAMIS observation: 9800 -> 9600 -> 9900.
-    assert result["series"]["online_naver"][2] < result["series"]["online_naver"][1]
-    assert result["series"]["online_naver"][3] > result["series"]["online_naver"][2]
-
-    # Coupang follows KAMIS two observations later.
-    assert result["series"]["online_coupang"][3] < result["series"]["online_coupang"][2]
-    assert result["series"]["online_coupang"][4] > result["series"]["online_coupang"][3]
+    assert all(value is not None for value in result["series"]["online_naver"])
+    assert all(value is not None for value in result["series"]["online_coupang"])
+    assert result["series"]["online_naver"][6] == 9050.0
+    assert result["series"]["online_coupang"][7] == 6650.0
     assert any("추정치" in note for note in result["comparison_notes"])
 
 
@@ -58,7 +85,7 @@ def test_melon_correlations_exclude_dashboard_estimates() -> None:
     rows = service.correlations(
         "257",
         "kamis_retail",
-        date(2026, 9, 24),
+        date(2026, 9, 23),
         date(2026, 9, 30),
         "return_1d",
     )
