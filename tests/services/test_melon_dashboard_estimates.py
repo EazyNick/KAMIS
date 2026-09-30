@@ -39,8 +39,14 @@ def test_melon_chart_generates_lagged_dashboard_only_online_estimates() -> None:
     ]
     assert result["series"]["online_naver"][0] is None
     assert result["series"]["online_coupang"][:2] == [None, None]
-    assert result["series"]["online_naver"][2] > result["series"]["online_naver"][1]
-    assert result["series"]["online_coupang"][3] > result["series"]["online_coupang"][2]
+
+    # Naver follows the previous KAMIS observation: 9800 -> 9600 -> 9900.
+    assert result["series"]["online_naver"][2] < result["series"]["online_naver"][1]
+    assert result["series"]["online_naver"][3] > result["series"]["online_naver"][2]
+
+    # Coupang follows KAMIS two observations later.
+    assert result["series"]["online_coupang"][3] < result["series"]["online_coupang"][2]
+    assert result["series"]["online_coupang"][4] > result["series"]["online_coupang"][3]
     assert any("추정치" in note for note in result["comparison_notes"])
 
 
