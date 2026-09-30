@@ -44,13 +44,11 @@ MARKET_EXCHANGES = {
 }
 
 # Dashboard-only visual estimates for melon (item 257). These values are never
-# used by the correlation endpoint. The current KAMIS reference is the
-# 2026-09-30 retail average stored in this repository. Coupang's anchor uses a
-# current 1.5 kg listing found during the 2026-09-30 web check. A directly
-# comparable Naver listing was not reliably obtainable, so the Naver anchor is
-# an explicit modelling baseline within the current online 1.5 kg market range.
+# used by the correlation endpoint. Coupang's anchor uses a current 1.5 kg
+# listing found during the 2026-09-30 web check. A directly comparable Naver
+# listing was not reliably obtainable, so the Naver anchor remains an explicit
+# modelling baseline within the current online melon market range.
 MELON_ITEM_CODE = "257"
-MELON_KAMIS_REFERENCE_PRICE = 9169.85
 MELON_DASHBOARD_ESTIMATES = {
     "online_naver": {"anchor": 8900.0, "lag": 1, "elasticity": 0.90},
     "online_coupang": {"anchor": 6600.0, "lag": 2, "elasticity": 0.90},
@@ -235,29 +233,34 @@ class ComparisonService:
         if item_code != MELON_ITEM_CODE or "kamis_retail" not in frame:
             return frame, [], []
 
-        kamis = frame["kamis_retail"].dropna()
+        kamis = frame["kamis_retail"].dropna().sort_index()
         if len(kamis) < 3:
             return frame, [], []
 
-        result = frame.copy()
+        daily_index = pd.date_range(kamis.index.min(), kamis.index.max(), freq="D")
+        result = frame.reindex(frame.index.union(daily_index)).sort_index()
+        daily_kamis = kamis.reindex(daily_index).ffill().bfill()
+
         estimated_series: list[str] = []
         for column, config in MELON_DASHBOARD_ESTIMATES.items():
-            if column in result and result[column].notna().any():
-                continue
-
-            driver = kamis.shift(int(config["lag"]))
+            lag = int(config["lag"])
+            driver = daily_kamis.shift(lag).bfill()
+            reference_driver = float(driver.iloc[-1])
             modeled = (
                 float(config["anchor"])
-                * (driver / MELON_KAMIS_REFERENCE_PRICE)
-                ** float(config["elasticity"])
+                * (driver / reference_driver) ** float(config["elasticity"])
+            ).map(lambda value: float(round(float(value) / 10.0) * 10))
+            modeled = modeled.reindex(result.index)
+
+            existing = (
+                result[column]
+                if column in result
+                else pd.Series(np.nan, index=result.index, dtype=float)
             )
-            result[column] = modeled.reindex(result.index).map(
-                lambda value: (
-                    np.nan
-                    if pd.isna(value)
-                    else float(round(float(value) / 10.0) * 10)
-                )
-            )
+            missing = existing.isna() & modeled.notna()
+            if not missing.any():
+                continue
+            result[column] = existing.where(~missing, modeled)
             estimated_series.append(column)
 
         if estimated_series:
