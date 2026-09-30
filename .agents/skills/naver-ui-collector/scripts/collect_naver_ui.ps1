@@ -1,4 +1,4 @@
-param(
+﻿param(
     [Parameter(Mandatory = $true)]
     [string]$ManifestPath
 )
@@ -104,18 +104,35 @@ function Invoke-NaverSearch {
 
 function Get-NaverQuantity {
     param([string]$RawName, [string]$ComparisonUnit)
+    $empty = [regex]::Match('', 'a')
     $prefix = ($RawName -split '\([^)]*\uB2F9')[0]
-    $weight = [regex]::Matches($prefix, '(?i)(\d+(?:\.\d+)?)\s*(kg|g)')
+    $prefix = ($prefix -split '\d[\d,]*\s*\uC6D0')[0]
+    if ($prefix -match '\d\s*[~\-\u2013]\s*\d|\d\s*(kg|g|\uAC1C|\uACFC|\uBBF8|\uB9C8\uB9AC|\uD3EC\uAE30)\s*[xX*\u00D7]') { return $empty }
+    $prefix = $prefix -replace '(\d)\s*\uACFC(?=\s|[,)]|$)', ('$1' + [char]0xAC1C)
+    $prefix = $prefix -replace '(\d)\s*\uBBF8(?=\s|[,)]|$)', ('$1' + [char]0xB9C8 + [char]0xB9AC)
+    # A bare per-unit quote is not a package, even without parentheses.
+    $prefix = ($prefix -split '(?i)\d+(?:\.\d+)?\s*(kg|g|\uAC1C|\uB9C8\uB9AC|\uD3EC\uAE30)\s*\uB2F9')[0]
+    $packs = [regex]::Matches($prefix, '(\d+)\s*(\uBD09|\uD329|\uBC15\uC2A4|\uC138\uD2B8)')
+    foreach ($pack in $packs) { if ([decimal]$pack.Groups[1].Value -gt 1) { return $empty } }
     if ($ComparisonUnit -match '(?i)kg|g') {
-        if ($weight.Count -gt 0) { return $weight[$weight.Count - 1] }
+        $counts = [regex]::Matches($prefix, '(\d+)\s*\uAC1C')
+        foreach ($count in $counts) { if ([decimal]$count.Groups[1].Value -gt 1) { return $empty } }
     }
-    elseif ($ComparisonUnit -match '\uAC1C' -and $weight.Count -gt 0) {
-        $count = [regex]::Match($prefix, '(?<![\d~\-])(\d+)\s*(\uAC1C)')
-        if ($count.Success -and [decimal]$count.Groups[1].Value -gt 1) { return $count }
-        return [regex]::Match('', 'a')
-    }
-    return [regex]::Match($prefix, '(?i)(\d+(?:\.\d+)?)\s*(kg|g|\uAC1C|\uBD09|\uD329|\uD3EC\uAE30|\uB9C8\uB9AC)')
+    $weights = [regex]::Matches($prefix, '(?i)(\d+(?:\.\d+)?)\s*(kg|g)')
+    if ($weights.Count -gt 1) { return $empty }
+    $unit = if ($ComparisonUnit -match '(?i)kg|g') { 'kg|g' }
+            elseif ($ComparisonUnit -match '\uB9C8\uB9AC') { '\uB9C8\uB9AC' }
+            elseif ($ComparisonUnit -match '\uD3EC\uAE30') { '\uD3EC\uAE30' }
+            elseif ($ComparisonUnit -match '\uAC1C') { '\uAC1C' }
+            else { return $empty }
+    $candidates = [regex]::Matches($prefix, '(?i)(?<![\d.])(\d+(?:\.\d+)?)\s*(' + $unit + ')')
+    if ($candidates.Count -ne 1) { return $empty }
+    $match = $candidates[0]
+    if ([decimal]$match.Groups[1].Value -le 0) { return $empty }
+    if ($ComparisonUnit -match '\uAC1C' -and $weights.Count -gt 0 -and [decimal]$match.Groups[1].Value -le 1) { return $empty }
+    return $match
 }
+
 
 function Test-ShoppingProduct {
     param([string]$RawName, [string]$ItemName)
@@ -223,8 +240,9 @@ try {
             $valuePattern.SetValue([string]$target.query)
             Invoke-NaverSearch
             Start-Sleep -Milliseconds ([Math]::Max(500, [int]$manifest.minimum_delay_ms))
-            $accessibleRows = @(Wait-AccessibleProductRows -TimeoutSeconds 25 -Maximum ([Math]::Max(1, [int]$manifest.max_offers_per_target)) -PreviousDocumentName $previousDocumentName -Query ([string]$target.query) -ItemName ([string]$target.item_name))
+            $accessibleRows = @(Wait-AccessibleProductRows -TimeoutSeconds 25 -Maximum ([Math]::Min(40, [Math]::Max(1, [int]$manifest.max_offers_per_target) * 4)) -PreviousDocumentName $previousDocumentName -Query ([string]$target.query) -ItemName ([string]$target.item_name))
 
+            $acceptedCount = 0
             foreach ($accessibleRow in $accessibleRows) {
                 $raw = [string]$accessibleRow.Current.Name
                 $urlPattern = $accessibleRow.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern)
@@ -260,6 +278,11 @@ try {
                     availability = $(if ($raw -match '\uD488\uC808') { 'sold_out' } else { 'available' })
                     raw_accessible_name = Escape-SpreadsheetValue $raw
                 })
+                # Invalid candidates stay in the raw evidence but do not consume the offer quota.
+                if ($quantityMatch.Success -and ($discountedPriceMatch.Success -or $priceMatch.Success) -and ($shippingMatch.Success -or $freeShipping) -and $raw -notmatch '\uD488\uC808') {
+                    $acceptedCount += 1
+                    if ($acceptedCount -ge [Math]::Max(1, [int]$manifest.max_offers_per_target)) { break }
+                }
             }
             if ($accessibleRows.Count -gt 0) { $completedCount += 1 }
         }
@@ -283,11 +306,13 @@ finally {
     if ($openedChromeForRun) { Close-NaverCollectionTab }
 }
 
-$status = if ($completedCount -eq $targets.Count) { 'success' } elseif ($completedCount -gt 0) { 'partial' } else { 'failed' }
-[pscustomobject][ordered]@{
-    status = $status
-    target_count = $targets.Count
-    completed_count = $completedCount
-    failed_keys = @($failedKeys)
-    csv_path = $outputCsv
-} | ConvertTo-Json -Compress
+# Final completion is based on ingestion validation, not visible card counts.
+$projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../../..'))
+$python = Join-Path $projectRoot '.venv/Scripts/python.exe'
+if (-not (Test-Path -LiteralPath $python)) { throw 'Repository .venv Python is required for final validation' }
+Push-Location $projectRoot
+try {
+    & $python -m app.infrastructure.shopping_agent_validation --manifest $manifestFull --platform naver
+    if ($LASTEXITCODE -ne 0) { throw 'Collected CSV validation failed; do not report success' }
+}
+finally { Pop-Location }

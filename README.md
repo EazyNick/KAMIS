@@ -6,6 +6,19 @@
 창을 UI Automation으로 조작해 수집합니다. 처음 clone한 뒤 Codex CLI 인증을
 완료하세요.
 
+수집 스킬과 실행 스크립트는 이 저장소에 포함됩니다. 별도의 개인 스킬 폴더로 복사할
+필요 없이 프로젝트 루트에서 실행하세요.
+
+- 네이버: `.agents/skills/naver-ui-collector/`
+- 쿠팡: `.agents/skills/coupang-ui-collector/`
+- 공통 CSV 검증기: `app/infrastructure/shopping_agent_validation.py`
+
+새 환경에서는 아래 **저장소 클론 및 실행** 절차로 프로젝트 루트에 `.venv`를 만들고
+`requirements.txt`를 설치한 뒤, Google Chrome과 인증된 Codex CLI를 준비해야 합니다.
+수집 스크립트는 자신의 위치에서 프로젝트 루트를 계산하므로 clone 경로와 Windows
+사용자 이름이 달라도 동작합니다. API 키·Codex 인증·브라우저 로그인은 각 사용자
+환경에서 설정하며 저장소에 포함하지 않습니다.
+
 ```powershell
 codex login
 Copy-Item .env.example .env
@@ -38,6 +51,11 @@ Windows UI Automation 프로세스 실행 때문에 기본 `CODEX_SANDBOX_MODE`�
 `data/normalized/online_price_summaries.csv`에서 확인합니다. 실행 원인과 실패 범위는
 `log/logs/`의 `codex_cli.*`, `naver_agent.*`, `coupang_agent.*`,
 `online.collection.*` 이벤트로 추적합니다.
+
+각 실행 폴더의 `validation-report.json`에는 CSV 행별 검증 오류와 품목별 비교 가능한
+상품 수·제외 사유가 기록됩니다. 최종 성공 여부는 접근 가능한 상품 카드 수가 아니라
+이 검증 결과로 결정합니다. 상품 수량이 모호하면 임의로 채우지 않으며, 현재 수집기는
+상품 상세 페이지의 선택 옵션을 자동으로 확인하지 않습니다.
 
 API에서 직접 실행할 때는 `POST /api/v1/collections/naver-agent` 또는
 `POST /api/v1/collections/coupang-agent`에 다음 JSON을 전송합니다. `item`을 생략하면

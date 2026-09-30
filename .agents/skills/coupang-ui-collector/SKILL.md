@@ -53,16 +53,39 @@ deterministic script and CSV validator. Apply exclusions before the result limit
 excluded cards must not consume the target's offer quota. Do not count a target
 with only excluded cards as completed. Never invent replacements for excluded rows.
 
+## Price and quantity evidence
+
+Use only an unambiguous package quantity attached to the displayed sale price.
+The script supports explicit `과` → `개` and `미` → `마리` counts. A `1개` kg box
+does not mean one fruit. A per-unit quote such as `100g당` is not the package size.
+Do not convert kg to pieces or fish without an explicit count.
+
+Multiple weights/options (`4kg 3kg 2kg 1kg`), count ranges (`8~10과`), and
+multipacks with unresolved totals are rejected; never pick the first/last number
+or use the manifest's desired quantity as evidence. The current script does not
+read selected options on product detail pages. Do not claim it verified them.
+
+The script scans up to four times the requested offer limit (at most 40 visible
+eligible cards per target, one search). Candidates with missing or incompatible
+quantities do not consume the usable-offer quota. Their raw rows remain as evidence.
+If no comparable candidate remains, report that target as failed; do not retry
+indefinitely, browse outside the script, or rewrite missing quantities by hand.
+
+Final validation runs with the repository `.venv` and the same CSV parser as ingestion.
+Read `validation-report.json` in `run_dir` for row-numbered validation errors,
+per-target comparable counts and exclusion reasons. An accessible page or a CSV
+with rows is not collection success. Return the validator's final JSON unchanged.
+
 ## Output contract
 
-The script writes only the raw CSV named by `output_csv`; its columns are defined in
+The script writes the raw CSV named by `output_csv` and a `validation-report.json` diagnostic artifact; its columns are defined in
 `references/csv-schema.md`. Treat the CSV as the data result, not any prose in the agent reply.
 
 Return a final JSON object with exactly these fields:
 
 - `status`: `success`, `partial`, or `failed`
 - `target_count`: number of manifest targets
-- `completed_count`: targets for which accessible product rows were written
+- `completed_count`: targets with at least one validated comparable offer
 - `failed_keys`: array of `item_code:kind_code` values not completed
 - `csv_path`: absolute output path
 

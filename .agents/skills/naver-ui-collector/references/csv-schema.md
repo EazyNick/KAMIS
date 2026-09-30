@@ -27,3 +27,16 @@ writes UTF-8 CSV with these columns in order:
 | `raw_accessible_name` | Full accessible result name used by downstream validation. |
 
 Unknown values remain empty or `unknown`; never guess. Escape spreadsheet-formula prefixes.
+
+## Quantity evidence
+
+`quantity` and `unit` must refer to the same unambiguous offer as `displayed_price`.
+Explicit fruit counts in 과 normalize to 개; fish counts in 미 normalize to 마리.
+Multiple option quantities, ranges, per-unit prices, and unclear multipacks do not
+establish a package quantity. Preserve the original text in `raw_accessible_name`.
+Unknown quantities stay empty and are excluded by validation. Never infer pieces
+from kg, use the requested comparison size, or treat one box as one fruit.
+
+Raw rejected candidates may exceed the usable-offer quota; they are retained for
+diagnosis, not included in the average. `validation-report.json` records validation
+errors and counts; it is not a substitute for raw CSV evidence.
