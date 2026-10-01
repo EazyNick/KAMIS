@@ -56,13 +56,21 @@ class ShoppingAgentSource:
     ) -> None:
         if not entries:
             return
-        if len(entries) > 10:
-            raise ValueError(f"{self.platform} agent batch cannot exceed 10 targets")
         if not self._safe_run_id.fullmatch(run_id):
             raise ValueError("run_id contains unsupported path characters")
         self._offers = {}
         self._errors = {}
         self._prepared_date = observed_date
+        for offset in range(0, len(entries), 10):
+            batch_id = run_id if len(entries) <= 10 else f"{run_id}-batch-{offset // 10 + 1:03d}"
+            self._prepare_batch(entries[offset:offset + 10], observed_date, batch_id)
+
+    def _prepare_batch(
+        self,
+        entries: list[ProductCatalogEntry],
+        observed_date: date,
+        run_id: str,
+    ) -> None:
         catalog = {(entry.item_code, entry.kind_code): entry for entry in entries}
         run_dir = self._run_root / run_id
         run_dir.mkdir(parents=True, exist_ok=True)

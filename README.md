@@ -26,7 +26,7 @@ Copy-Item .env.example .env
 ```
 
 서버는 당일 플랫폼·품목별 완료 CSV를 먼저 확인합니다. 이미 완료된 항목은 다시
-요청하지 않고, 플랫폼별로 빠진 항목들만 한 번의 agent batch로 수집합니다. 직접 한 품목을
+요청하지 않고, 플랫폼별로 빠진 항목들만 배치당 최대 10개씩 나눠 수집합니다. 직접 한 품목을
 점검하려면 다음 명령을 실행합니다.
 
 ```powershell
@@ -59,7 +59,7 @@ Windows UI Automation 프로세스 실행 때문에 기본 `CODEX_SANDBOX_MODE`�
 
 API에서 직접 실행할 때는 `POST /api/v1/collections/naver-agent` 또는
 `POST /api/v1/collections/coupang-agent`에 다음 JSON을 전송합니다. `item`을 생략하면
-설정된 대표 10개 중 해당 플랫폼의 당일 누락 항목만 처리합니다.
+설정된 대표 11개 중 해당 플랫폼의 당일 누락 항목만 처리합니다.
 
 ```json
 {"observed_date":"2026-09-26","item":"111:10"}
@@ -111,9 +111,9 @@ KAMIS_CERT_ID=발급받은_요청자_ID
 
 수집 도중 서버가 종료된 경우에도 다음 실행에서 날짜별 KAMIS·온라인·시장 성공 체크포인트와 기존 CSV의 관측일을 확인합니다. 이미 저장까지 완료된 소스는 건너뛰고 실패·부분 완료·미실행 소스만 다시 수집하며, 이 판단은 `log/logs/`의 `daily_pipeline.checkpoint.recovered`와 `daily_pipeline.source.skipped` 이벤트에서 확인할 수 있습니다.
 
-KAMIS 품목·도매가·소매가는 전체 수집하고, 네이버·쿠팡 검색은 대표 KAMIS 품목 10개에만 수행합니다(플랫폼별 10회, 하루 최대 20회). 기본 요청 간격은 5초이며 진행 상황과 실패 원인은 `log/logs/`의 로그에서 확인할 수 있습니다.
+KAMIS 품목·도매가·소매가는 전체 수집하고, 네이버·쿠팡 검색은 대표 KAMIS 품목 11개에만 수행합니다(플랫폼별 11회, 하루 최대 22회). 기본 요청 간격은 5초이며 진행 상황과 실패 원인은 `log/logs/`의 로그에서 확인할 수 있습니다.
 
-온라인 수집은 기본적으로 설치된 Google Chrome과 `data/browser-profile`의 전용 프로필을 화면 표시 모드로 재사용합니다. 쿠팡은 검색 URL로 직접 진입하지 않고 홈페이지를 연 뒤 검색창을 사용합니다. 서버 환경에 Chrome이 없으면 `.env`의 `SHOPPING_BROWSER_CHANNEL`을 빈 값으로 설정해 Playwright Chromium을 사용할 수 있지만, 쿠팡은 해당 브라우저를 차단할 수 있습니다. `ONLINE_TARGETS`에는 정확히 10개의 KAMIS `item_code:kind_code` 쌍을 지정할 수 있습니다. HTTP 403/418/429, `Access Denied` 또는 CAPTCHA가 감지되면 우회하지 않고 그 플랫폼의 남은 검색을 당일 중단합니다.
+온라인 수집은 기본적으로 설치된 Google Chrome과 `data/browser-profile`의 전용 프로필을 화면 표시 모드로 재사용합니다. 쿠팡은 검색 URL로 직접 진입하지 않고 홈페이지를 연 뒤 검색창을 사용합니다. 서버 환경에 Chrome이 없으면 `.env`의 `SHOPPING_BROWSER_CHANNEL`을 빈 값으로 설정해 Playwright Chromium을 사용할 수 있지만, 쿠팡은 해당 브라우저를 차단할 수 있습니다. `ONLINE_TARGETS`에는 중복 없는 KAMIS `item_code:kind_code` 쌍을 지정할 수 있습니다. HTTP 403/418/429, `Access Denied` 또는 CAPTCHA가 감지되면 우회하지 않고 그 플랫폼의 남은 검색을 당일 중단합니다.
 
 ### VS Code에서 실행
 
@@ -170,11 +170,11 @@ $today = Get-Date -Format yyyy-MM-dd
 # KAMIS 전체 품목의 해당 날짜 가격
 .\.venv\Scripts\python.exe app\collectors\kamis.py --date 2026-09-25
 
-# 네이버 대표 10개 / 쌀 10kg 한 품목만 화면 표시
+# 네이버 대표 11개 / 쌀 10kg 한 품목만 화면 표시
 .\.venv\Scripts\python.exe app\collectors\naver.py --date 2026-09-25 --headful
 .\.venv\Scripts\python.exe app\collectors\naver.py --date 2026-09-25 --item 111:10 --headful
 
-# 쿠팡 대표 10개 / 쌀 10kg 한 품목만 화면 표시
+# 쿠팡 대표 11개 / 쌀 10kg 한 품목만 화면 표시
 .\.venv\Scripts\python.exe app\collectors\coupang.py --date 2026-09-25 --headful
 .\.venv\Scripts\python.exe app\collectors\coupang.py --date 2026-09-25 --item 111:10 --headful
 

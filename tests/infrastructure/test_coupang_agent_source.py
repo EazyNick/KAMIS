@@ -146,3 +146,15 @@ def test_coupang_manifest_queries_include_comparison_unit(tmp_path: Path) -> Non
         (tmp_path / "runs/query-run/manifest.json").read_text(encoding="utf-8")
     )
     assert manifest["targets"][0]["query"] == "배추 1포기"
+
+
+def test_eleven_targets_are_batched_without_losing_first_batch(tmp_path):
+    import json
+    entries = TEN_ENTRIES + [replace(BASE_ENTRY, item_code="257", kind_code="00")]
+    source, runner = build_source(tmp_path, set())
+    source.prepare(entries, TODAY, "melon-run")
+    assert runner.calls == 2
+    manifests = sorted((tmp_path / "runs").glob("*/manifest.json"))
+    assert [len(json.loads(p.read_text(encoding="utf-8"))["targets"]) for p in manifests] == [10, 1]
+    for entry in entries:
+        assert source.search(entry, TODAY)

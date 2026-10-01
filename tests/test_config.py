@@ -41,7 +41,7 @@ def test_shopping_browser_settings_are_explicit(
     assert configured.shopping_browser_channel == "chrome"
 
 
-def test_online_collection_defaults_to_ten_representative_kamis_items(
+def test_online_collection_defaults_to_eleven_representative_kamis_items(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("DATA_DIR", str(tmp_path / "data"))
@@ -51,7 +51,7 @@ def test_online_collection_defaults_to_ten_representative_kamis_items(
     configured = Settings.from_env(load_environment_file=False)
 
     assert configured.online_target_keys == frozenset(DEFAULT_ONLINE_TARGET_KEYS)
-    assert len(configured.online_target_keys) == 10
+    assert len(configured.online_target_keys) == 11
     assert (
         configured.shopping_user_data_dir
         == (tmp_path / "data/browser-profile").resolve()
@@ -59,12 +59,16 @@ def test_online_collection_defaults_to_ten_representative_kamis_items(
     assert configured.shopping_request_interval_seconds == 5
 
 
-def test_online_targets_must_contain_exactly_ten_unique_pairs(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("ONLINE_TARGETS", "111:10,152:00")
+def test_online_targets_accept_custom_target_counts(monkeypatch):
+    monkeypatch.setenv("ONLINE_TARGETS", "111:10,257:00")
+    configured = Settings.from_env(load_environment_file=False)
+    assert configured.online_target_keys == frozenset({("111", "10"), ("257", "00")})
 
-    with pytest.raises(ConfigurationError, match="exactly 10"):
+
+@pytest.mark.parametrize("value", ["111:10,111:10", "111", "abc:00", ","])
+def test_online_targets_reject_invalid_pairs(monkeypatch, value):
+    monkeypatch.setenv("ONLINE_TARGETS", value)
+    with pytest.raises(ConfigurationError):
         Settings.from_env(load_environment_file=False)
 
 

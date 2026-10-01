@@ -17,6 +17,7 @@ DEFAULT_ONLINE_TARGET_KEYS = (
     ("411", "05"),  # 사과 / 후지
     ("412", "01"),  # 배 / 신고
     ("611", "05"),  # 고등어 / 국산 신선·냉장
+    ("257", "00"),  # 멜론 / 1개
 )
 
 
@@ -131,12 +132,12 @@ class Settings:
                 "ONLINE_TARGETS must use item_code:kind_code pairs"
             ) from error
         if (
-            len(targets) != 10
+            len(targets) != len(value.split(","))
             or any(len(pair) != 2 for pair in targets)
             or any(not code.isdigit() for pair in targets for code in pair)
         ):
             raise ConfigurationError(
-                "ONLINE_TARGETS must contain exactly 10 unique numeric "
+                "ONLINE_TARGETS must contain unique numeric "
                 "item_code:kind_code pairs"
             )
         return frozenset((pair[0], pair[1]) for pair in targets)
