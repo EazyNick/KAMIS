@@ -2,6 +2,27 @@
 
 import math
 import re
+import json
+from pathlib import Path
+
+
+def _conversion_rules():
+    path = Path(__file__).resolve().parents[2] / "config" / "comparison_unit_rules.json"
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _bridge(source, target, rule):
+    if not isinstance(rule, dict):
+        return None
+    weight = _measure(rule.get("kg_per_unit"), "kg")
+    unit = rule.get("unit")
+    if weight is None or unit not in {"개", "포기", "마리"} or not rule.get("basis"):
+        return None
+    if {source[0], target[0]} != {"kg", unit}:
+        return None
+    source_kg = source[1] * (weight[1] if source[0] == unit else 1)
+    target_kg = target[1] * (weight[1] if target[0] == unit else 1)
+    return target_kg / source_kg
 
 
 def _measure(size, unit):
@@ -17,7 +38,9 @@ def _measure(size, unit):
     return ("kg", amount / 1000) if unit == "g" else (unit, amount)
 
 
-def comparable_kamis_rows(rows, item_code, kind, catalog):
+def comparable_kamis_rows(rows, item_code, kind, catalog, *, conversion_rules=None):
+    if conversion_rules is None:
+        conversion_rules = _conversion_rules()
     entries = {(r["item_code"], r["kind_code"]): r for r in catalog}
     target = entries.get((item_code, kind))
     if target is None:
@@ -55,6 +78,16 @@ def comparable_kamis_rows(rows, item_code, kind, catalog):
         elif source_kind == kind and price_type == "retail":
             size, unit = target.get("retail_unit_size"), target.get("retail_unit")
         measure = _measure(size, unit)
+        if measure is not None and measure[0] != target_measure[0]:
+            rule = conversion_rules.get(f"{item_code}:{kind}")
+            ratio = _bridge(measure, target_measure, rule)
+            if ratio is not None:
+                converted.append((fallback, {**row, "price_krw": price * ratio}))
+                notes.add(
+                    f"KAMIS 단위 환산: 1{rule['unit']}={rule['kg_per_unit']}kg "
+                    f"({rule['basis']}) 기준으로 {target_measure[1]:g}{target_measure[0]} 가격을 계산했습니다."
+                )
+                continue
         if measure is None or measure[0] != target_measure[0]:
             label = "도매" if price_type == "wholesale" else "소매"
             notes.add(f"KAMIS {label}: 온라인과 단위가 달라 환산할 수 없는 가격은 제외했습니다.")

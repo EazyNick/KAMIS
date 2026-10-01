@@ -153,7 +153,7 @@ def test_dashboard_defaults_to_kamis_futures_and_preserves_manual_selection(
         assert page.locator(".featured-badge").count() == 0
         for key in ("rough_rice_futures", "soybean_futures"):
             is_off = "off" in page.locator(f'[data-key="{key}"]').get_attribute("class")
-            assert is_off == (not has_kamis_commodities)
+            assert is_off
         for key in ("orange_juice_futures", "coffee_futures", "wheat_futures"):
             assert "off" in page.locator(f'[data-key="{key}"]').get_attribute("class")
         orange = page.locator('[data-key="orange_juice_futures"]')

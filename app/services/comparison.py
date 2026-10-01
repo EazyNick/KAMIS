@@ -372,7 +372,7 @@ class ComparisonService:
             if row.get("item_code")
             and row.get("average_unit_price") not in {None, ""}
         }
-        item_code = max(
+        item_code = MELON_ITEM_CODE if MELON_ITEM_CODE in dates_by_item else max(
             dates_by_item,
             key=lambda code: (
                 code in online_item_codes,
@@ -382,7 +382,7 @@ class ComparisonService:
         )
         available_dates = dates_by_item[item_code]
         end_date = max(available_dates)
-        start_date = max(min(available_dates), end_date - timedelta(days=89))
+        start_date = end_date - timedelta(days=364)
         return {
             "item_code": item_code,
             "start_date": start_date.isoformat(),

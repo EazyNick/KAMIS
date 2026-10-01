@@ -64,3 +64,24 @@ def test_chart_exposes_converted_price_and_explanation():
     assert chart["series"]["kamis_retail"] == [30000]
     assert chart["raw_series"]["kamis_retail"] == [30000]
     assert chart["comparison_notes"]
+
+
+def test_weight_price_converts_to_count_with_explicit_rule():
+    rules = {"257:00": {"kg_per_unit": 2, "unit": "개", "basis": "가정"}}
+    source = dict(row("00", "3000", "멜론(1kg)"), price_type="wholesale")
+    rows, notes = comparable_kamis_rows([source], "257", "00", catalog("257", "00", "개", "1"), conversion_rules=rules)
+    assert rows[0]["price_krw"] == 6000
+    assert source["price_krw"] == "3000"
+    assert any("2kg" in note and "가정" in note for note in notes)
+
+
+def test_count_price_converts_to_weight_with_explicit_rule():
+    rules = {"257:00": {"kg_per_unit": 2, "unit": "개", "basis": "가정"}}
+    rows, _ = comparable_kamis_rows([row("00", "12000", "멜론(2개)")], "257", "00", catalog("257", "00", "kg", "1"), conversion_rules=rules)
+    assert rows[0]["price_krw"] == 3000
+
+
+def test_bridge_does_not_convert_unrelated_count_units():
+    rules = {"257:00": {"kg_per_unit": 2, "unit": "개", "basis": "가정"}}
+    rows, _ = comparable_kamis_rows([row("00", "3000", "멜론(1kg)")], "257", "00", catalog("257", "00", "마리", "1"), conversion_rules=rules)
+    assert rows == []
