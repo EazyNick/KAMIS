@@ -50,11 +50,18 @@ def test_price_repository_requires_configured_item_coverage(tmp_path: Path) -> N
     observed_date = date(2026, 9, 24)
     assert repository.has_collected_date(
         observed_date,
-        {("111", "01"), ("222", "01")},
+        {
+            ("111", "01", "retail", "04"),
+            ("222", "01", "retail", "04"),
+        },
     ) is True
     assert repository.has_collected_date(
         observed_date,
-        {("111", "01"), ("222", "01"), ("257", "00")},
+        {
+            ("111", "01", "retail", "04"),
+            ("222", "01", "retail", "04"),
+            ("111", "01", "wholesale", "04"),
+        },
     ) is False
 
 
