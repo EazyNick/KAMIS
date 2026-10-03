@@ -148,6 +148,7 @@ class ApplicationContainer:
             catalog.entries,
             analytics_batch if settings.analytics_auto_refresh else None,
             app_logger,
+            kamis_required_keys=set(settings.online_target_keys),
         )
         kamis_history = KamisHistoryService(
             prices,
