@@ -1,23 +1,24 @@
 from __future__ import annotations
 
 from dataclasses import replace
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
+from zoneinfo import ZoneInfo
 from types import SimpleNamespace
 
 import pytest
 from fastapi.testclient import TestClient
 
 from app.core.container import ApplicationContainer
-from app.domain.models import ProductCatalogEntry
+from app.domain.models import PriceObservation, PriceType, ProductCatalogEntry
 from app.domain.online_models import MatchStatus, ShoppingOffer
 from app.infrastructure.csv_repository import (
     CatalogRepository,
     PriceRepository,
     RunRepository,
 )
-from app.infrastructure.market_data import MarketRepository
+from app.infrastructure.market_data import MarketObservation, MarketRepository
 from app.infrastructure.online_repository import OnlinePriceRepository
 from app.main import create_app
 from app.services.analytics import AnalyticsService
@@ -133,6 +134,68 @@ def test_price_date_order_is_validated(client: TestClient) -> None:
         params={"start_date": "2026-09-25", "end_date": "2026-09-24"},
     )
     assert response.status_code == 422
+
+
+def test_price_and_market_routes_support_latest_first_paging(
+    client: TestClient, container: ApplicationContainer
+) -> None:
+    container.price_repository.upsert(
+        [
+            PriceObservation(
+                price_type=PriceType.RETAIL,
+                observed_date=observed_date,
+                collected_at=datetime(2026, 9, 25, 7, tzinfo=ZoneInfo("Asia/Seoul")),
+                category_code="100",
+                item_code="111",
+                kind_code="10",
+                rank_code="04",
+                item_name="쌀",
+                variety="10kg",
+                region="서울",
+                market_name="테스트",
+                price_krw=Decimal(price),
+                requested_convert_kg=True,
+            )
+            for observed_date, price in (
+                (date(2026, 9, 24), "1000"),
+                (date(2026, 9, 25), "1100"),
+            )
+        ],
+        "prices",
+    )
+    assert container.market_repository is not None
+    container.market_repository.upsert(
+        [
+            MarketObservation(
+                series_id="kospi",
+                ticker="^KS11",
+                observed_date=observed_date,
+                close=close,
+                currency="index",
+                unit="index points",
+                collected_at=datetime(2026, 9, 25, 7, tzinfo=ZoneInfo("Asia/Seoul")),
+            )
+            for observed_date, close in (
+                (date(2026, 9, 24), 2600.0),
+                (date(2026, 9, 25), 2610.0),
+            )
+        ],
+        "market",
+    )
+
+    prices = client.get(
+        "/api/v1/prices",
+        params={"order": "desc", "limit": 1, "offset": 0},
+    ).json()
+    market = client.get(
+        "/api/v1/market",
+        params={"order": "desc", "limit": 1, "offset": 0},
+    ).json()
+
+    assert prices["total"] == 2
+    assert prices["items"][0]["observed_date"] == "2026-09-25"
+    assert market["total"] == 2
+    assert market["items"][0]["observed_date"] == "2026-09-25"
 
 
 def test_dashboard_is_served_as_html(client: TestClient) -> None:
