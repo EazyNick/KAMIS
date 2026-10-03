@@ -84,13 +84,21 @@ class DailyPipeline:
             observed_date=observed_date,
         )
 
+        try:
+            catalog = self._catalog_provider()
+        except Exception as error:  # noqa: BLE001 - source isolation boundary
+            catalog = []
+            self._record_error(errors, "catalog", error, run.run_id)
+
         kamis_price_repository = getattr(self._kamis, "price_repository", None)
+        required_kamis_scopes = self._required_kamis_scopes(catalog)
         kamis_data_probe = (
             lambda: kamis_price_repository.has_collected_date(
                 observed_date,
-                self._kamis_required_keys,
+                required_kamis_scopes,
             )
             if kamis_price_repository is not None
+            and (required_kamis_scopes or not self._kamis_required_keys)
             else False
         )
         if not self._is_kamis_business_day(observed_date):
@@ -117,12 +125,6 @@ class DailyPipeline:
                     )
             except Exception as error:  # noqa: BLE001 - source isolation boundary
                 self._record_error(errors, "kamis", error, run.run_id)
-
-        try:
-            catalog = self._catalog_provider()
-        except Exception as error:  # noqa: BLE001 - source isolation boundary
-            catalog = []
-            self._record_error(errors, "catalog", error, run.run_id)
 
         if self._source_completed(
             "online",
@@ -230,6 +232,24 @@ class DailyPipeline:
         )
         return completed
 
+    def _required_kamis_scopes(
+        self, catalog: list[ProductCatalogEntry]
+    ) -> frozenset[tuple[str, str, str, str]]:
+        if not self._kamis_required_keys:
+            return frozenset()
+        scopes: set[tuple[str, str, str, str]] = set()
+        for entry in catalog:
+            if (entry.item_code, entry.kind_code) not in self._kamis_required_keys:
+                continue
+            scopes.update(
+                (entry.item_code, entry.kind_code, "wholesale", rank_code)
+                for rank_code in entry.wholesale_rank_codes
+            )
+            scopes.update(
+                (entry.item_code, entry.kind_code, "retail", rank_code)
+                for rank_code in entry.retail_rank_codes
+            )
+        return frozenset(scopes)
     @staticmethod
     def _is_kamis_business_day(observed_date: date) -> bool:
         if observed_date.weekday() >= 5:
