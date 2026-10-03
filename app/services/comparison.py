@@ -382,7 +382,11 @@ class ComparisonService:
         )
         available_dates = dates_by_item[item_code]
         end_date = max(available_dates)
-        start_date = end_date - timedelta(days=364)
+        try:
+            twenty_year_start = end_date.replace(year=end_date.year - 20)
+        except ValueError:
+            twenty_year_start = end_date.replace(year=end_date.year - 20, day=28)
+        start_date = max(min(available_dates), twenty_year_start)
         return {
             "item_code": item_code,
             "start_date": start_date.isoformat(),
