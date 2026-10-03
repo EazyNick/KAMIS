@@ -29,6 +29,14 @@ def test_price_date_range_uses_actual_observations(tmp_path: Path) -> None:
     assert repository.observed_date_range() == (date(2024, 1, 3), date(2026, 9, 23))
 
 
+def test_price_repository_detects_existing_observed_date(tmp_path: Path) -> None:
+    repository = PriceRepository(tmp_path, app_logger)
+    repository.upsert([price_row()], "seed")
+
+    assert repository.has_collected_date(date(2026, 9, 24)) is True
+    assert repository.has_collected_date(date(2026, 9, 25)) is False
+
+
 def price_row(price: str = "1000") -> PriceObservation:
     return PriceObservation(
         price_type=PriceType.RETAIL,
