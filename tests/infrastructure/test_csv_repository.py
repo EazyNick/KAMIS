@@ -83,6 +83,51 @@ def price_row(price: str = "1000") -> PriceObservation:
     )
 
 
+def test_price_repository_item_date_stats_stream_long_history(tmp_path: Path) -> None:
+    repository = PriceRepository(tmp_path, app_logger)
+    repository.upsert(
+        [
+            replace(price_row(), observed_date=date(2006, 1, 3)),
+            replace(price_row(), observed_date=date(2026, 9, 24)),
+            replace(
+                price_row(),
+                observed_date=date(2025, 5, 1),
+                item_code="222",
+                kind_code="01",
+                item_name="감자",
+            ),
+        ],
+        "seed",
+    )
+
+    assert repository.item_date_stats() == {
+        "111": (date(2006, 1, 3), date(2026, 9, 24), 2),
+        "222": (date(2025, 5, 1), date(2025, 5, 1), 1),
+    }
+
+
+def test_price_repository_bounded_search_keeps_requested_history(tmp_path: Path) -> None:
+    repository = PriceRepository(tmp_path, app_logger)
+    repository.upsert(
+        [
+            replace(price_row(), observed_date=date(2006, 1, 3)),
+            replace(price_row(), observed_date=date(2016, 1, 4)),
+            replace(price_row(), observed_date=date(2026, 9, 24)),
+        ],
+        "seed",
+    )
+
+    rows = repository.search(
+        PriceFilters(
+            item_code="111",
+            start_date=date(2010, 1, 1),
+            end_date=date(2020, 12, 31),
+        )
+    )
+
+    assert [row["observed_date"] for row in rows] == ["2016-01-04"]
+
+
 def test_price_repository_upserts_duplicate_observations(tmp_path: Path) -> None:
     repository = PriceRepository(tmp_path, app_logger)
 
