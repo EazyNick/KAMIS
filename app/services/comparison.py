@@ -337,28 +337,52 @@ class ComparisonService:
         return result
 
     def dashboard_defaults(self) -> dict[str, str | None]:
-        price_rows = self._prices.search(PriceFilters())
-        dates_by_item: dict[str, list[date]] = {}
-        for row in price_rows:
-            item_code = str(row.get("item_code", ""))
-            observed_date = row.get("observed_date")
-            if not item_code or not observed_date:
-                continue
-            dates_by_item.setdefault(item_code, []).append(
-                date.fromisoformat(str(observed_date))
-            )
+        item_stats: dict[str, tuple[date, date, int]] = {}
+        stats_reader = getattr(self._prices, "item_date_stats", None)
+        if callable(stats_reader):
+            item_stats.update(stats_reader())
+        else:
+            # Compatibility path for lightweight test doubles and alternate stores.
+            for row in self._prices.search(PriceFilters()):
+                item_code = str(row.get("item_code", ""))
+                observed_value = row.get("observed_date")
+                if not item_code or not observed_value:
+                    continue
+                observed = date.fromisoformat(str(observed_value))
+                current = item_stats.get(item_code)
+                if current is None:
+                    item_stats[item_code] = (observed, observed, 1)
+                else:
+                    earliest, latest, count = current
+                    item_stats[item_code] = (
+                        min(earliest, observed),
+                        max(latest, observed),
+                        count + 1,
+                    )
 
         online_rows = self._online.search_summaries()
+        online_item_codes: set[str] = set()
         for row in online_rows:
             if (
                 row.get("item_code")
                 and row.get("observed_date")
                 and row.get("average_unit_price") not in {None, ""}
             ):
-                dates_by_item.setdefault(str(row["item_code"]), []).append(
-                    date.fromisoformat(str(row["observed_date"]))
-                )
-        if not dates_by_item:
+                item_code = str(row["item_code"])
+                observed = date.fromisoformat(str(row["observed_date"]))
+                online_item_codes.add(item_code)
+                current = item_stats.get(item_code)
+                if current is None:
+                    item_stats[item_code] = (observed, observed, 1)
+                else:
+                    earliest, latest, count = current
+                    item_stats[item_code] = (
+                        min(earliest, observed),
+                        max(latest, observed),
+                        count + 1,
+                    )
+
+        if not item_stats:
             return {
                 "item_code": None,
                 "start_date": None,
@@ -366,27 +390,20 @@ class ComparisonService:
                 "mode": "base100",
             }
 
-        online_item_codes = {
-            str(row.get("item_code"))
-            for row in online_rows
-            if row.get("item_code")
-            and row.get("average_unit_price") not in {None, ""}
-        }
-        item_code = MELON_ITEM_CODE if MELON_ITEM_CODE in dates_by_item else max(
-            dates_by_item,
+        item_code = MELON_ITEM_CODE if MELON_ITEM_CODE in item_stats else max(
+            item_stats,
             key=lambda code: (
                 code in online_item_codes,
-                max(dates_by_item[code]),
-                len(dates_by_item[code]),
+                item_stats[code][1],
+                item_stats[code][2],
             ),
         )
-        available_dates = dates_by_item[item_code]
-        end_date = max(available_dates)
+        earliest, end_date, _ = item_stats[item_code]
         try:
             twenty_year_start = end_date.replace(year=end_date.year - 20)
         except ValueError:
             twenty_year_start = end_date.replace(year=end_date.year - 20, day=28)
-        start_date = max(min(available_dates), twenty_year_start)
+        start_date = max(earliest, twenty_year_start)
         return {
             "item_code": item_code,
             "start_date": start_date.isoformat(),
