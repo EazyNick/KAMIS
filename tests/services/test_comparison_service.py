@@ -177,14 +177,14 @@ def test_comparison_fills_exchange_holiday_but_not_missing_open_session() -> Non
     ]
 
 
-def test_dashboard_defaults_prefer_online_item_and_use_365_day_window() -> None:
+def test_dashboard_defaults_prefer_online_item_and_use_available_20_year_window() -> None:
     service = ComparisonService(
         DefaultPriceRepo(), DefaultOnlineRepo(), MarketRepo(), AnalyticsService()
     )
 
     assert service.dashboard_defaults() == {
         "item_code": "111",
-        "start_date": "2025-09-25",
+        "start_date": "2026-01-01",
         "end_date": "2026-09-24",
         "mode": "base100",
     }
@@ -261,12 +261,12 @@ def test_bootstrap_overlays_fresh_online_prices_on_cached_chart():
     assert payload["chart"]["raw_series"]["online_coupang"][-1] == 35930
 
 
-def test_dashboard_defaults_prefer_melon_with_full_year_window():
+def test_dashboard_defaults_prefer_melon_with_available_history_window():
     class MelonPrices:
         def search(self, filters):
             return [{"item_code": "257", "observed_date": "2026-09-30", "price_krw": 5000}]
     service = ComparisonService(MelonPrices(), DefaultOnlineRepo(), MarketRepo(), AnalyticsService())
     defaults = service.dashboard_defaults()
     assert defaults["item_code"] == "257"
-    assert defaults["start_date"] == "2025-10-01"
+    assert defaults["start_date"] == "2026-09-30"
     assert defaults["end_date"] == "2026-09-30"
