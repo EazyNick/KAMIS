@@ -12,6 +12,7 @@ from typing import ClassVar
 
 from app.core.errors import DataValidationError
 from app.domain.models import ProductCatalogEntry
+from app.domain.count_evidence import validate_count_evidence
 from app.domain.online_models import MatchStatus, ShoppingOffer
 
 CatalogKey = tuple[str, str]
@@ -72,8 +73,10 @@ class ShoppingAgentCsvParser:
         "리터": ("volume", Decimal(1000)),
         "ml": ("volume", Decimal(1)),
         "개": ("count", Decimal(1)),
+        "과": ("count", Decimal(1)),
         "포기": ("head", Decimal(1)),
         "마리": ("fish", Decimal(1)),
+        "미": ("fish", Decimal(1)),
         "봉": ("bag", Decimal(1)),
         "팩": ("pack", Decimal(1)),
     }
@@ -231,6 +234,15 @@ class ShoppingAgentCsvParser:
             quantity = Decimal(1)
             exclusion_reason = exclusion_reason or "incompatible_unit"
 
+        if entry.retail_unit in {"개", "과", "마리", "미"}:
+            try:
+                if not self._matches_item(row.get("detail_product_title") or "", entry.item_name):
+                    raise DataValidationError("detail product does not match requested item")
+                eligible_price = member_price if scope == "all_members" and member_price is not None else displayed_price
+                validate_count_evidence(row, eligible_price, offered_quantity, row["unit"])
+            except (DataValidationError, ValueError, InvalidOperation):
+                exclusion_reason = exclusion_reason or "count_evidence_invalid"
+
         if shipping_fee is None:
             shipping_fee = Decimal(0)
             exclusion_reason = exclusion_reason or "shipping_unknown"
@@ -263,6 +275,13 @@ class ShoppingAgentCsvParser:
             observed_date=observed_date,
             collected_at=collected_at,
             exclusion_reason=exclusion_reason,
+            offered_quantity=str(offered_quantity),
+            offered_unit={"과": "개", "미": "마리"}.get(row["unit"].strip(), row["unit"].strip()),
+            **{field: row.get(field) or None for field in (
+                "selected_option", "quantity_evidence", "price_evidence",
+                "detail_accessible_name", "evidence_source", "order_quantity",
+                "detail_product_title",
+            )},
         )
 
     @classmethod

@@ -61,8 +61,19 @@ Do not convert kg to pieces or fish without an explicit count.
 
 Multiple weights/options (`4kg 3kg 2kg 1kg`), count ranges (`8~10과`), and
 multipacks with unresolved totals are rejected; never pick the first/last number
-or use the manifest's desired quantity as evidence. The current script does not
-read selected options on product detail pages. Do not claim it verified them.
+or use the manifest's desired quantity as evidence.
+
+For `개`/`마리` targets the script opens the exposed product link in a temporary
+tab and reads the currently selected option, public sale price, and order quantity
+from one local purchase area. It never changes options or purchases anything.
+Explicit `2마리 × 3팩` is 6마리; a box alone and count ranges are not counts.
+Order quantity must be explicitly 1. Missing selected controls, unsupported detail
+layouts, surcharges, conflicting prices, and restricted prices are excluded.
+Conditional shipping is unknown, not free. There is no search-card fallback for
+count targets. Only an owned new tab is closed; cleanup failure is not success.
+Raw CSV retains the selected option, count/price evidence, detail title/text, and
+actual product URL. Ingestion validates this evidence again. Live-site support
+depends on the accessibility controls exposed by the current page.
 
 The script scans up to four times the requested offer limit (at most 40 visible
 eligible cards per target, one search). Candidates with missing or incompatible
@@ -97,3 +108,5 @@ may use that count. A kg box of apples still cannot use its package count as a
 fruit count. Reject melon boxes, sets, packs, cut fruit, halves and multiple
 weight options. Unknown shipping remains unknown; the exception does not waive
 price, shipping, availability or product validation.
+For detail verification, the selected option must explicitly establish `개`; a
+card's `통` wording alone is insufficient.

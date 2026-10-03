@@ -25,6 +25,13 @@ The collector writes UTF-8 CSV with these columns in this order:
 | `advertisement` | `true` only when the accessible text marks an ad. |
 | `availability` | `available`, `sold_out`, or `unknown`. |
 | `raw_accessible_name` | Full accessible ListItem name used for downstream validation. |
+| `selected_option` | Currently selected product detail option, unmodified. |
+| `quantity_evidence` | Same selected option text establishing total pieces/fish. |
+| `price_evidence` | Original labeled public sale price in the same purchase area. |
+| `detail_accessible_name` | Accessible text of that local purchase area. |
+| `detail_product_title` | Product detail document title, checked against the requested item. |
+| `evidence_source` | `product_detail` for detail evidence, otherwise empty. |
+| `order_quantity` | Explicit selected order quantity; must be `1` for count evidence. |
 
 Unknown values stay empty or `unknown`; they must never be guessed. Spreadsheet-formula
 prefixes (`=`, `+`, `-`, `@`) are escaped before CSV serialization.
@@ -37,6 +44,12 @@ Multiple option quantities, ranges, per-unit prices, and unclear multipacks do n
 establish a package quantity. Preserve the original text in `raw_accessible_name`.
 Unknown quantities stay empty and are excluded by validation. Never infer pieces
 from kg, use the requested comparison size, or treat one box as one fruit.
+
+For count targets, the detail evidence above and an HTTPS product URL are required.
+`2마리 × 3팩` supplies `quantity=6, unit=마리`; `10과` supplies `10,개`.
+Price, shipping and count come from the same selected detail offer. No card fallback.
+Older CSVs remain readable, but count rows without detail evidence are excluded.
+Normalized offers also retain `offered_quantity`/`offered_unit` before KAMIS scaling.
 
 Raw rejected candidates may exceed the usable-offer quota; they are retained for
 diagnosis, not included in the average. `validation-report.json` records validation

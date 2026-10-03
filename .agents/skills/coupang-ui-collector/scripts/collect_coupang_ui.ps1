@@ -7,6 +7,8 @@ $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName UIAutomationClient
 Add-Type -AssemblyName UIAutomationTypes
 Add-Type -AssemblyName System.Windows.Forms
+. (Join-Path $PSScriptRoot '../../../../scripts/collectors/shopping_count_detail.ps1')
+$detailProjectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../../..'))
 
 function Resolve-ChildPath {
     param([string]$Candidate, [string]$Parent, [string]$Label)
@@ -238,15 +240,36 @@ try {
             Start-Sleep -Milliseconds ([Math]::Max(500, [int]$manifest.minimum_delay_ms))
             $accessibleRows = @(Wait-AccessibleProductRows -TimeoutSeconds 25 -Maximum ([Math]::Min(40, [Math]::Max(1, [int]$manifest.max_offers_per_target) * 4)) -Query ([string]$target.query) -ItemName ([string]$target.item_name))
 
+            $candidateRows = @($accessibleRows | ForEach-Object {
+                [pscustomobject]@{ raw = [string]$_.Current.Name; url = Get-ShoppingProductUrl $_ }
+            })
             $acceptedCount = 0
-            foreach ($accessibleRow in $accessibleRows) {
-                $raw = [string]$accessibleRow.Current.Name
+            foreach ($candidateRow in $candidateRows) {
+                $raw = $candidateRow.raw
+                $url = $candidateRow.url
+                $detail = $null
+                $countTarget = [string]$target.comparison_unit -match '\uAC1C|\uB9C8\uB9AC'
+                if ($countTarget) {
+                    $detail = Read-ShoppingCountDetail -SearchDocument (Find-CoupangDocument) -Url $url -ComparisonUnit ([string]$target.comparison_unit) -ProjectRoot $detailProjectRoot
+                }
                 $lines = @($raw -split "`r?`n" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
                 $displayedPrice = Get-CoupangDisplayedPrice -RawName $raw
                 $quantityMatch = Get-CoupangQuantity -RawName $raw -ComparisonUnit ([string]$target.comparison_unit)
                 $unitPriceMatch = [regex]::Match($raw, '\([^\r\n]*?\d[\d,]*\s*\uC6D0[^\r\n]*?\)')
                 $shippingMatch = [regex]::Match($raw, '\uBC30\uC1A1\uBE44\s*(\d[\d,]*)\s*\uC6D0')
                 $freeShipping = $raw -match '\uBB34\uB8CC\s*\uBC30\uC1A1'
+                if ($countTarget) {
+                    # No search-card fallback for piece/fish targets.
+                    $quantityMatch = [regex]::Match('', 'a')
+                    $displayedPrice = ''
+                    $freeShipping = $false
+                    $shippingMatch = [regex]::Match('', 'a')
+                    if ($null -ne $detail -and $detail.verified) {
+                        $quantityMatch = [regex]::Match(($detail.quantity + $detail.unit), '^(\d+)(.+)$')
+                        $displayedPrice = $detail.displayed_price
+                        $url = $detail.url
+                    }
+                }
                 $allRows.Add([pscustomobject][ordered]@{
                     run_id = Escape-SpreadsheetValue $manifest.run_id
                     observed_date = Escape-SpreadsheetValue $manifest.observed_date
@@ -257,9 +280,9 @@ try {
                     query = Escape-SpreadsheetValue $target.query
                     product_id = New-StableProductId -RawName $raw
                     title = Escape-SpreadsheetValue $(if ($lines.Count -gt 0) { $lines[0] } else { '' })
-                    url = ''
+                    url = Escape-SpreadsheetValue $url
                     displayed_price = $displayedPrice
-                    shipping_fee = $(if ($shippingMatch.Success) { $shippingMatch.Groups[1].Value.Replace(',', '') } elseif ($freeShipping) { '0' } else { '' })
+                    shipping_fee = $(if ($countTarget) { [string]$detail.shipping_fee } elseif ($shippingMatch.Success) { $shippingMatch.Groups[1].Value.Replace(',', '') } elseif ($freeShipping) { '0' } else { '' })
                     member_price = ''
                     member_discount_scope = $(if ($raw -match '\uC640\uC6B0\uD68C\uC6D0|\uCFE0\uD398\uC774|\uCE74\uB4DC\uD560\uC778|\uCFE0\uD3F0') { 'restricted' } else { 'unknown' })
                     quantity = $(if ($quantityMatch.Success) { $quantityMatch.Groups[1].Value } else { '' })
@@ -268,9 +291,16 @@ try {
                     advertisement = ($raw -match '(^|\s)\uAD11\uACE0($|\s)')
                     availability = $(if ($raw -match '\uD488\uC808') { 'sold_out' } else { 'available' })
                     raw_accessible_name = Escape-SpreadsheetValue $raw
+                    selected_option = Escape-SpreadsheetValue $detail.selected_option
+                    quantity_evidence = Escape-SpreadsheetValue $detail.quantity_evidence
+                    price_evidence = Escape-SpreadsheetValue $detail.price_evidence
+                    detail_accessible_name = Escape-SpreadsheetValue $detail.detail_accessible_name
+                    detail_product_title = Escape-SpreadsheetValue $detail.detail_product_title
+                    evidence_source = Escape-SpreadsheetValue $detail.evidence_source
+                    order_quantity = Escape-SpreadsheetValue $detail.order_quantity
                 })
                 # Invalid candidates stay in the raw evidence but do not consume the offer quota.
-                if ($quantityMatch.Success -and $displayedPrice -and ($shippingMatch.Success -or $freeShipping) -and $raw -notmatch '\uD488\uC808') {
+                if ($quantityMatch.Success -and $displayedPrice -and ($shippingMatch.Success -or $freeShipping -or ($countTarget -and [string]$detail.shipping_fee -ne '')) -and $raw -notmatch '\uD488\uC808') {
                     $acceptedCount += 1
                     if ($acceptedCount -ge [Math]::Max(1, [int]$manifest.max_offers_per_target)) { break }
                 }
@@ -278,6 +308,7 @@ try {
             if ($accessibleRows.Count -gt 0) { $completedCount += 1 }
         }
         catch {
+            if ($_.Exception.Data['DetailCleanupFailed']) { throw }
             Write-Warning "Coupang target ${key}: $($_.Exception.Message)"
             $failedKeys.Add($key)
         }
@@ -287,7 +318,7 @@ try {
         $allRows | Export-Csv -LiteralPath $temporaryCsv -NoTypeInformation -Encoding UTF8
     }
     else {
-        $headers = 'run_id,observed_date,collected_at,platform,item_code,kind_code,query,product_id,title,url,displayed_price,shipping_fee,member_price,member_discount_scope,quantity,unit,unit_price_text,advertisement,availability,raw_accessible_name'
+        $headers = 'run_id,observed_date,collected_at,platform,item_code,kind_code,query,product_id,title,url,displayed_price,shipping_fee,member_price,member_discount_scope,quantity,unit,unit_price_text,advertisement,availability,raw_accessible_name,selected_option,quantity_evidence,price_evidence,detail_accessible_name,detail_product_title,evidence_source,order_quantity'
         [System.IO.File]::WriteAllText($temporaryCsv, $headers + [Environment]::NewLine, [System.Text.UTF8Encoding]::new($true))
     }
     Move-Item -LiteralPath $temporaryCsv -Destination $outputCsv -Force

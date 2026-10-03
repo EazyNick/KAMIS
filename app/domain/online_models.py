@@ -36,6 +36,15 @@ class ShoppingOffer:
     seller: str | None = None
     origin: str | None = None
     exclusion_reason: str | None = None
+    offered_quantity: str | None = None
+    offered_unit: str | None = None
+    selected_option: str | None = None
+    quantity_evidence: str | None = None
+    price_evidence: str | None = None
+    detail_accessible_name: str | None = None
+    detail_product_title: str | None = None
+    evidence_source: str | None = None
+    order_quantity: str | None = None
 
     def __post_init__(self) -> None:
         if self.base_price < 0 or self.shipping_fee < 0:
