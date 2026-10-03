@@ -1,0 +1,18 @@
+{
+  "run_id": "melon-reparse-20261002-201521",
+  "observed_date": "2026-10-02",
+  "run_dir": "D:\\Python\\KAMIS\\data\\runs\\coupang-agent\\melon-reparse-20261002-201521",
+  "output_csv": "D:\\Python\\KAMIS\\data\\runs\\coupang-agent\\melon-reparse-20261002-201521\\offers.csv",
+  "minimum_delay_ms": 5000,
+  "max_offers_per_target": 8,
+  "targets": [
+    {
+      "item_code": "257",
+      "kind_code": "00",
+      "item_name": "멜론",
+      "variety": "멜론",
+      "comparison_unit": "1개",
+      "query": "멜론 1개"
+    }
+  ]
+}

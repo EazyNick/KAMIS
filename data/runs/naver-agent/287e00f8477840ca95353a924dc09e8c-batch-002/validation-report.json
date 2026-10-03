@@ -1,0 +1,14 @@
+{
+  "targets": {
+    "611:05": {
+      "comparable_count": 0,
+      "excluded_reasons": {}
+    }
+  },
+  "invalid_row_count": 3,
+  "errors": [
+    "row 2: quantity must be positive",
+    "row 3: quantity must be positive",
+    "row 4: quantity must be positive"
+  ]
+}

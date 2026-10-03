@@ -1,0 +1,34 @@
+{
+  "run_id": "608eaada527648329e135bb8fc23e147",
+  "observed_date": "2026-09-30",
+  "run_dir": "D:\\Python\\KAMIS\\data\\runs\\naver-agent\\608eaada527648329e135bb8fc23e147",
+  "output_csv": "D:\\Python\\KAMIS\\data\\runs\\naver-agent\\608eaada527648329e135bb8fc23e147\\offers.csv",
+  "minimum_delay_ms": 5000,
+  "max_offers_per_target": 8,
+  "targets": [
+    {
+      "item_code": "411",
+      "kind_code": "05",
+      "item_name": "사과",
+      "variety": "후지",
+      "comparison_unit": "10개",
+      "query": "사과 후지 10개"
+    },
+    {
+      "item_code": "412",
+      "kind_code": "01",
+      "item_name": "배",
+      "variety": "신고",
+      "comparison_unit": "10개",
+      "query": "배 신고 10개"
+    },
+    {
+      "item_code": "611",
+      "kind_code": "05",
+      "item_name": "고등어",
+      "variety": "국산(신선 냉장)",
+      "comparison_unit": "1마리",
+      "query": "고등어 국산 신선 냉장 1마리"
+    }
+  ]
+}

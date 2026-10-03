@@ -1,0 +1,18 @@
+{
+  "run_id": "287e00f8477840ca95353a924dc09e8c-batch-002",
+  "observed_date": "2026-10-01",
+  "run_dir": "D:\\Python\\KAMIS\\data\\runs\\coupang-agent\\287e00f8477840ca95353a924dc09e8c-batch-002",
+  "output_csv": "D:\\Python\\KAMIS\\data\\runs\\coupang-agent\\287e00f8477840ca95353a924dc09e8c-batch-002\\offers.csv",
+  "minimum_delay_ms": 5000,
+  "max_offers_per_target": 8,
+  "targets": [
+    {
+      "item_code": "611",
+      "kind_code": "05",
+      "item_name": "고등어",
+      "variety": "국산(신선 냉장)",
+      "comparison_unit": "1마리",
+      "query": "고등어 국산 신선 냉장 1마리"
+    }
+  ]
+}

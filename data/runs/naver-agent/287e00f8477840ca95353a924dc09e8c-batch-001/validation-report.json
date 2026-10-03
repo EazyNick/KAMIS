@@ -1,0 +1,189 @@
+{
+  "targets": {
+    "411:05": {
+      "comparable_count": 0,
+      "excluded_reasons": {}
+    },
+    "111:10": {
+      "comparable_count": 8,
+      "excluded_reasons": {
+        "shipping_unknown": 2
+      }
+    },
+    "412:01": {
+      "comparable_count": 0,
+      "excluded_reasons": {}
+    },
+    "211:03": {
+      "comparable_count": 8,
+      "excluded_reasons": {}
+    },
+    "258:01": {
+      "comparable_count": 8,
+      "excluded_reasons": {
+        "shipping_unknown": 2
+      }
+    },
+    "257:00": {
+      "comparable_count": 1,
+      "excluded_reasons": {}
+    },
+    "245:00": {
+      "comparable_count": 8,
+      "excluded_reasons": {
+        "sold_out": 1
+      }
+    },
+    "225:00": {
+      "comparable_count": 4,
+      "excluded_reasons": {
+        "shipping_unknown": 3
+      }
+    },
+    "152:00": {
+      "comparable_count": 8,
+      "excluded_reasons": {
+        "shipping_unknown": 4
+      }
+    },
+    "231:03": {
+      "comparable_count": 1,
+      "excluded_reasons": {}
+    }
+  },
+  "invalid_row_count": 132,
+  "errors": [
+    "row 7: quantity must be positive",
+    "row 12: quantity must be positive",
+    "row 21: quantity must be positive",
+    "row 24: quantity must be positive",
+    "row 26: quantity must be positive",
+    "row 28: quantity must be positive",
+    "row 36: quantity must be positive",
+    "row 42: quantity must be positive",
+    "row 44: quantity must be positive",
+    "row 45: quantity must be positive",
+    "row 47: quantity must be positive",
+    "row 48: quantity must be positive",
+    "row 50: quantity must be positive",
+    "row 51: quantity must be positive",
+    "row 53: quantity must be positive",
+    "row 55: quantity must be positive",
+    "row 56: quantity must be positive",
+    "row 57: quantity must be positive",
+    "row 58: quantity must be positive",
+    "row 59: quantity must be positive",
+    "row 60: quantity must be positive",
+    "row 61: quantity must be positive",
+    "row 62: quantity must be positive",
+    "row 63: quantity must be positive",
+    "row 64: quantity must be positive",
+    "row 65: quantity must be positive",
+    "row 66: quantity must be positive",
+    "row 67: quantity must be positive",
+    "row 68: quantity must be positive",
+    "row 69: quantity must be positive",
+    "row 70: quantity must be positive",
+    "row 71: quantity must be positive",
+    "row 75: quantity must be positive",
+    "row 76: quantity must be positive",
+    "row 78: quantity must be positive",
+    "row 79: quantity must be positive",
+    "row 80: quantity must be positive",
+    "row 83: quantity must be positive",
+    "row 85: quantity must be positive",
+    "row 87: quantity must be positive",
+    "row 88: quantity must be positive",
+    "row 89: quantity must be positive",
+    "row 91: quantity must be positive",
+    "row 92: quantity must be positive",
+    "row 93: quantity must be positive",
+    "row 94: quantity must be positive",
+    "row 95: quantity must be positive",
+    "row 96: quantity must be positive",
+    "row 97: quantity must be positive",
+    "row 98: quantity must be positive",
+    "row 99: quantity must be positive",
+    "row 100: quantity must be positive",
+    "row 101: quantity must be positive",
+    "row 103: quantity must be positive",
+    "row 104: quantity must be positive",
+    "row 105: quantity must be positive",
+    "row 106: quantity must be positive",
+    "row 107: quantity must be positive",
+    "row 108: quantity must be positive",
+    "row 109: quantity must be positive",
+    "row 110: quantity must be positive",
+    "row 111: quantity must be positive",
+    "row 112: quantity must be positive",
+    "row 113: quantity must be positive",
+    "row 114: quantity must be positive",
+    "row 117: quantity must be positive",
+    "row 118: quantity must be positive",
+    "row 126: quantity must be positive",
+    "row 128: quantity must be positive",
+    "row 129: quantity must be positive",
+    "row 130: quantity must be positive",
+    "row 131: quantity must be positive",
+    "row 132: quantity must be positive",
+    "row 133: quantity must be positive",
+    "row 134: quantity must be positive",
+    "row 135: quantity must be positive",
+    "row 136: quantity must be positive",
+    "row 137: quantity must be positive",
+    "row 138: quantity must be positive",
+    "row 139: quantity must be positive",
+    "row 140: quantity must be positive",
+    "row 141: quantity must be positive",
+    "row 142: quantity must be positive",
+    "row 143: quantity must be positive",
+    "row 144: quantity must be positive",
+    "row 145: quantity must be positive",
+    "row 146: quantity must be positive",
+    "row 147: quantity must be positive",
+    "row 148: quantity must be positive",
+    "row 149: quantity must be positive",
+    "row 150: quantity must be positive",
+    "row 151: quantity must be positive",
+    "row 152: quantity must be positive",
+    "row 153: quantity must be positive",
+    "row 154: quantity must be positive",
+    "row 155: quantity must be positive",
+    "row 156: quantity must be positive",
+    "row 157: quantity must be positive",
+    "row 158: quantity must be positive",
+    "row 159: quantity must be positive",
+    "row 160: quantity must be positive",
+    "row 161: quantity must be positive",
+    "row 162: quantity must be positive",
+    "row 163: quantity must be positive",
+    "row 164: quantity must be positive",
+    "row 165: quantity must be positive",
+    "row 166: quantity must be positive",
+    "row 167: quantity must be positive",
+    "row 168: quantity must be positive",
+    "row 169: quantity must be positive",
+    "row 170: quantity must be positive",
+    "row 171: quantity must be positive",
+    "row 172: quantity must be positive",
+    "row 173: quantity must be positive",
+    "row 174: quantity must be positive",
+    "row 175: quantity must be positive",
+    "row 176: quantity must be positive",
+    "row 177: quantity must be positive",
+    "row 178: quantity must be positive",
+    "row 179: quantity must be positive",
+    "row 180: quantity must be positive",
+    "row 181: quantity must be positive",
+    "row 182: quantity must be positive",
+    "row 183: quantity must be positive",
+    "row 184: quantity must be positive",
+    "row 185: quantity must be positive",
+    "row 186: quantity must be positive",
+    "row 187: quantity must be positive",
+    "row 188: quantity must be positive",
+    "row 189: quantity must be positive",
+    "row 190: quantity must be positive",
+    "row 191: quantity must be positive"
+  ]
+}

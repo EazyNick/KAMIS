@@ -1,0 +1,191 @@
+{
+  "targets": {
+    "111:10": {
+      "comparable_count": 8,
+      "excluded_reasons": {}
+    },
+    "258:01": {
+      "comparable_count": 8,
+      "excluded_reasons": {
+        "shipping_unknown": 4
+      }
+    },
+    "245:00": {
+      "comparable_count": 8,
+      "excluded_reasons": {
+        "shipping_unknown": 7
+      }
+    },
+    "412:01": {
+      "comparable_count": 2,
+      "excluded_reasons": {}
+    },
+    "231:03": {
+      "comparable_count": 1,
+      "excluded_reasons": {}
+    },
+    "257:00": {
+      "comparable_count": 5,
+      "excluded_reasons": {
+        "shipping_unknown": 24
+      }
+    },
+    "152:00": {
+      "comparable_count": 8,
+      "excluded_reasons": {
+        "shipping_unknown": 10
+      }
+    },
+    "211:03": {
+      "comparable_count": 3,
+      "excluded_reasons": {}
+    },
+    "411:05": {
+      "comparable_count": 0,
+      "excluded_reasons": {}
+    },
+    "225:00": {
+      "comparable_count": 8,
+      "excluded_reasons": {
+        "sold_out": 1,
+        "shipping_unknown": 2
+      }
+    }
+  },
+  "invalid_row_count": 133,
+  "errors": [
+    "row 24: quantity must be positive",
+    "row 29: quantity must be positive",
+    "row 32: quantity must be positive",
+    "row 33: offer has no usable price",
+    "row 34: quantity must be positive",
+    "row 35: quantity must be positive",
+    "row 36: quantity must be positive",
+    "row 37: quantity must be positive",
+    "row 38: quantity must be positive",
+    "row 39: quantity must be positive",
+    "row 41: quantity must be positive",
+    "row 42: offer has no usable price",
+    "row 43: quantity must be positive",
+    "row 44: quantity must be positive",
+    "row 45: quantity must be positive",
+    "row 46: quantity must be positive",
+    "row 47: offer has no usable price",
+    "row 48: quantity must be positive",
+    "row 49: quantity must be positive",
+    "row 50: quantity must be positive",
+    "row 51: quantity must be positive",
+    "row 52: offer has no usable price",
+    "row 53: quantity must be positive",
+    "row 54: quantity must be positive",
+    "row 55: quantity must be positive",
+    "row 56: offer has no usable price",
+    "row 57: quantity must be positive",
+    "row 58: quantity must be positive",
+    "row 59: quantity must be positive",
+    "row 60: quantity must be positive",
+    "row 72: quantity must be positive",
+    "row 73: quantity must be positive",
+    "row 74: quantity must be positive",
+    "row 75: quantity must be positive",
+    "row 76: quantity must be positive",
+    "row 77: quantity must be positive",
+    "row 78: quantity must be positive",
+    "row 79: quantity must be positive",
+    "row 81: quantity must be positive",
+    "row 82: quantity must be positive",
+    "row 83: quantity must be positive",
+    "row 84: quantity must be positive",
+    "row 85: quantity must be positive",
+    "row 86: quantity must be positive",
+    "row 87: quantity must be positive",
+    "row 88: quantity must be positive",
+    "row 89: quantity must be positive",
+    "row 90: quantity must be positive",
+    "row 91: quantity must be positive",
+    "row 92: quantity must be positive",
+    "row 93: quantity must be positive",
+    "row 94: quantity must be positive",
+    "row 95: quantity must be positive",
+    "row 96: quantity must be positive",
+    "row 97: quantity must be positive",
+    "row 98: quantity must be positive",
+    "row 99: quantity must be positive",
+    "row 100: quantity must be positive",
+    "row 101: quantity must be positive",
+    "row 102: quantity must be positive",
+    "row 103: quantity must be positive",
+    "row 116: quantity must be positive",
+    "row 117: quantity must be positive",
+    "row 134: quantity must be positive",
+    "row 143: quantity must be positive",
+    "row 146: quantity must be positive",
+    "row 156: quantity must be positive",
+    "row 161: quantity must be positive",
+    "row 162: quantity must be positive",
+    "row 166: quantity must be positive",
+    "row 168: quantity must be positive",
+    "row 170: quantity must be positive",
+    "row 171: quantity must be positive",
+    "row 172: quantity must be positive",
+    "row 173: quantity must be positive",
+    "row 174: offer has no usable price",
+    "row 175: quantity must be positive",
+    "row 176: quantity must be positive",
+    "row 177: quantity must be positive",
+    "row 178: quantity must be positive",
+    "row 179: quantity must be positive",
+    "row 180: quantity must be positive",
+    "row 181: quantity must be positive",
+    "row 182: quantity must be positive",
+    "row 183: quantity must be positive",
+    "row 184: quantity must be positive",
+    "row 185: quantity must be positive",
+    "row 186: quantity must be positive",
+    "row 187: quantity must be positive",
+    "row 188: quantity must be positive",
+    "row 189: quantity must be positive",
+    "row 190: quantity must be positive",
+    "row 191: quantity must be positive",
+    "row 192: quantity must be positive",
+    "row 193: quantity must be positive",
+    "row 194: offer has no usable price",
+    "row 195: quantity must be positive",
+    "row 196: quantity must be positive",
+    "row 197: quantity must be positive",
+    "row 198: quantity must be positive",
+    "row 199: quantity must be positive",
+    "row 200: quantity must be positive",
+    "row 201: quantity must be positive",
+    "row 202: quantity must be positive",
+    "row 203: quantity must be positive",
+    "row 204: quantity must be positive",
+    "row 205: quantity must be positive",
+    "row 207: quantity must be positive",
+    "row 208: quantity must be positive",
+    "row 209: quantity must be positive",
+    "row 210: quantity must be positive",
+    "row 211: quantity must be positive",
+    "row 212: quantity must be positive",
+    "row 213: quantity must be positive",
+    "row 214: quantity must be positive",
+    "row 215: quantity must be positive",
+    "row 216: quantity must be positive",
+    "row 217: quantity must be positive",
+    "row 219: quantity must be positive",
+    "row 220: quantity must be positive",
+    "row 221: offer has no usable price",
+    "row 222: quantity must be positive",
+    "row 223: quantity must be positive",
+    "row 224: quantity must be positive",
+    "row 225: quantity must be positive",
+    "row 226: quantity must be positive",
+    "row 227: quantity must be positive",
+    "row 228: quantity must be positive",
+    "row 229: quantity must be positive",
+    "row 230: quantity must be positive",
+    "row 231: quantity must be positive",
+    "row 232: quantity must be positive",
+    "row 233: quantity must be positive"
+  ]
+}

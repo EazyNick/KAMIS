@@ -1,0 +1,36 @@
+{
+  "targets": {
+    "611:05": {
+      "comparable_count": 1,
+      "excluded_reasons": {
+        "shipping_unknown": 8
+      }
+    }
+  },
+  "invalid_row_count": 23,
+  "errors": [
+    "row 4: quantity must be positive",
+    "row 5: quantity must be positive",
+    "row 7: quantity must be positive",
+    "row 8: quantity must be positive",
+    "row 10: offer has no usable price",
+    "row 12: quantity must be positive",
+    "row 14: quantity must be positive",
+    "row 15: quantity must be positive",
+    "row 17: quantity must be positive",
+    "row 18: quantity must be positive",
+    "row 19: quantity must be positive",
+    "row 20: quantity must be positive",
+    "row 22: offer has no usable price",
+    "row 23: quantity must be positive",
+    "row 24: quantity must be positive",
+    "row 25: quantity must be positive",
+    "row 26: quantity must be positive",
+    "row 27: quantity must be positive",
+    "row 28: quantity must be positive",
+    "row 29: offer has no usable price",
+    "row 30: quantity must be positive",
+    "row 31: quantity must be positive",
+    "row 33: quantity must be positive"
+  ]
+}
