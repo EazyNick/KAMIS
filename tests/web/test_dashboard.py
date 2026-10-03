@@ -154,6 +154,7 @@ def test_dashboard_defaults_to_kamis_futures_and_preserves_manual_selection(
         assert page.locator("#endDate").input_value() == "2026-09-24"
         assert page.locator("#periodPreset").input_value() == "20"
         assert page.locator("#comparisonChart").evaluate("canvas => canvas.width") > 0
+        assert not any("/api/v1/comparison?" in url for url in requested_urls)
 
         page.locator("#periodPreset").select_option("5")
         page.wait_for_timeout(50)
@@ -169,7 +170,6 @@ def test_dashboard_defaults_to_kamis_futures_and_preserves_manual_selection(
             for url in requested_urls
         )
         assert any("/api/v1/dashboard/bootstrap" in url for url in requested_urls)
-        assert not any("/api/v1/comparison?" in url for url in requested_urls)
         assert page.get_by_role("navigation").is_visible()
         dashboard_box = page.locator("#dashboard").bounding_box()
         overview_box = page.locator("#overview").bounding_box()
