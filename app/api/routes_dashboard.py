@@ -1,12 +1,18 @@
 from pathlib import Path
 
 from fastapi import APIRouter
-from fastapi.responses import HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse
 
 router = APIRouter()
 _web_root = Path(__file__).resolve().parents[1] / "web"
 _dashboard = _web_root / "dashboard.html"
 _enhancements = _web_root / "dashboard_enhancements.html"
+_favicon = _web_root / "favicon.png"
+
+
+@router.get("/favicon.ico", response_class=FileResponse, include_in_schema=False)
+def favicon() -> FileResponse:
+    return FileResponse(_favicon, media_type="image/png")
 
 
 @router.get("/", response_class=HTMLResponse, include_in_schema=False)
