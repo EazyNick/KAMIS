@@ -79,7 +79,18 @@ class DailyPipeline:
             observed_date=observed_date,
         )
 
-        if self._source_completed("kamis", observed_date, run.run_id):
+        kamis_price_repository = getattr(self._kamis, "price_repository", None)
+        kamis_data_probe = (
+            lambda: kamis_price_repository.has_collected_date(observed_date)
+            if kamis_price_repository is not None
+            else False
+        )
+        if self._source_completed(
+            "kamis",
+            observed_date,
+            run.run_id,
+            data_probe=kamis_data_probe,
+        ):
             self._log_source_skipped("kamis", observed_date, run.run_id)
         else:
             self._log_source_started("kamis", observed_date, run.run_id)
