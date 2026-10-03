@@ -37,6 +37,7 @@ class Settings:
     request_timeout_seconds: float
     scheduler_hour: int
     scheduler_minute: int
+    analytics_auto_refresh: bool = False
     shopping_user_data_dir: Path | None = None
     shopping_headless: bool = False
     shopping_browser_channel: str | None = "chrome"
@@ -74,6 +75,10 @@ class Settings:
             request_timeout_seconds=float(os.getenv("REQUEST_TIMEOUT_SECONDS", "30")),
             scheduler_hour=int(os.getenv("SCHEDULER_HOUR", "7")),
             scheduler_minute=int(os.getenv("SCHEDULER_MINUTE", "0")),
+            analytics_auto_refresh=os.getenv(
+                "ANALYTICS_AUTO_REFRESH", "false"
+            ).casefold()
+            not in {"0", "false", "no"},
             shopping_user_data_dir=(
                 Path(value).resolve()
                 if (value := os.getenv("SHOPPING_USER_DATA_DIR"))
