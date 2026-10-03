@@ -248,26 +248,49 @@ class PriceRepository(_AtomicCsvRepository):
     def count(self) -> int:
         return len(self._read())
 
-    def has_collected_date(self, observed_date: date) -> bool:
-        """Return True when at least one KAMIS observation exists for the date.
+    def has_collected_date(
+        self,
+        observed_date: date,
+        required_item_keys: set[tuple[str, str]] | frozenset[tuple[str, str]] | None = None,
+    ) -> bool:
+        """Return whether a date has sufficient stored KAMIS item coverage.
 
-        This intentionally scans only until the requested date is found so startup
-        checkpoint recovery does not need to materialize the full price CSV.
+        When required_item_keys is provided, every configured (item_code, kind_code)
+        must be represented on the date. This prevents one partial row from
+        suppressing a recovery collection.
         """
         expected = observed_date.isoformat()
+        required = set(required_item_keys or ())
+        found_date = False
+        found_keys: set[tuple[str, str]] = set()
+
         with self._lock:
             if not self.path.exists() or self.path.stat().st_size == 0:
                 return False
             try:
                 with self.path.open(encoding="utf-8-sig", newline="") as handle:
-                    return any(
-                        row.get("observed_date") == expected
-                        for row in csv.DictReader(handle)
-                    )
+                    for row in csv.DictReader(handle):
+                        row_date = row.get("observed_date", "")
+                        if row_date < expected:
+                            continue
+                        if row_date > expected:
+                            break
+                        found_date = True
+                        if not required:
+                            return True
+                        found_keys.add(
+                            (
+                                str(row.get("item_code", "")),
+                                str(row.get("kind_code", "")),
+                            )
+                        )
+                        if required.issubset(found_keys):
+                            return True
             except (OSError, csv.Error) as error:
                 raise StorageError(
                     f"failed to inspect collected KAMIS date in {self.path}: {error}"
                 ) from error
+        return found_date if not required else required.issubset(found_keys)
 
     def observed_date_range(self) -> tuple[date, date] | None:
         """Scan the date column without loading the full price history into memory."""
