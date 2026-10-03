@@ -50,11 +50,15 @@
     const systemStatus=document.querySelector('#systemStatus')?.textContent?.trim();
     const catalogCount=document.querySelector('#catalogCount')?.textContent?.trim();
     const itemOptions=document.querySelector('#itemSelect')?.options?.length||0;
-    const correlations=document.querySelector('#correlations')?.textContent?.trim()||'';
     const chartReady=Boolean(chartData&&Array.isArray(chartData.dates)&&chartData.series);
-    const baseReady=systemStatus&&systemStatus!=='시스템 확인 중'&&catalogCount&&catalogCount!=='—'&&itemOptions>1&&chartReady;
-    const correlationReady=!correlations.includes('품목을 선택하면 분석 결과가 표시됩니다.');
-    return Boolean(baseReady&&correlationReady);
+    return Boolean(
+      systemStatus&&
+      systemStatus!=='시스템 확인 중'&&
+      catalogCount&&
+      catalogCount!=='—'&&
+      itemOptions>1&&
+      chartReady
+    );
   }
 
   const startupStartedAt=Date.now();
@@ -71,8 +75,9 @@
       return;
     }
     if(Date.now()-startupStartedAt>30000){
-      clearInterval(startupWatcher);
-      finishStartup(false);
+      const card=startup.querySelector('.dashboard-startup-card');
+      card.querySelector('strong').textContent='대용량 데이터를 불러오는 중입니다';
+      card.querySelector('span').textContent='20년 시계열을 처리하고 있습니다. 서버 오류가 아니라면 완료되는 즉시 화면이 열립니다.';
     }
   },100);
 
