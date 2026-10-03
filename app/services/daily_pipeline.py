@@ -5,6 +5,8 @@ from datetime import date
 from threading import Lock
 from typing import Any, Protocol
 
+from holidays import country_holidays
+
 from app.core.errors import CollectionAlreadyRunning
 from app.domain.models import (
     CollectionError,
@@ -32,6 +34,8 @@ class DailyPipeline:
         catalog_provider: Callable[[], list[ProductCatalogEntry]],
         analytics_refresher: AnalyticsRefresher | None,
         logger: StructuredLogger,
+        *,
+        kamis_required_keys: set[tuple[str, str]] | frozenset[tuple[str, str]] = frozenset(),
     ) -> None:
         self._kamis = kamis_service
         self._online = online_service
@@ -41,6 +45,7 @@ class DailyPipeline:
         self._catalog_provider = catalog_provider
         self._analytics = analytics_refresher
         self._logger = logger
+        self._kamis_required_keys = frozenset(kamis_required_keys)
         self._run_lock = Lock()
 
     @property
@@ -81,11 +86,16 @@ class DailyPipeline:
 
         kamis_price_repository = getattr(self._kamis, "price_repository", None)
         kamis_data_probe = (
-            lambda: kamis_price_repository.has_collected_date(observed_date)
+            lambda: kamis_price_repository.has_collected_date(
+                observed_date,
+                self._kamis_required_keys,
+            )
             if kamis_price_repository is not None
             else False
         )
-        if self._source_completed(
+        if not self._is_kamis_business_day(observed_date):
+            self._skip_calendar_closed_source("kamis", observed_date, run.run_id)
+        elif self._source_completed(
             "kamis",
             observed_date,
             run.run_id,
@@ -156,7 +166,9 @@ class DailyPipeline:
                 self._save_failed_checkpoint(online_checkpoint, error)
                 self._record_error(errors, "online", error, run.run_id)
 
-        if self._source_completed(
+        if observed_date.weekday() >= 5:
+            self._skip_calendar_closed_source("market", observed_date, run.run_id)
+        elif self._source_completed(
             "market",
             observed_date,
             run.run_id,
@@ -217,6 +229,31 @@ class DailyPipeline:
             error_count=len(errors),
         )
         return completed
+
+    @staticmethod
+    def _is_kamis_business_day(observed_date: date) -> bool:
+        if observed_date.weekday() >= 5:
+            return False
+        return observed_date not in country_holidays("KR")
+
+    def _skip_calendar_closed_source(
+        self, source: str, observed_date: date, run_id: str
+    ) -> None:
+        if not self._runs.has_successful_run(source, observed_date):
+            checkpoint = CollectionRun.start(source, observed_date, observed_date).finish(
+                RunStatus.SUCCESS,
+                record_count=0,
+                error_count=0,
+            )
+            self._runs.save(checkpoint)
+        self._logger.info(
+            "daily_pipeline.source.skipped",
+            "Source collection skipped because its market is closed",
+            run_id=run_id,
+            source=source,
+            observed_date=observed_date,
+            reason="calendar_closed",
+        )
 
     def _source_completed(
         self,
