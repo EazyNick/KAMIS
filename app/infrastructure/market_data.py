@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import csv
 from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from datetime import date, datetime, timedelta
@@ -263,15 +264,23 @@ class MarketRepository:
         end_date: date | None = None,
     ) -> list[dict[str, Any]]:
         result: list[dict[str, Any]] = []
-        for row in self._storage._read():
-            observed = date.fromisoformat(row["observed_date"])
-            if series_id and row["series_id"] != series_id:
-                continue
-            if start_date and observed < start_date:
-                continue
-            if end_date and observed > end_date:
-                continue
-            converted: dict[str, Any] = dict(row)
-            converted["close"] = float(row["close"])
-            result.append(converted)
+        with self._storage._lock:
+            path = self._storage.path
+            if not path.exists() or path.stat().st_size == 0:
+                return result
+            with path.open(encoding="utf-8-sig", newline="") as handle:
+                for row in csv.DictReader(handle):
+                    observed_text = row.get("observed_date", "")
+                    if not observed_text:
+                        continue
+                    observed = date.fromisoformat(observed_text)
+                    if start_date and observed < start_date:
+                        continue
+                    if end_date and observed > end_date:
+                        break
+                    if series_id and row.get("series_id") != series_id:
+                        continue
+                    converted: dict[str, Any] = dict(row)
+                    converted["close"] = float(row["close"])
+                    result.append(converted)
         return result
