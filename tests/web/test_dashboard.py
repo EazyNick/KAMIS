@@ -69,6 +69,21 @@ def test_dashboard_defaults_to_kamis_futures_and_preserves_manual_selection(
             "total": 3 if has_kamis_commodities else 1,
         },
         "/api/v1/online/summaries": {"items": [], "total": 0},
+        "/api/v1/market": {
+            "items": [
+                {
+                    "observed_date": "2026-09-24",
+                    "series_id": "kospi",
+                    "ticker": "^KS11",
+                    "close": 2600,
+                    "currency": "index",
+                    "unit": "index points",
+                }
+            ],
+            "total": 150,
+            "limit": 100,
+            "offset": 0,
+        },
         "/api/v1/dashboard/defaults": {
             "item_code": "222",
             "start_date": "2026-06-27",
@@ -137,7 +152,22 @@ def test_dashboard_defaults_to_kamis_futures_and_preserves_manual_selection(
             assert page.locator('#itemSelect option[value="111"]').inner_text() == "쌀 · 10kg"
         assert page.locator("#startDate").input_value() == "2026-06-27"
         assert page.locator("#endDate").input_value() == "2026-09-24"
+        assert page.locator("#periodPreset").input_value() == "20"
         assert page.locator("#comparisonChart").evaluate("canvas => canvas.width") > 0
+
+        page.locator("#periodPreset").select_option("5")
+        page.wait_for_timeout(50)
+        assert page.locator("#startDate").input_value() == "2021-09-24"
+
+        page.locator("#tableDataset").select_option("market")
+        page.wait_for_timeout(50)
+        assert "1-100 / 150건" in page.locator("#tablePageInfo").inner_text()
+        page.locator("#tableNext").click()
+        page.wait_for_timeout(50)
+        assert any(
+            "/api/v1/market?" in url and "offset=100" in url and "order=desc" in url
+            for url in requested_urls
+        )
         assert any("/api/v1/dashboard/bootstrap" in url for url in requested_urls)
         assert not any("/api/v1/comparison?" in url for url in requested_urls)
         assert page.get_by_role("navigation").is_visible()
