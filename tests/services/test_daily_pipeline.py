@@ -119,7 +119,7 @@ def test_daily_pipeline_skips_sources_already_completed_for_date() -> None:
 
 def test_daily_pipeline_recovers_checkpoints_from_existing_dated_data() -> None:
     class StoredKamisRepository:
-        def has_collected_date(self, observed_date):
+        def has_collected_date(self, observed_date, required_item_keys=None):
             return True
 
     class StoredKamis:
@@ -159,6 +159,50 @@ def test_daily_pipeline_recovers_checkpoints_from_existing_dated_data() -> None:
 
     assert result.status is RunStatus.SUCCESS
     assert {"kamis", "online", "market"}.issubset(runs.successful_sources)
+
+
+def test_daily_pipeline_skips_kamis_and_market_on_weekend() -> None:
+    class ClosedDayKamis:
+        def collect(self, start_date, end_date):
+            raise AssertionError("KAMIS must not run on a weekend")
+
+    class CleanOnline:
+        calls = 0
+
+        def has_collected_date(self, catalog, observed_date):
+            return False
+
+        def collect(self, catalog, observed_date, run_id):
+            self.calls += 1
+            return SimpleNamespace(offer_count=1, error_count=0, errors=())
+
+    class ClosedDayMarket:
+        def fetch(self, start_date, end_date):
+            raise AssertionError("market must not run on a weekend")
+
+    runs = Runs()
+    online = CleanOnline()
+    pipeline = DailyPipeline(
+        ClosedDayKamis(),
+        online,
+        ClosedDayMarket(),
+        MarketRepo(),
+        runs,
+        lambda: [SimpleNamespace(item_code="111")],
+        None,
+        app_logger,
+    )
+
+    result = pipeline.collect(date(2026, 10, 3))
+
+    assert result.status is RunStatus.SUCCESS
+    assert online.calls == 1
+    assert {"kamis", "online", "market"}.issubset(runs.successful_sources)
+
+
+def test_kamis_business_day_excludes_korean_public_holiday() -> None:
+    assert DailyPipeline._is_kamis_business_day(date(2026, 10, 9)) is False
+    assert DailyPipeline._is_kamis_business_day(date(2026, 10, 8)) is True
 
 
 def test_daily_pipeline_logs_each_source_before_collection() -> None:
