@@ -205,6 +205,14 @@ def test_dashboard_is_served_as_html(client: TestClient) -> None:
     assert "comparisonChart" in response.text
 
 
+def test_dashboard_favicon_is_served(client: TestClient) -> None:
+    response = client.get("/favicon.ico")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("image/png")
+    assert response.content.startswith(b"\x89PNG")
+
+
 def test_dashboard_defaults_endpoint_handles_empty_dataset(client: TestClient) -> None:
     response = client.get("/api/v1/dashboard/defaults")
 
