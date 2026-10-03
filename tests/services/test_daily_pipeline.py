@@ -118,6 +118,16 @@ def test_daily_pipeline_skips_sources_already_completed_for_date() -> None:
 
 
 def test_daily_pipeline_recovers_checkpoints_from_existing_dated_data() -> None:
+    class StoredKamisRepository:
+        def has_collected_date(self, observed_date):
+            return True
+
+    class StoredKamis:
+        price_repository = StoredKamisRepository()
+
+        def collect(self, start_date, end_date):
+            raise AssertionError("stored KAMIS data must not be recollected")
+
     class StoredOnline:
         def has_collected_date(self, catalog, observed_date):
             return True
@@ -133,9 +143,9 @@ def test_daily_pipeline_recovers_checkpoints_from_existing_dated_data() -> None:
         def fetch(self, start_date, end_date):
             raise AssertionError("stored market data must not be recollected")
 
-    runs = Runs(successful_sources={"kamis"})
+    runs = Runs()
     pipeline = DailyPipeline(
-        Kamis(),
+        StoredKamis(),
         StoredOnline(),
         AlreadyCollectedMarket(),
         StoredMarketRepo(),
@@ -148,7 +158,7 @@ def test_daily_pipeline_recovers_checkpoints_from_existing_dated_data() -> None:
     result = pipeline.collect(date(2026, 9, 25))
 
     assert result.status is RunStatus.SUCCESS
-    assert {"online", "market"}.issubset(runs.successful_sources)
+    assert {"kamis", "online", "market"}.issubset(runs.successful_sources)
 
 
 def test_daily_pipeline_logs_each_source_before_collection() -> None:
