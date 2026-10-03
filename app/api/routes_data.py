@@ -96,6 +96,7 @@ def market_data(
     series_id: str | None = None,
     start_date: date | None = None,
     end_date: date | None = None,
+    order: Literal["asc", "desc"] = "asc",
     limit: Annotated[int, Query(ge=1, le=5000)] = 500,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> dict[str, Any]:
@@ -105,13 +106,12 @@ def market_data(
         raise HTTPException(
             status_code=422, detail="start_date must not exceed end_date"
         )
-    return _page(
-        container.market_repository.search(
-            series_id=series_id, start_date=start_date, end_date=end_date
-        ),
-        limit,
-        offset,
+    rows = container.market_repository.search(
+        series_id=series_id, start_date=start_date, end_date=end_date
     )
+    if order == "desc":
+        rows.reverse()
+    return _page(rows, limit, offset)
 
 
 @router.get("/comparison")
