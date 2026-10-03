@@ -146,7 +146,7 @@ class ApplicationContainer:
             market_repository,
             runs,
             catalog.entries,
-            analytics_batch,
+            analytics_batch if settings.analytics_auto_refresh else None,
             app_logger,
         )
         kamis_history = KamisHistoryService(
@@ -188,11 +188,18 @@ class ApplicationContainer:
                     "Market history backfill failed; startup will continue",
                     error,
                 )
-            analytics_batch.refresh_if_stale(
-                catalog.entries(),
-                f"startup-history-{uuid4().hex}",
-                (prices.path, market_repository.path),
-            )
+            if settings.analytics_auto_refresh:
+                analytics_batch.refresh_if_stale(
+                    catalog.entries(),
+                    f"startup-history-{uuid4().hex}",
+                    (prices.path, market_repository.path),
+                )
+            else:
+                app_logger.info(
+                    "analytics.refresh.skipped",
+                    "Automatic analytics cache refresh is disabled at startup",
+                    reason="auto_refresh_disabled",
+                )
             return total
 
         startup_collection = StartupCollectionService(
