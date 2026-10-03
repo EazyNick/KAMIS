@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
@@ -19,6 +19,7 @@ def list_prices(
     item_name: str | None = None,
     start_date: date | None = None,
     end_date: date | None = None,
+    order: Literal["asc", "desc"] = "asc",
     limit: Annotated[int, Query(ge=1, le=500)] = 100,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> dict[str, object]:
@@ -29,6 +30,8 @@ def list_prices(
     rows = container.price_repository.search(
         PriceFilters(price_type, item_code, item_name, start_date, end_date)
     )
+    if order == "desc":
+        rows.reverse()
     return {
         "items": rows[offset : offset + limit],
         "total": len(rows),
