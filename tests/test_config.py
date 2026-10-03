@@ -19,6 +19,22 @@ def test_settings_load_paths_relative_to_project(
     assert settings.timezone == "Asia/Seoul"
 
 
+def test_analytics_auto_refresh_is_disabled_by_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("ANALYTICS_AUTO_REFRESH", raising=False)
+    configured = Settings.from_env(load_environment_file=False)
+    assert configured.analytics_auto_refresh is False
+
+
+def test_analytics_auto_refresh_can_be_enabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("ANALYTICS_AUTO_REFRESH", "true")
+    configured = Settings.from_env(load_environment_file=False)
+    assert configured.analytics_auto_refresh is True
+
+
 def test_missing_kamis_credentials_raise_clear_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
