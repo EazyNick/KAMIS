@@ -48,6 +48,12 @@ class DefaultPriceRepo:
         return [
             {
                 "item_code": "111",
+                "observed_date": "2000-01-01",
+                "price_type": "retail",
+                "price_krw": 900,
+            },
+            {
+                "item_code": "111",
                 "observed_date": "2026-01-01",
                 "price_type": "retail",
                 "price_krw": 1000,
@@ -184,7 +190,7 @@ def test_dashboard_defaults_prefer_online_item_and_use_available_20_year_window(
 
     assert service.dashboard_defaults() == {
         "item_code": "111",
-        "start_date": "2026-01-01",
+        "start_date": "2006-09-24",
         "end_date": "2026-09-24",
         "mode": "base100",
     }
