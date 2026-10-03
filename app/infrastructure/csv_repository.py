@@ -222,28 +222,70 @@ class PriceRepository(_AtomicCsvRepository):
     def search(self, filters: PriceFilters | None = None) -> list[dict[str, Any]]:
         filters = filters or PriceFilters()
         result: list[dict[str, Any]] = []
-        for row in self._read():
-            observed = date.fromisoformat(row["observed_date"])
-            if filters.price_type and row.get("price_type") != filters.price_type:
-                continue
-            if filters.item_code and row.get("item_code") != filters.item_code:
-                continue
-            if (
-                filters.item_name
-                and filters.item_name.casefold()
-                not in row.get("item_name", "").casefold()
-            ):
-                continue
-            if filters.start_date and observed < filters.start_date:
-                continue
-            if filters.end_date and observed > filters.end_date:
-                continue
-            converted: dict[str, Any] = dict(row)
-            converted["price_krw"] = (
-                float(row["price_krw"]) if row.get("price_krw") else None
-            )
-            result.append(converted)
+        with self._lock:
+            if not self.path.exists() or self.path.stat().st_size == 0:
+                return result
+            try:
+                with self.path.open(encoding="utf-8-sig", newline="") as handle:
+                    for row in csv.DictReader(handle):
+                        observed_text = row.get("observed_date", "")
+                        if not observed_text:
+                            continue
+                        observed = date.fromisoformat(observed_text)
+                        if filters.start_date and observed < filters.start_date:
+                            continue
+                        if filters.end_date and observed > filters.end_date:
+                            # The repository is sorted by observed_date, so a bounded
+                            # query can stop as soon as it moves past the requested range.
+                            break
+                        if filters.price_type and row.get("price_type") != filters.price_type:
+                            continue
+                        if filters.item_code and row.get("item_code") != filters.item_code:
+                            continue
+                        if (
+                            filters.item_name
+                            and filters.item_name.casefold()
+                            not in row.get("item_name", "").casefold()
+                        ):
+                            continue
+                        converted: dict[str, Any] = dict(row)
+                        converted["price_krw"] = (
+                            float(row["price_krw"]) if row.get("price_krw") else None
+                        )
+                        result.append(converted)
+            except (OSError, csv.Error, ValueError) as error:
+                raise StorageError(f"failed to search {self.path}: {error}") from error
         return result
+
+    def item_date_stats(self) -> dict[str, tuple[date, date, int]]:
+        """Return earliest/latest/count per item without materializing price rows."""
+        stats: dict[str, tuple[date, date, int]] = {}
+        with self._lock:
+            if not self.path.exists() or self.path.stat().st_size == 0:
+                return stats
+            try:
+                with self.path.open(encoding="utf-8-sig", newline="") as handle:
+                    for row in csv.DictReader(handle):
+                        item_code = str(row.get("item_code", ""))
+                        observed_text = row.get("observed_date", "")
+                        if not item_code or not observed_text:
+                            continue
+                        observed = date.fromisoformat(observed_text)
+                        current = stats.get(item_code)
+                        if current is None:
+                            stats[item_code] = (observed, observed, 1)
+                        else:
+                            earliest, latest, count = current
+                            stats[item_code] = (
+                                min(earliest, observed),
+                                max(latest, observed),
+                                count + 1,
+                            )
+            except (OSError, csv.Error, ValueError) as error:
+                raise StorageError(
+                    f"failed to inspect item date stats in {self.path}: {error}"
+                ) from error
+        return stats
 
     def count(self) -> int:
         return len(self._read())
