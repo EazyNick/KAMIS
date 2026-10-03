@@ -1,0 +1,18 @@
+{
+  "targets": {
+    "411:05": {
+      "comparable_count": 0,
+      "excluded_reasons": {}
+    },
+    "611:05": {
+      "comparable_count": 0,
+      "excluded_reasons": {}
+    },
+    "412:01": {
+      "comparable_count": 0,
+      "excluded_reasons": {}
+    }
+  },
+  "invalid_row_count": 0,
+  "errors": []
+}

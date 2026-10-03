@@ -915,3 +915,14 @@
 2026-10-03,coupang,258,01,06235e22e526e635ce279111,False,sample_limit,15800
 2026-10-03,coupang,412,01,def5bc2dfd0ec9fa73cbb5e7,True,,63000
 2026-10-03,coupang,412,01,4211a32e1239fe93ef5aa5fe,True,,64000
+2026-10-03,coupang,611,05,c9432b3a7de8028334e67b0b,True,,1990
+2026-10-03,coupang,611,05,8e635cb9f2901ed80b7cb874,True,,2080
+2026-10-03,coupang,611,05,94e691bd175c7e6f9474d272,False,match_rejected,4800
+2026-10-03,coupang,611,05,dbfd1add6b4eb6f6cdd3c506,False,match_rejected,4800
+2026-10-03,coupang,611,05,65bee34434c3625429198c1a,False,match_rejected,10400
+2026-10-03,coupang,611,05,d2455f5e68a6d7cf5a37eeaa,False,match_rejected,7435
+2026-10-03,coupang,611,05,64b71ff2a809e5cfe20d232d,False,match_rejected,7250
+2026-10-03,coupang,611,05,95b3a771a868c69905f8ddbd,False,match_rejected,4025
+2026-10-03,coupang,611,05,306f0cfc45414055833e17c8,False,match_rejected,2780
+2026-10-03,coupang,611,05,40bc0d63482a5165c5e66301,False,match_rejected,3200
+2026-10-03,coupang,611,05,e8b3c2b3a3fbe9f470ad76e4,False,match_rejected,9310

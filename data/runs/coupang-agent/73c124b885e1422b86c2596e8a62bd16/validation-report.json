@@ -1,0 +1,70 @@
+{
+  "targets": {
+    "411:05": {
+      "comparable_count": 0,
+      "excluded_reasons": {}
+    },
+    "611:05": {
+      "comparable_count": 2,
+      "excluded_reasons": {
+        "shipping_unknown": 9
+      }
+    }
+  },
+  "invalid_row_count": 53,
+  "errors": [
+    "row 2: quantity must be positive",
+    "row 3: quantity must be positive",
+    "row 4: quantity must be positive",
+    "row 5: quantity must be positive",
+    "row 6: offer has no usable price",
+    "row 7: quantity must be positive",
+    "row 8: quantity must be positive",
+    "row 9: quantity must be positive",
+    "row 10: quantity must be positive",
+    "row 11: quantity must be positive",
+    "row 12: quantity must be positive",
+    "row 13: quantity must be positive",
+    "row 14: quantity must be positive",
+    "row 15: quantity must be positive",
+    "row 16: quantity must be positive",
+    "row 17: quantity must be positive",
+    "row 18: quantity must be positive",
+    "row 19: quantity must be positive",
+    "row 20: quantity must be positive",
+    "row 21: quantity must be positive",
+    "row 22: quantity must be positive",
+    "row 23: quantity must be positive",
+    "row 24: quantity must be positive",
+    "row 25: quantity must be positive",
+    "row 26: offer has no usable price",
+    "row 27: quantity must be positive",
+    "row 28: quantity must be positive",
+    "row 29: quantity must be positive",
+    "row 30: offer has no usable price",
+    "row 31: quantity must be positive",
+    "row 32: quantity must be positive",
+    "row 33: quantity must be positive",
+    "row 37: quantity must be positive",
+    "row 38: quantity must be positive",
+    "row 40: offer has no usable price",
+    "row 41: quantity must be positive",
+    "row 42: quantity must be positive",
+    "row 43: quantity must be positive",
+    "row 44: quantity must be positive",
+    "row 46: quantity must be positive",
+    "row 47: quantity must be positive",
+    "row 49: offer has no usable price",
+    "row 51: quantity must be positive",
+    "row 52: quantity must be positive",
+    "row 53: quantity must be positive",
+    "row 54: quantity must be positive",
+    "row 55: quantity must be positive",
+    "row 56: quantity must be positive",
+    "row 58: quantity must be positive",
+    "row 59: quantity must be positive",
+    "row 60: quantity must be positive",
+    "row 61: quantity must be positive",
+    "row 63: quantity must be positive"
+  ]
+}

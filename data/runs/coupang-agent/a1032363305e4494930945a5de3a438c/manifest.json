@@ -1,0 +1,18 @@
+{
+  "run_id": "a1032363305e4494930945a5de3a438c",
+  "observed_date": "2026-10-03",
+  "run_dir": "D:\\Python\\KAMIS\\data\\runs\\coupang-agent\\a1032363305e4494930945a5de3a438c",
+  "output_csv": "D:\\Python\\KAMIS\\data\\runs\\coupang-agent\\a1032363305e4494930945a5de3a438c\\offers.csv",
+  "minimum_delay_ms": 5000,
+  "max_offers_per_target": 8,
+  "targets": [
+    {
+      "item_code": "411",
+      "kind_code": "05",
+      "item_name": "사과",
+      "variety": "후지",
+      "comparison_unit": "10개",
+      "query": "사과 후지 10개"
+    }
+  ]
+}
