@@ -37,6 +37,27 @@ def test_price_repository_detects_existing_observed_date(tmp_path: Path) -> None
     assert repository.has_collected_date(date(2026, 9, 25)) is False
 
 
+def test_price_repository_requires_configured_item_coverage(tmp_path: Path) -> None:
+    repository = PriceRepository(tmp_path, app_logger)
+    repository.upsert(
+        [
+            price_row(),
+            replace(price_row(), item_code="222", kind_code="01", item_name="감자"),
+        ],
+        "seed",
+    )
+
+    observed_date = date(2026, 9, 24)
+    assert repository.has_collected_date(
+        observed_date,
+        {("111", "01"), ("222", "01")},
+    ) is True
+    assert repository.has_collected_date(
+        observed_date,
+        {("111", "01"), ("222", "01"), ("257", "00")},
+    ) is False
+
+
 def price_row(price: str = "1000") -> PriceObservation:
     return PriceObservation(
         price_type=PriceType.RETAIL,
