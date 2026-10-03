@@ -161,6 +161,52 @@ def test_daily_pipeline_recovers_checkpoints_from_existing_dated_data() -> None:
     assert {"kamis", "online", "market"}.issubset(runs.successful_sources)
 
 
+def test_daily_pipeline_uses_rank_level_kamis_coverage() -> None:
+    class CoverageRepository:
+        scopes = None
+
+        def has_collected_date(self, observed_date, required_scopes=None):
+            self.scopes = required_scopes
+            return True
+
+    class StoredKamis:
+        price_repository = CoverageRepository()
+
+        def collect(self, start_date, end_date):
+            raise AssertionError("complete rank coverage must skip KAMIS collection")
+
+    runs = Runs(successful_sources={"online", "market"})
+    pipeline = DailyPipeline(
+        StoredKamis(),
+        Online(),
+        Market(),
+        MarketRepo(),
+        runs,
+        lambda: [
+            SimpleNamespace(
+                item_code="111",
+                kind_code="10",
+                wholesale_rank_codes=("03",),
+                retail_rank_codes=("04", "05"),
+            )
+        ],
+        None,
+        app_logger,
+        kamis_required_keys={("111", "10")},
+    )
+
+    result = pipeline.collect(date(2026, 9, 24))
+
+    assert result.status is RunStatus.SUCCESS
+    assert StoredKamis.price_repository.scopes == frozenset(
+        {
+            ("111", "10", "wholesale", "03"),
+            ("111", "10", "retail", "04"),
+            ("111", "10", "retail", "05"),
+        }
+    )
+
+
 def test_daily_pipeline_skips_kamis_and_market_on_weekend() -> None:
     class ClosedDayKamis:
         def collect(self, start_date, end_date):
