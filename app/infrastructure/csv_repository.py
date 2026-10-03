@@ -238,9 +238,15 @@ class PriceRepository(_AtomicCsvRepository):
                             # The repository is sorted by observed_date, so a bounded
                             # query can stop as soon as it moves past the requested range.
                             break
-                        if filters.price_type and row.get("price_type") != filters.price_type:
+                        if (
+                            filters.price_type
+                            and row.get("price_type") != filters.price_type
+                        ):
                             continue
-                        if filters.item_code and row.get("item_code") != filters.item_code:
+                        if (
+                            filters.item_code
+                            and row.get("item_code") != filters.item_code
+                        ):
                             continue
                         if (
                             filters.item_name
