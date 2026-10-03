@@ -251,18 +251,21 @@ class PriceRepository(_AtomicCsvRepository):
     def has_collected_date(
         self,
         observed_date: date,
-        required_item_keys: set[tuple[str, str]] | frozenset[tuple[str, str]] | None = None,
+        required_scopes: set[tuple[str, str, str, str]]
+        | frozenset[tuple[str, str, str, str]]
+        | None = None,
     ) -> bool:
-        """Return whether a date has sufficient stored KAMIS item coverage.
+        """Return whether a date has sufficient stored KAMIS query coverage.
 
-        When required_item_keys is provided, every configured (item_code, kind_code)
-        must be represented on the date. This prevents one partial row from
-        suppressing a recovery collection.
+        A scope is (item_code, kind_code, price_type, rank_code). Requiring
+        complete scopes prevents a partially written date from suppressing a
+        recovery collection. With no scopes supplied, any row on the date is
+        considered collected for backward compatibility.
         """
         expected = observed_date.isoformat()
-        required = set(required_item_keys or ())
+        required = set(required_scopes or ())
         found_date = False
-        found_keys: set[tuple[str, str]] = set()
+        found_scopes: set[tuple[str, str, str, str]] = set()
 
         with self._lock:
             if not self.path.exists() or self.path.stat().st_size == 0:
@@ -278,19 +281,21 @@ class PriceRepository(_AtomicCsvRepository):
                         found_date = True
                         if not required:
                             return True
-                        found_keys.add(
+                        found_scopes.add(
                             (
                                 str(row.get("item_code", "")),
                                 str(row.get("kind_code", "")),
+                                str(row.get("price_type", "")),
+                                str(row.get("rank_code", "")),
                             )
                         )
-                        if required.issubset(found_keys):
+                        if required.issubset(found_scopes):
                             return True
             except (OSError, csv.Error) as error:
                 raise StorageError(
                     f"failed to inspect collected KAMIS date in {self.path}: {error}"
                 ) from error
-        return found_date if not required else required.issubset(found_keys)
+        return found_date if not required else required.issubset(found_scopes)
 
     def observed_date_range(self) -> tuple[date, date] | None:
         """Scan the date column without loading the full price history into memory."""
