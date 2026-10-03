@@ -248,6 +248,27 @@ class PriceRepository(_AtomicCsvRepository):
     def count(self) -> int:
         return len(self._read())
 
+    def has_collected_date(self, observed_date: date) -> bool:
+        """Return True when at least one KAMIS observation exists for the date.
+
+        This intentionally scans only until the requested date is found so startup
+        checkpoint recovery does not need to materialize the full price CSV.
+        """
+        expected = observed_date.isoformat()
+        with self._lock:
+            if not self.path.exists() or self.path.stat().st_size == 0:
+                return False
+            try:
+                with self.path.open(encoding="utf-8-sig", newline="") as handle:
+                    return any(
+                        row.get("observed_date") == expected
+                        for row in csv.DictReader(handle)
+                    )
+            except (OSError, csv.Error) as error:
+                raise StorageError(
+                    f"failed to inspect collected KAMIS date in {self.path}: {error}"
+                ) from error
+
     def observed_date_range(self) -> tuple[date, date] | None:
         """Scan the date column without loading the full price history into memory."""
         with self._lock:
