@@ -35,7 +35,8 @@ class DailyPipeline:
         analytics_refresher: AnalyticsRefresher | None,
         logger: StructuredLogger,
         *,
-        kamis_required_keys: set[tuple[str, str]] | frozenset[tuple[str, str]] = frozenset(),
+        kamis_required_keys: set[tuple[str, str]]
+        | frozenset[tuple[str, str]] = frozenset(),
     ) -> None:
         self._kamis = kamis_service
         self._online = online_service
@@ -250,6 +251,7 @@ class DailyPipeline:
                 for rank_code in entry.retail_rank_codes
             )
         return frozenset(scopes)
+
     @staticmethod
     def _is_kamis_business_day(observed_date: date) -> bool:
         if observed_date.weekday() >= 5:
