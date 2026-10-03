@@ -118,6 +118,12 @@ function Get-NaverQuantity {
         $counts = [regex]::Matches($prefix, '(\d+)\s*\uAC1C')
         foreach ($count in $counts) { if ([decimal]$count.Groups[1].Value -gt 1) { return $empty } }
     }
+    # Whole melon may genuinely be sold as one fruit with its weight.
+    $wholeMelon = $prefix -match '\uBA5C\uB860|\uBA54\uB860'
+    if ($wholeMelon -and $prefix -match '\uBC15\uC2A4|\uC138\uD2B8|\uBB36\uC74C|\uD329|\uCEF7\uD305|\uCEE4\uD305|\uC870\uAC01|\uC190\uC9C8|\uD050\uBE0C|\uBC18\uD1B5|\uBC18\uCABD|\uACFC\uC721|\uC0D0\uB7EC\uB4DC|\uC808\uB2E8') { return $empty }
+    if ($wholeMelon -and $prefix -notmatch '\d\s*\uAC1C') {
+        $prefix = $prefix -replace '(\d+)\s*\uD1B5', ('$1' + [char]0xAC1C)
+    }
     $weights = [regex]::Matches($prefix, '(?i)(\d+(?:\.\d+)?)\s*(kg|g)')
     if ($weights.Count -gt 1) { return $empty }
     $unit = if ($ComparisonUnit -match '(?i)kg|g') { 'kg|g' }
@@ -129,7 +135,7 @@ function Get-NaverQuantity {
     if ($candidates.Count -ne 1) { return $empty }
     $match = $candidates[0]
     if ([decimal]$match.Groups[1].Value -le 0) { return $empty }
-    if ($ComparisonUnit -match '\uAC1C' -and $weights.Count -gt 0 -and [decimal]$match.Groups[1].Value -le 1) { return $empty }
+    if ($ComparisonUnit -match '\uAC1C' -and $weights.Count -gt 0 -and [decimal]$match.Groups[1].Value -le 1 -and -not $wholeMelon) { return $empty }
     return $match
 }
 

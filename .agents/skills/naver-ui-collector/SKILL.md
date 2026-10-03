@@ -89,3 +89,11 @@ Return a final JSON object with exactly:
 - `csv_path`: absolute raw CSV path
 
 Preserve failures honestly. Never fabricate or manually rewrite product rows.
+
+### Whole melon exception
+
+A whole melon with a single explicit fruit count (`1개` or `1통`) and one weight
+may use that count. A kg box of apples still cannot use its package count as a
+fruit count. Reject melon boxes, sets, packs, cut fruit, halves and multiple
+weight options. Unknown shipping remains unknown; the exception does not waive
+price, shipping, availability or product validation.
