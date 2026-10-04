@@ -1,0 +1,43 @@
+{
+  "targets": {
+    "611:05": {
+      "comparable_count": 0,
+      "excluded_reasons": {}
+    }
+  },
+  "invalid_row_count": 32,
+  "errors": [
+    "row 2: offer has no usable price",
+    "row 3: offer has no usable price",
+    "row 4: offer has no usable price",
+    "row 5: offer has no usable price",
+    "row 6: offer has no usable price",
+    "row 7: offer has no usable price",
+    "row 8: offer has no usable price",
+    "row 9: offer has no usable price",
+    "row 10: offer has no usable price",
+    "row 11: offer has no usable price",
+    "row 12: offer has no usable price",
+    "row 13: offer has no usable price",
+    "row 14: offer has no usable price",
+    "row 15: offer has no usable price",
+    "row 16: offer has no usable price",
+    "row 17: offer has no usable price",
+    "row 18: offer has no usable price",
+    "row 19: offer has no usable price",
+    "row 20: offer has no usable price",
+    "row 21: offer has no usable price",
+    "row 22: offer has no usable price",
+    "row 23: offer has no usable price",
+    "row 24: offer has no usable price",
+    "row 25: offer has no usable price",
+    "row 26: offer has no usable price",
+    "row 27: offer has no usable price",
+    "row 28: offer has no usable price",
+    "row 29: offer has no usable price",
+    "row 30: offer has no usable price",
+    "row 31: offer has no usable price",
+    "row 32: offer has no usable price",
+    "row 33: offer has no usable price"
+  ]
+}

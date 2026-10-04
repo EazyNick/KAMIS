@@ -1,0 +1,191 @@
+{
+  "targets": {
+    "231:03": {
+      "comparable_count": 0,
+      "excluded_reasons": {}
+    },
+    "257:00": {
+      "comparable_count": 0,
+      "excluded_reasons": {}
+    },
+    "225:00": {
+      "comparable_count": 4,
+      "excluded_reasons": {
+        "shipping_unknown": 2
+      }
+    },
+    "111:10": {
+      "comparable_count": 8,
+      "excluded_reasons": {
+        "shipping_unknown": 2
+      }
+    },
+    "152:00": {
+      "comparable_count": 8,
+      "excluded_reasons": {
+        "shipping_unknown": 6
+      }
+    },
+    "211:03": {
+      "comparable_count": 8,
+      "excluded_reasons": {}
+    },
+    "258:01": {
+      "comparable_count": 8,
+      "excluded_reasons": {
+        "shipping_unknown": 2
+      }
+    },
+    "245:00": {
+      "comparable_count": 8,
+      "excluded_reasons": {
+        "sold_out": 1,
+        "shipping_unknown": 1
+      }
+    },
+    "412:01": {
+      "comparable_count": 0,
+      "excluded_reasons": {}
+    },
+    "411:05": {
+      "comparable_count": 0,
+      "excluded_reasons": {}
+    }
+  },
+  "invalid_row_count": 133,
+  "errors": [
+    "row 7: quantity must be positive",
+    "row 11: quantity must be positive",
+    "row 23: quantity must be positive",
+    "row 25: quantity must be positive",
+    "row 26: quantity must be positive",
+    "row 28: quantity must be positive",
+    "row 29: quantity must be positive",
+    "row 30: quantity must be positive",
+    "row 31: quantity must be positive",
+    "row 33: quantity must be positive",
+    "row 46: quantity must be positive",
+    "row 48: quantity must be positive",
+    "row 49: quantity must be positive",
+    "row 50: quantity must be positive",
+    "row 54: quantity must be positive",
+    "row 55: quantity must be positive",
+    "row 56: offer has no usable price",
+    "row 57: offer has no usable price",
+    "row 58: offer has no usable price",
+    "row 59: offer has no usable price",
+    "row 60: offer has no usable price",
+    "row 61: offer has no usable price",
+    "row 62: offer has no usable price",
+    "row 63: offer has no usable price",
+    "row 64: offer has no usable price",
+    "row 65: offer has no usable price",
+    "row 66: offer has no usable price",
+    "row 67: offer has no usable price",
+    "row 68: offer has no usable price",
+    "row 69: offer has no usable price",
+    "row 70: offer has no usable price",
+    "row 71: offer has no usable price",
+    "row 72: offer has no usable price",
+    "row 76: quantity must be positive",
+    "row 77: quantity must be positive",
+    "row 81: quantity must be positive",
+    "row 83: quantity must be positive",
+    "row 84: quantity must be positive",
+    "row 87: quantity must be positive",
+    "row 88: quantity must be positive",
+    "row 89: quantity must be positive",
+    "row 91: offer has no usable price",
+    "row 92: offer has no usable price",
+    "row 93: offer has no usable price",
+    "row 94: offer has no usable price",
+    "row 95: offer has no usable price",
+    "row 96: offer has no usable price",
+    "row 97: offer has no usable price",
+    "row 98: offer has no usable price",
+    "row 99: offer has no usable price",
+    "row 100: offer has no usable price",
+    "row 101: offer has no usable price",
+    "row 102: offer has no usable price",
+    "row 103: offer has no usable price",
+    "row 104: offer has no usable price",
+    "row 105: offer has no usable price",
+    "row 106: offer has no usable price",
+    "row 107: offer has no usable price",
+    "row 108: offer has no usable price",
+    "row 109: offer has no usable price",
+    "row 110: offer has no usable price",
+    "row 111: offer has no usable price",
+    "row 112: offer has no usable price",
+    "row 113: offer has no usable price",
+    "row 114: offer has no usable price",
+    "row 116: quantity must be positive",
+    "row 118: quantity must be positive",
+    "row 123: quantity must be positive",
+    "row 125: quantity must be positive",
+    "row 129: offer has no usable price",
+    "row 130: offer has no usable price",
+    "row 131: offer has no usable price",
+    "row 132: offer has no usable price",
+    "row 133: offer has no usable price",
+    "row 134: offer has no usable price",
+    "row 135: offer has no usable price",
+    "row 136: offer has no usable price",
+    "row 137: offer has no usable price",
+    "row 138: offer has no usable price",
+    "row 139: offer has no usable price",
+    "row 140: offer has no usable price",
+    "row 141: offer has no usable price",
+    "row 142: offer has no usable price",
+    "row 143: offer has no usable price",
+    "row 144: offer has no usable price",
+    "row 145: offer has no usable price",
+    "row 146: offer has no usable price",
+    "row 147: offer has no usable price",
+    "row 148: offer has no usable price",
+    "row 149: offer has no usable price",
+    "row 150: offer has no usable price",
+    "row 151: offer has no usable price",
+    "row 152: offer has no usable price",
+    "row 153: offer has no usable price",
+    "row 154: offer has no usable price",
+    "row 155: offer has no usable price",
+    "row 156: offer has no usable price",
+    "row 157: offer has no usable price",
+    "row 158: offer has no usable price",
+    "row 159: offer has no usable price",
+    "row 160: offer has no usable price",
+    "row 161: offer has no usable price",
+    "row 162: offer has no usable price",
+    "row 163: offer has no usable price",
+    "row 164: offer has no usable price",
+    "row 165: offer has no usable price",
+    "row 166: offer has no usable price",
+    "row 167: offer has no usable price",
+    "row 168: offer has no usable price",
+    "row 169: offer has no usable price",
+    "row 170: offer has no usable price",
+    "row 171: offer has no usable price",
+    "row 172: offer has no usable price",
+    "row 173: offer has no usable price",
+    "row 174: offer has no usable price",
+    "row 175: offer has no usable price",
+    "row 176: offer has no usable price",
+    "row 177: offer has no usable price",
+    "row 178: offer has no usable price",
+    "row 179: offer has no usable price",
+    "row 180: offer has no usable price",
+    "row 181: offer has no usable price",
+    "row 182: offer has no usable price",
+    "row 183: offer has no usable price",
+    "row 184: offer has no usable price",
+    "row 185: offer has no usable price",
+    "row 186: offer has no usable price",
+    "row 187: offer has no usable price",
+    "row 188: offer has no usable price",
+    "row 189: offer has no usable price",
+    "row 190: offer has no usable price",
+    "row 191: offer has no usable price",
+    "row 192: offer has no usable price"
+  ]
+}
