@@ -345,6 +345,29 @@ class PriceRepository(_AtomicCsvRepository):
                 ) from error
         return found_date if not required else required.issubset(found_scopes)
 
+    def observed_dates(self, start_date: date, end_date: date) -> set[date]:
+        """Return stored observation dates in a bounded window without loading rows."""
+        result: set[date] = set()
+        start_text = start_date.isoformat()
+        end_text = end_date.isoformat()
+        with self._lock:
+            if not self.path.exists() or self.path.stat().st_size == 0:
+                return result
+            try:
+                with self.path.open(encoding="utf-8-sig", newline="") as handle:
+                    for row in csv.DictReader(handle):
+                        observed_text = row.get("observed_date", "")
+                        if not observed_text or observed_text < start_text:
+                            continue
+                        if observed_text > end_text:
+                            break
+                        result.add(date.fromisoformat(observed_text))
+            except (OSError, csv.Error, ValueError) as error:
+                raise StorageError(
+                    f"failed to inspect observed KAMIS dates in {self.path}: {error}"
+                ) from error
+        return result
+
     def observed_date_range(self) -> tuple[date, date] | None:
         """Scan the date column without loading the full price history into memory."""
         with self._lock:

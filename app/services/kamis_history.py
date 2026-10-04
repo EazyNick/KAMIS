@@ -5,11 +5,15 @@ from datetime import date, datetime, timedelta
 from typing import Any, Protocol
 from zoneinfo import ZoneInfo
 
+from holidays import country_holidays
+
 from log.logger import StructuredLogger
 
 
 class PriceHistoryRepositoryProtocol(Protocol):
     def observed_date_range(self) -> tuple[date, date] | None: ...
+
+    def observed_dates(self, start_date: date, end_date: date) -> set[date]: ...
 
 
 class KamisCollectorProtocol(Protocol):
@@ -55,6 +59,13 @@ class KamisHistoryService:
             if latest < target_end:
                 ranges.append((max(latest + timedelta(days=1), target_start), target_end))
 
+            overlap_start = max(earliest, target_start)
+            overlap_end = min(latest, target_end)
+            if overlap_start <= overlap_end:
+                stored_dates = self._prices.observed_dates(overlap_start, overlap_end)
+                expected_dates = self._expected_dates(overlap_start, overlap_end)
+                ranges.extend(self._missing_ranges(expected_dates, stored_dates))
+
         ranges = [(start, end) for start, end in ranges if start <= end]
         if not ranges:
             self._logger.info(
@@ -86,3 +97,40 @@ class KamisHistoryService:
                 status=getattr(run, "status", None),
             )
         return total
+
+    @staticmethod
+    def _expected_dates(start: date, end: date) -> list[date]:
+        holidays = country_holidays(
+            "KR",
+            years=range(start.year, end.year + 1),
+        )
+        return [
+            observed
+            for offset in range((end - start).days + 1)
+            if (observed := start + timedelta(days=offset)).weekday() < 5
+            and observed not in holidays
+        ]
+
+    @staticmethod
+    def _missing_ranges(
+        expected_dates: list[date],
+        stored_dates: set[date],
+    ) -> list[tuple[date, date]]:
+        ranges: list[tuple[date, date]] = []
+        range_start: date | None = None
+        range_end: date | None = None
+
+        for observed in expected_dates:
+            if observed in stored_dates:
+                if range_start is not None and range_end is not None:
+                    ranges.append((range_start, range_end))
+                    range_start = None
+                    range_end = None
+                continue
+            if range_start is None:
+                range_start = observed
+            range_end = observed
+
+        if range_start is not None and range_end is not None:
+            ranges.append((range_start, range_end))
+        return ranges
