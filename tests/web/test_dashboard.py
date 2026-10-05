@@ -383,3 +383,142 @@ def test_dashboard_draws_isolated_market_value_after_missing_date() -> None:
         arcs = page.evaluate("window.__chartArcs")
         assert any(arc["radius"] == 3.5 for arc in arcs)
         browser.close()
+
+
+
+def test_dashboard_draws_all_19_series_as_continuous_paths() -> None:
+    page_errors: list[str] = []
+    series_ids = [
+        "kamis_wholesale",
+        "kamis_retail",
+        "online_naver",
+        "online_coupang",
+        "online_combined",
+        "kospi",
+        "kosdaq",
+        "sp500",
+        "nasdaq",
+        "dow_jones",
+        "usd_krw",
+        "corn_futures",
+        "wheat_futures",
+        "soybean_futures",
+        "rough_rice_futures",
+        "coffee_futures",
+        "sugar_futures",
+        "cotton_futures",
+        "orange_juice_futures",
+    ]
+    chart_payload = {
+        "comparison_kinds": {"111": "10"},
+        "item_code": "111",
+        "mode": "base100",
+        "dates": ["2026-09-25", "2026-09-26", "2026-09-27"],
+        "series": {
+            series_id: [100.0, 101.0, 102.0]
+            for series_id in series_ids
+        },
+        "raw_series": {
+            series_id: [1000.0, 1010.0, 1020.0]
+            for series_id in series_ids
+        },
+    }
+    catalog_item = {
+        "category_code": "100",
+        "category_name": "식량작물",
+        "item_code": "111",
+        "item_name": "쌀",
+        "kind_code": "10",
+        "variety": "10kg",
+        "wholesale_rank_codes": "04",
+        "retail_rank_codes": "04",
+    }
+
+    def handle(route: Route) -> None:
+        parsed = urlparse(route.request.url)
+        if parsed.path == "/":
+            route.fulfill(
+                status=200,
+                content_type="text/html; charset=utf-8",
+                body=DASHBOARD.read_text(encoding="utf-8"),
+            )
+            return
+        responses = {
+            "/health": {
+                "status": "ok",
+                "collection_running": False,
+                "latest_run": {"requested_end": "2026-09-27", "status": "success"},
+            },
+            "/api/v1/catalog": {"items": [catalog_item], "total": 1},
+            "/api/v1/online/summaries": {"items": [], "total": 0},
+            "/api/v1/dashboard/bootstrap": {
+                "defaults": {
+                    "item_code": "111",
+                    "start_date": "2026-09-25",
+                    "end_date": "2026-09-27",
+                    "mode": "base100",
+                },
+                "chart": chart_payload,
+            },
+            "/api/v1/correlations": [],
+        }
+        payload = responses.get(parsed.path)
+        if payload is None:
+            route.fulfill(status=404, body="not found")
+            return
+        route.fulfill(
+            status=200,
+            content_type="application/json",
+            body=json.dumps(payload, ensure_ascii=False),
+        )
+
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch(headless=True)
+        page = browser.new_page(viewport={"width": 1600, "height": 1000})
+        page.on("pageerror", lambda error: page_errors.append(str(error)))
+        page.add_init_script(
+            """
+            window.__seriesMoveToCount = 0;
+            window.__seriesLineToCount = 0;
+            const nativeGetContext = HTMLCanvasElement.prototype.getContext;
+            HTMLCanvasElement.prototype.getContext = function (...args) {
+              const context = nativeGetContext.apply(this, args);
+              if (context.__continuityInstrumented) return context;
+              context.__continuityInstrumented = true;
+              const nativeMoveTo = context.moveTo.bind(context);
+              const nativeLineTo = context.lineTo.bind(context);
+              context.moveTo = function (...moveArgs) {
+                if (context.lineWidth === 2) window.__seriesMoveToCount += 1;
+                return nativeMoveTo(...moveArgs);
+              };
+              context.lineTo = function (...lineArgs) {
+                if (context.lineWidth === 2) window.__seriesLineToCount += 1;
+                return nativeLineTo(...lineArgs);
+              };
+              return context;
+            };
+            """
+        )
+        page.route("**/*", handle)
+        page.goto("http://dashboard.test/")
+        page.wait_for_timeout(200)
+
+        assert page.locator("#legend .chip").count() == 19
+        page.locator("#legend .chip.off").evaluate_all(
+            "chips => chips.forEach(chip => chip.click())"
+        )
+        assert page.locator("#legend .chip:not(.off)").count() == 19
+
+        page.evaluate(
+            """
+            () => {
+              window.__seriesMoveToCount = 0;
+              window.__seriesLineToCount = 0;
+              draw();
+            }
+            """
+        )
+        assert page.evaluate("window.__seriesMoveToCount") == 19
+        assert page.evaluate("window.__seriesLineToCount") == 38
+        assert page_errors == []
+        browser.close()
