@@ -30,6 +30,55 @@ def test_kamis_holidays_continue_prices_but_open_day_gaps_remain():
     assert pd.isna(frame.loc["2026-07-17", "kamis_retail"])
 
 
+def test_all_market_series_fill_weekend_closures_but_keep_weekday_gaps():
+    import pandas as pd
+
+    from app.services.comparison import MARKET_EXCHANGES, fill_exchange_holidays
+
+    expected_series = {
+        "kospi",
+        "kosdaq",
+        "sp500",
+        "nasdaq",
+        "dow_jones",
+        "usd_krw",
+        "corn_futures",
+        "wheat_futures",
+        "soybean_futures",
+        "rough_rice_futures",
+        "coffee_futures",
+        "sugar_futures",
+        "cotton_futures",
+        "orange_juice_futures",
+    }
+    assert set(MARKET_EXCHANGES) == expected_series
+
+    dates = pd.to_datetime(
+        [
+            "2026-09-25",  # Friday
+            "2026-09-26",  # Saturday
+            "2026-09-27",  # Sunday
+            "2026-09-28",  # Monday
+            "2026-09-29",  # Tuesday
+        ]
+    )
+    frame = pd.DataFrame(
+        {
+            series_id: [100.0, None, None, 110.0, None]
+            for series_id in expected_series
+        },
+        index=dates,
+    )
+
+    result = fill_exchange_holidays(frame)
+
+    for series_id in expected_series:
+        assert result.loc["2026-09-26", series_id] == 100.0
+        assert result.loc["2026-09-27", series_id] == 100.0
+        assert result.loc["2026-09-28", series_id] == 110.0
+        assert pd.isna(result.loc["2026-09-29", series_id])
+
+
 class OneDayPriceRepo:
     def search(self, filters):
         return [
