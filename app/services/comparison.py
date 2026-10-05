@@ -24,15 +24,18 @@ class MarketRepositoryProtocol(Protocol):
     def search(self, **kwargs: Any) -> list[dict[str, Any]]: ...
 
 
-MARKET_EXCHANGES = {
+MARKET_EXCHANGES: dict[str, str | None] = {
     "kospi": "XKRX",
     "kosdaq": "XKRX",
     "sp500": "XNYS",
     "nasdaq": "XNYS",
     "dow_jones": "XNYS",
+    # USD/KRW trades on weekdays but does not share a stock-exchange holiday
+    # calendar. Treat weekends as normal closures and leave weekday gaps visible.
+    "usd_krw": None,
     # The commodity feeds follow US futures sessions, but the provider can
-    # publish values on partial-session days. Only use full US market closures
-    # as a conservative proxy so genuine provider gaps stay empty.
+    # publish values on partial-session days. Use weekends plus full US market
+    # closures as a conservative proxy so genuine weekday provider gaps stay empty.
     "corn_futures": "XNYS",
     "wheat_futures": "XNYS",
     "soybean_futures": "XNYS",
@@ -79,12 +82,16 @@ def fill_exchange_holidays(frame: pd.DataFrame) -> pd.DataFrame:
     for series_id, exchange in MARKET_EXCHANGES.items():
         if series_id not in result:
             continue
-        calendar = financial_holidays(exchange)
-        holiday_mask = pd.Series(
-            [timestamp.date() in calendar for timestamp in result.index],
+        calendar = financial_holidays(exchange) if exchange else frozenset()
+        closed = pd.Series(
+            [
+                timestamp.weekday() >= 5 or timestamp.date() in calendar
+                for timestamp in result.index
+            ],
             index=result.index,
+            dtype=bool,
         )
-        fillable = result[series_id].isna() & holiday_mask
+        fillable = result[series_id].isna() & closed
         if fillable.any():
             previous = result[series_id].ffill()
             result.loc[fillable, series_id] = previous.loc[fillable]
