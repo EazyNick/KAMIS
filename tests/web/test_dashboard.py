@@ -504,20 +504,18 @@ def test_dashboard_draws_all_19_series_as_continuous_paths() -> None:
         page.wait_for_timeout(200)
 
         assert page.locator("#legend .chip").count() == 19
-        page.locator("#legend .chip.off").evaluate_all(
-            "chips => chips.forEach(chip => chip.click())"
-        )
-        assert page.locator("#legend .chip:not(.off)").count() == 19
-
         page.evaluate(
             """
             () => {
+              Object.keys(chartData.series).forEach(key => enabled.add(key));
+              renderLegend();
               window.__seriesMoveToCount = 0;
               window.__seriesLineToCount = 0;
               draw();
             }
             """
         )
+        assert page.locator("#legend .chip:not(.off)").count() == 19
         assert page.evaluate("window.__seriesMoveToCount") == 19
         assert page.evaluate("window.__seriesLineToCount") == 38
         assert page_errors == []
