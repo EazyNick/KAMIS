@@ -386,7 +386,8 @@ def test_dashboard_draws_isolated_market_value_after_missing_date() -> None:
 
 
 
-def test_dashboard_draws_all_19_series_as_continuous_paths() -> None:
+@pytest.mark.parametrize("missing_middle", [False, True])
+def test_dashboard_draws_all_19_series_as_continuous_paths(missing_middle: bool) -> None:
     page_errors: list[str] = []
     series_ids = [
         "kamis_wholesale",
@@ -415,11 +416,11 @@ def test_dashboard_draws_all_19_series_as_continuous_paths() -> None:
         "mode": "base100",
         "dates": ["2026-09-25", "2026-09-26", "2026-09-27"],
         "series": {
-            series_id: [100.0, 101.0, 102.0]
+            series_id: [100.0, None if missing_middle else 101.0, 102.0]
             for series_id in series_ids
         },
         "raw_series": {
-            series_id: [1000.0, 1010.0, 1020.0]
+            series_id: [1000.0, None if missing_middle else 1010.0, 1020.0]
             for series_id in series_ids
         },
     }
@@ -517,6 +518,8 @@ def test_dashboard_draws_all_19_series_as_continuous_paths() -> None:
         )
         assert page.locator("#legend .chip:not(.off)").count() == 19
         assert page.evaluate("window.__seriesMoveToCount") == 19
-        assert page.evaluate("window.__seriesLineToCount") == 38
+        assert page.evaluate("window.__seriesLineToCount") == (19 if missing_middle else 38)
+        assert page.evaluate("chartData.series") == chart_payload["series"]
+        assert page.evaluate("chartData.raw_series") == chart_payload["raw_series"]
         assert page_errors == []
         browser.close()
