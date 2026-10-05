@@ -48,21 +48,27 @@ def test_price_repository_requires_configured_item_coverage(tmp_path: Path) -> N
     )
 
     observed_date = date(2026, 9, 24)
-    assert repository.has_collected_date(
-        observed_date,
-        {
-            ("111", "01", "retail", "04"),
-            ("222", "01", "retail", "04"),
-        },
-    ) is True
-    assert repository.has_collected_date(
-        observed_date,
-        {
-            ("111", "01", "retail", "04"),
-            ("222", "01", "retail", "04"),
-            ("111", "01", "wholesale", "04"),
-        },
-    ) is False
+    assert (
+        repository.has_collected_date(
+            observed_date,
+            {
+                ("111", "01", "retail", "04"),
+                ("222", "01", "retail", "04"),
+            },
+        )
+        is True
+    )
+    assert (
+        repository.has_collected_date(
+            observed_date,
+            {
+                ("111", "01", "retail", "04"),
+                ("222", "01", "retail", "04"),
+                ("111", "01", "wholesale", "04"),
+            },
+        )
+        is False
+    )
 
 
 def price_row(price: str = "1000") -> PriceObservation:
@@ -106,7 +112,9 @@ def test_price_repository_item_date_stats_stream_long_history(tmp_path: Path) ->
     }
 
 
-def test_price_repository_bounded_search_keeps_requested_history(tmp_path: Path) -> None:
+def test_price_repository_bounded_search_keeps_requested_history(
+    tmp_path: Path,
+) -> None:
     repository = PriceRepository(tmp_path, app_logger)
     repository.upsert(
         [
@@ -128,6 +136,19 @@ def test_price_repository_bounded_search_keeps_requested_history(tmp_path: Path)
     assert [row["observed_date"] for row in rows] == ["2016-01-04"]
 
 
+def test_price_search_does_not_drop_history_in_unsorted_import(tmp_path: Path) -> None:
+    repository = PriceRepository(tmp_path, app_logger)
+    repository._atomic_write(
+        [
+            replace(price_row(), observed_date=date(2026, 9, 24)).to_dict(),
+            replace(price_row(), observed_date=date(2016, 1, 4)).to_dict(),
+        ],
+        "import",
+    )
+    rows = repository.search(PriceFilters(item_code="111", end_date=date(2020, 1, 1)))
+    assert [r["observed_date"] for r in rows] == ["2016-01-04"]
+
+
 def test_price_repository_upserts_duplicate_observations(tmp_path: Path) -> None:
     repository = PriceRepository(tmp_path, app_logger)
 
@@ -138,6 +159,23 @@ def test_price_repository_upserts_duplicate_observations(tmp_path: Path) -> None
     assert first.inserted == 1
     assert second.updated == 1
     assert rows[0]["price_krw"] == 1010.0
+
+
+def test_backfill_repeated_observation_with_missing_market_is_updated(
+    tmp_path: Path,
+) -> None:
+    repository = PriceRepository(tmp_path, app_logger)
+    observation = replace(
+        price_row(), region=None, market_name=None, requested_convert_kg=False
+    )
+    repository.upsert([observation], "first")
+    result = repository.upsert(
+        [replace(observation, price_krw=Decimal("1100"))], "repeat"
+    )
+    assert result.inserted == 0
+    assert result.updated == 1
+    assert len(repository.search()) == 1
+    assert repository.search()[0]["price_krw"] == 1100.0
 
 
 def test_repository_preserves_existing_file_when_new_write_fails(

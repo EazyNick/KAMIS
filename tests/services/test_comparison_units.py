@@ -1,6 +1,24 @@
 from app.services.comparison_units import comparable_kamis_rows
 
 
+def test_generic_potato_uses_labelled_field_sumi_without_mixing_greenhouse():
+    entries = catalog('152', '00', 'kg', '1') + catalog('152', '01', 'g', '100')
+    rows, notes = comparable_kamis_rows([
+        row('01', '250', '수미(노지)(100g)'),
+        row('04', '500', '수미(시설)(100g)'),
+    ], '152', '00', entries)
+    assert [r['price_krw'] for r in rows] == [2500]
+    assert any('수미(노지)' in note for note in notes)
+
+
+def test_exact_potato_preferred_over_field_sumi_on_same_date():
+    entries = catalog('152', '00', 'kg', '1') + catalog('152', '01', 'g', '100')
+    rows, _ = comparable_kamis_rows([
+        row('00', '3000', '감자(1kg)'), row('01', '250', '수미(노지)(100g)'),
+    ], '152', '00', entries)
+    assert [r['price_krw'] for r in rows] == [3000]
+
+
 def catalog(item="111", kind="10", unit="kg", size="10"):
     return [{"item_code": item, "kind_code": kind, "retail_unit": unit, "retail_unit_size": size}]
 

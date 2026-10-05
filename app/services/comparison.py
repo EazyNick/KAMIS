@@ -9,7 +9,7 @@ from holidays import country_holidays, financial_holidays
 
 from app.infrastructure.csv_repository import PriceFilters
 from app.services.analytics import AnalysisMode, AnalyticsService
-from app.services.comparison_units import comparable_kamis_rows
+from app.services.comparison_units import comparable_kamis_rows, preferred_grain_kinds
 
 
 class PriceRepositoryProtocol(Protocol):
@@ -65,7 +65,10 @@ def fill_exchange_holidays(frame: pd.DataFrame) -> pd.DataFrame:
     result = frame.copy()
     calendar = country_holidays("KR")
     closed = pd.Series(
-        [timestamp.weekday() >= 5 or timestamp.date() in calendar for timestamp in result.index],
+        [
+            timestamp.weekday() >= 5 or timestamp.date() in calendar
+            for timestamp in result.index
+        ],
         index=result.index,
         dtype=bool,
     )
@@ -112,8 +115,7 @@ def chart_from_frame(
                 else pd.Series(np.nan, index=frame.index)
             )
             result[column] = [
-                None if pd.isna(value) else float(value)
-                for value in values.tolist()
+                None if pd.isna(value) else float(value) for value in values.tolist()
             ]
         return result
 
@@ -154,7 +156,14 @@ class ComparisonService:
         self._online = online_repository
         self._market = market_repository
         self._analytics = analytics
-        self.comparison_kinds = dict(sorted(target_keys))
+        self.comparison_kinds = (
+            preferred_grain_kinds(
+                [entry.to_dict() for entry in catalog_repository.entries()]
+            )
+            if catalog_repository is not None
+            else {}
+        )
+        self.comparison_kinds.update(dict(sorted(target_keys)))
         self._catalog = catalog_repository
 
     def build_frame(
@@ -222,7 +231,20 @@ class ComparisonService:
             for series_id, values in market.groupby("series_id"):
                 frame[str(series_id)] = values.groupby("observed_date")["close"].mean()
 
+        observed_coverage = {}
+        for key in ("kamis_wholesale", "kamis_retail"):
+            observed = frame[key].dropna() if key in frame else pd.Series(dtype=float)
+            observed_coverage[key] = {
+                "first_date": observed.index.min().date().isoformat()
+                if len(observed)
+                else None,
+                "last_date": observed.index.max().date().isoformat()
+                if len(observed)
+                else None,
+                "observations": len(observed),
+            }
         result = fill_exchange_holidays(frame.sort_index())
+        result.attrs["kamis_observed_coverage"] = observed_coverage
         result.attrs["comparison_notes"] = notes
         result.attrs["estimated_series"] = estimated_series
         return result
@@ -277,7 +299,10 @@ class ComparisonService:
         return result, [], []
 
     def online_frame(
-        self, item_code: str, start_date: date | None = None, end_date: date | None = None
+        self,
+        item_code: str,
+        start_date: date | None = None,
+        end_date: date | None = None,
     ) -> pd.DataFrame:
         rows = self._online.search_summaries(item_code=item_code)
         kind = self.comparison_kinds.get(item_code)
@@ -305,9 +330,7 @@ class ComparisonService:
         platforms = [column for column in ("naver", "coupang") if column in frame]
         if platforms:
             frame["combined"] = frame[platforms].mean(axis=1)
-        return frame.rename(
-            columns=lambda column: f"online_{column}"
-        ).sort_index()
+        return frame.rename(columns=lambda column: f"online_{column}").sort_index()
 
     def chart(
         self,
@@ -328,6 +351,19 @@ class ComparisonService:
         )
         result["comparison_kinds"] = self.comparison_kinds
         result["comparison_notes"] = raw_frame.attrs.get("comparison_notes", [])
+        coverage = raw_frame.attrs["kamis_observed_coverage"]
+        for key, label in (("kamis_wholesale", "도매"), ("kamis_retail", "소매")):
+            first = coverage[key]["first_date"]
+            last = coverage[key]["last_date"]
+            if first:
+                result["comparison_notes"].append(
+                    f"KAMIS {label} 실측 범위: {first} ~ {last}. 관측이 없는 영업일의 가격은 채우지 않습니다."
+                )
+        result["kamis_coverage"] = coverage
+        if not any(entry["observations"] for entry in coverage.values()):
+            result["comparison_notes"].append(
+                "이 조회 조건에 맞는 KAMIS 관측 가격이 없습니다. 시장 지수만 표시될 수 있습니다."
+            )
         result["estimated_series"] = raw_frame.attrs.get("estimated_series", [])
         if any(column.startswith("kamis_") for column in raw_frame):
             result["comparison_notes"] = [
@@ -390,13 +426,17 @@ class ComparisonService:
                 "mode": "base100",
             }
 
-        item_code = MELON_ITEM_CODE if MELON_ITEM_CODE in item_stats else max(
-            item_stats,
-            key=lambda code: (
-                code in online_item_codes,
-                item_stats[code][1],
-                item_stats[code][2],
-            ),
+        item_code = (
+            MELON_ITEM_CODE
+            if MELON_ITEM_CODE in item_stats
+            else max(
+                item_stats,
+                key=lambda code: (
+                    code in online_item_codes,
+                    item_stats[code][1],
+                    item_stats[code][2],
+                ),
+            )
         )
         earliest, end_date, _ = item_stats[item_code]
         try:

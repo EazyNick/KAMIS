@@ -1,8 +1,8 @@
 """Convert observed KAMIS prices to the shopping comparison package."""
 
+import json
 import math
 import re
-import json
 from pathlib import Path
 
 
@@ -52,7 +52,10 @@ def comparable_kamis_rows(rows, item_code, kind, catalog, *, conversion_rules=No
     converted = []
     for row in rows:
         source_kind = row.get("kind_code")
-        fallback = (item_code, kind, source_kind) == ("111", "10", "01")
+        fallback = (item_code, kind, source_kind) in {
+            ("111", "10", "01"),
+            ("152", "00", "01"),
+        }
         if source_kind != kind and not fallback:
             continue
         if row.get("region") == "평년":
@@ -68,12 +71,18 @@ def comparable_kamis_rows(rows, item_code, kind, catalog, *, conversion_rules=No
         unit = source.get(f"{price_type}_unit")
         size = source.get(f"{price_type}_unit_size")
         # The response unit wins: convert_kg is a request, not a guarantee.
-        match = re.search(r"\((\d+(?:\.\d+)?)\s*(kg|g|개|포기|마리)\)$", row.get("variety", ""))
+        match = re.search(
+            r"\((\d+(?:\.\d+)?)\s*(kg|g|개|포기|마리)\)$", row.get("variety", "")
+        )
         if match:
             size, unit = match.groups()
-        elif str(row.get("requested_convert_kg")).lower() in {"true", "y", "1"} and (unit or "").startswith("kg"):
-            size, unit = "1", "kg"
-        elif fallback and str(row.get("requested_convert_kg")).lower() in {"true", "y", "1"}:
+        elif (
+            str(row.get("requested_convert_kg")).lower() in {"true", "y", "1"}
+            and (unit or "").startswith("kg")
+            or fallback
+            and item_code == "111"
+            and str(row.get("requested_convert_kg")).lower() in {"true", "y", "1"}
+        ):
             size, unit = "1", "kg"
         elif source_kind == kind and price_type == "retail":
             size, unit = target.get("retail_unit_size"), target.get("retail_unit")
@@ -90,16 +99,30 @@ def comparable_kamis_rows(rows, item_code, kind, catalog, *, conversion_rules=No
                 continue
         if measure is None or measure[0] != target_measure[0]:
             label = "도매" if price_type == "wholesale" else "소매"
-            notes.add(f"KAMIS {label}: 온라인과 단위가 달라 환산할 수 없는 가격은 제외했습니다.")
+            notes.add(
+                f"KAMIS {label}: 온라인과 단위가 달라 환산할 수 없는 가격은 제외했습니다."
+            )
             continue
-        converted.append((fallback, {**row, "price_krw": price * target_measure[1] / measure[1]}))
-    exact = {(r["observed_date"], r["price_type"]) for fallback, r in converted if not fallback}
+        converted.append(
+            (fallback, {**row, "price_krw": price * target_measure[1] / measure[1]})
+        )
+    exact = {
+        (r["observed_date"], r["price_type"])
+        for fallback, r in converted
+        if not fallback
+    }
     result = []
     for fallback, row in converted:
         if fallback and (row["observed_date"], row["price_type"]) in exact:
             continue
-        if fallback:
-            notes.add("쌀 KAMIS: 20kg 품목 가격을 10kg 기준으로 환산했습니다. 실제 10kg 포장 조사 가격과 다릅니다.")
+        if fallback and item_code == "111":
+            notes.add(
+                "쌀 KAMIS: 20kg 품목 가격을 10kg 기준으로 환산했습니다. 실제 10kg 포장 조사 가격과 다릅니다."
+            )
+        elif fallback and item_code == "152":
+            notes.add(
+                "감자 KAMIS: 일반 감자 관측이 없는 날짜는 수미(노지) 실측 가격을 1kg 기준으로 환산해 표시합니다. 수미(시설)는 혼합하지 않습니다."
+            )
         result.append(row)
     if not result:
         notes.add("선택한 품종·비교 단위에 맞는 KAMIS 관측 가격이 없습니다.")
@@ -109,3 +132,25 @@ def comparable_kamis_rows(rows, item_code, kind, catalog, *, conversion_rules=No
             if price_type not in present:
                 notes.add(f"KAMIS {label}: 비교 가능한 관측 가격이 없습니다.")
     return result, sorted(notes)
+
+
+def preferred_grain_kinds(catalog):
+    """Use one documented measurement per grain instead of averaging varieties."""
+    candidates = sorted(
+        catalog,
+        key=lambda row: (
+            not bool(row.get("retail_rank_codes")),
+            not bool(row.get("wholesale_rank_codes")),
+            row["kind_code"],
+        ),
+    )
+    preferred = {}
+    for row in candidates:
+        if row.get("category_code") != "100":
+            continue
+        if not (row.get("retail_rank_codes") or row.get("wholesale_rank_codes")):
+            continue
+        if _measure(row.get("retail_unit_size"), row.get("retail_unit")) is None:
+            continue
+        preferred.setdefault(row["item_code"], row["kind_code"])
+    return preferred

@@ -30,9 +30,12 @@ Output:
 import argparse
 import json
 import os
-from datetime import date
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from uuid import uuid4
+from zoneinfo import ZoneInfo
 
 from app.domain.models import PriceQuery, PriceType
 from app.infrastructure.csv_repository import CatalogRepository, PriceRepository
@@ -41,7 +44,7 @@ from config.server_config import DEFAULT_ONLINE_TARGET_KEYS, Settings
 from log import app_logger
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Backfill KAMIS wholesale/retail prices for about 20 years."
     )
@@ -61,7 +64,39 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="First year to collect. Default: current year - 20.",
     )
-    return parser.parse_args()
+    parser.add_argument(
+        "--category-code", help="Limit backfill to one KAMIS category (100: grains)."
+    )
+    parser.add_argument("--end-year", type=int, help="Last year to collect, inclusive.")
+    parser.add_argument(
+        "--workers",
+        type=int,
+        choices=range(1, 5),
+        default=1,
+        help="Concurrent read requests (1 to 4); writes remain sequential.",
+    )
+    parser.add_argument(
+        "--chunk-days",
+        type=int,
+        default=31,
+        help="Maximum days per API request; avoids annual response timeouts.",
+    )
+    args = parser.parse_args(argv)
+    if not 1 <= args.chunk_days <= 366:
+        parser.error("chunk-days must be between 1 and 366")
+    if args.start_year and args.end_year and args.start_year > args.end_year:
+        parser.error("start-year must not exceed end-year")
+    return args
+
+
+def fetch_in_chunks(client, query, chunk_days: int):
+    rows = []
+    start = query.start_date
+    while start <= query.end_date:
+        end = min(start + timedelta(days=chunk_days - 1), query.end_date)
+        rows.extend(client.fetch_prices(replace(query, start_date=start, end_date=end)))
+        start = end + timedelta(days=1)
+    return rows
 
 
 def load_checkpoint(path: Path) -> set[str]:
@@ -111,9 +146,15 @@ def main() -> int:
     catalog_repository = CatalogRepository(settings.data_dir, app_logger)
     client = KamisClient(settings, build_requests_session(), app_logger)
 
-    today = date.today()
+    today = datetime.now(ZoneInfo(settings.timezone)).date()
     start_year = args.start_year or (today.year - 20)
-    checkpoint_path = settings.data_dir / "backfill" / "kamis_20y_checkpoint.json"
+    end_year = min(args.end_year or today.year, today.year)
+    checkpoint_name = (
+        f"kamis_20y_category_{args.category_code}.json"
+        if args.category_code
+        else "kamis_20y_checkpoint.json"
+    )
+    checkpoint_path = settings.data_dir / "backfill" / checkpoint_name
     completed_queries = set() if args.force else load_checkpoint(checkpoint_path)
 
     print("[CATALOG] fetching KAMIS productInfo")
@@ -128,7 +169,11 @@ def main() -> int:
         f"kamis-20y-catalog-{uuid4().hex}",
     )
 
-    if args.all_catalog:
+    if args.category_code:
+        targets = [
+            entry for entry in catalog if entry.category_code == args.category_code
+        ]
+    elif args.all_catalog:
         targets = catalog
     else:
         target_keys = set(DEFAULT_ONLINE_TARGET_KEYS)
@@ -155,13 +200,14 @@ def main() -> int:
     total_rows = 0
     failed_queries: list[str] = []
 
-    for year in range(start_year, today.year + 1):
+    for year in range(start_year, end_year + 1):
         period_start = date(year, 1, 1)
         period_end = min(date(year, 12, 31), today)
         year_rows = []
         successful_keys: list[str] = []
         attempted = 0
         skipped = 0
+        pending = []
 
         print("\n" + "=" * 72)
         print(f"[YEAR] {period_start} ~ {period_end}")
@@ -202,17 +248,31 @@ def main() -> int:
                         f"{entry.item_name}/{entry.variety} "
                         f"{price_type.value} rank={rank_code}"
                     )
-                    try:
-                        rows = client.fetch_prices(query)
-                        year_rows.extend(rows)
-                        successful_keys.append(key)
-                        print(f"       -> {len(rows):,} rows")
-                    except Exception as error:  # noqa: BLE001
-                        failed_queries.append(key)
-                        print(
-                            f"[FAILED] {key}: "
-                            f"{type(error).__name__}: {error}"
-                        )
+                    pending.append((key, query))
+
+        def fetch_one(job):
+            key, query = job
+            try:
+                # Each worker owns its HTTP session. Repository writes stay on this thread.
+                with build_requests_session() as session:
+                    rows = fetch_in_chunks(
+                        KamisClient(settings, session, app_logger),
+                        query,
+                        args.chunk_days,
+                    )
+                return key, rows, None
+            except Exception as fetch_error:  # noqa: BLE001
+                return key, [], type(fetch_error).__name__
+
+        with ThreadPoolExecutor(max_workers=args.workers) as executor:
+            for key, rows, error in executor.map(fetch_one, pending):
+                if error:
+                    failed_queries.append(key)
+                    print(f"[FAILED] {key}: {error}")
+                else:
+                    year_rows.extend(rows)
+                    successful_keys.append(key)
+                    print(f"[FETCHED] {key}: {len(rows):,} rows")
 
         if year_rows:
             result = prices.upsert(

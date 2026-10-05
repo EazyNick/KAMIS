@@ -10,6 +10,8 @@ from threading import RLock
 from time import perf_counter
 from typing import Any
 
+import duckdb
+
 from app.core.errors import StorageError
 from app.domain.models import (
     CollectionRun,
@@ -189,7 +191,11 @@ class PriceRepository(_AtomicCsvRepository):
 
     @classmethod
     def _key(cls, row: dict[str, Any]) -> tuple[str, ...]:
-        return tuple(str(row.get(field, "")) for field in cls._key_fields)
+        # CSV writes nullable fields as empty strings; keep the key stable on reload.
+        return tuple(
+            "" if row.get(field) is None else str(row[field])
+            for field in cls._key_fields
+        )
 
     def upsert(
         self, observations: list[PriceObservation], run_id: str
@@ -226,40 +232,51 @@ class PriceRepository(_AtomicCsvRepository):
             if not self.path.exists() or self.path.stat().st_size == 0:
                 return result
             try:
-                with self.path.open(encoding="utf-8-sig", newline="") as handle:
-                    for row in csv.DictReader(handle):
-                        observed_text = row.get("observed_date", "")
-                        if not observed_text:
-                            continue
-                        observed = date.fromisoformat(observed_text)
-                        if filters.start_date and observed < filters.start_date:
-                            continue
-                        if filters.end_date and observed > filters.end_date:
-                            # The repository is sorted by observed_date, so a bounded
-                            # query can stop as soon as it moves past the requested range.
-                            break
-                        if (
-                            filters.price_type
-                            and row.get("price_type") != filters.price_type
-                        ):
-                            continue
-                        if (
-                            filters.item_code
-                            and row.get("item_code") != filters.item_code
-                        ):
-                            continue
-                        if (
-                            filters.item_name
-                            and filters.item_name.casefold()
-                            not in row.get("item_name", "").casefold()
-                        ):
-                            continue
-                        converted: dict[str, Any] = dict(row)
-                        converted["price_krw"] = (
-                            float(row["price_krw"]) if row.get("price_krw") else None
-                        )
-                        result.append(converted)
-            except (OSError, csv.Error, ValueError) as error:
+                # Filter in the native CSV scanner before materializing Python rows.
+                # Codes remain strings (leading zeroes matter); imports need not be sorted.
+                conditions = ["observed_date IS NOT NULL", "observed_date <> ''"]
+                parameters: list[Any] = [str(self.path)]
+                for column, value, operator in (
+                    ("item_code", filters.item_code, "="),
+                    ("price_type", filters.price_type, "="),
+                    ("observed_date", filters.start_date, ">="),
+                    ("observed_date", filters.end_date, "<="),
+                ):
+                    if value is not None:
+                        conditions.append(f"{column} {operator} ?")
+                        parameters.append(str(value))
+                with duckdb.connect(config={"threads": 2}) as connection:
+                    cursor = connection.execute(
+                        "SELECT * FROM read_csv(?, header=true, all_varchar=true) WHERE "
+                        + " AND ".join(conditions),
+                        parameters,
+                    )
+                    columns = [column[0] for column in cursor.description]
+                    while batch := cursor.fetchmany(4096):
+                        for values in batch:
+                            row = dict(
+                                zip(
+                                    columns,
+                                    (
+                                        value if value is not None else ""
+                                        for value in values
+                                    ),
+                                )
+                            )
+                            if (
+                                filters.item_name
+                                and filters.item_name.casefold()
+                                not in row.get("item_name", "").casefold()
+                            ):
+                                continue
+                            date.fromisoformat(row["observed_date"])
+                            row["price_krw"] = (
+                                float(row["price_krw"])
+                                if row.get("price_krw")
+                                else None
+                            )
+                            result.append(row)
+            except (OSError, csv.Error, ValueError, duckdb.Error) as error:
                 raise StorageError(f"failed to search {self.path}: {error}") from error
         return result
 
