@@ -1,7 +1,7 @@
 from datetime import date
 
 from app.services.analytics import AnalyticsService
-from app.services.comparison import ComparisonService
+from app.services.comparison import MARKET_EXCHANGES, ComparisonService
 
 
 def test_kamis_holidays_continue_prices_but_open_day_gaps_remain():
@@ -102,6 +102,56 @@ class HistoricalMarketRepo:
             {"observed_date": "2026-09-25", "series_id": "kospi", "close": 2610},
             {"observed_date": "2026-09-28", "series_id": "kospi", "close": 2620},
         ]
+
+
+class WeekendOnlineRepo:
+    def search_summaries(self, **kwargs):
+        return [
+            {
+                "observed_date": observed_date,
+                "platform": "naver",
+                "average_unit_price": "1000",
+            }
+            for observed_date in ("2026-09-26", "2026-09-27")
+        ]
+
+
+class AllMarketWeekendRepo:
+    def search(self, **kwargs):
+        return [
+            {
+                "observed_date": observed_date,
+                "series_id": series_id,
+                "close": close,
+            }
+            for series_id in MARKET_EXCHANGES
+            for observed_date, close in (
+                ("2026-09-25", 100.0),
+                ("2026-09-28", 110.0),
+            )
+        ]
+
+
+def test_chart_payload_keeps_all_market_series_continuous_across_weekend() -> None:
+    service = ComparisonService(
+        OneDayPriceRepo(),
+        WeekendOnlineRepo(),
+        AllMarketWeekendRepo(),
+        AnalyticsService(),
+    )
+
+    result = service.chart(
+        "111", date(2026, 9, 25), date(2026, 9, 28), "raw"
+    )
+
+    assert result["dates"] == [
+        "2026-09-25",
+        "2026-09-26",
+        "2026-09-27",
+        "2026-09-28",
+    ]
+    for series_id in MARKET_EXCHANGES:
+        assert result["series"][series_id] == [100.0, 100.0, 100.0, 110.0]
 
 
 def test_market_history_dates_extend_chart_timeline() -> None:
