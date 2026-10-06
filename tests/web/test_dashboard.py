@@ -195,7 +195,19 @@ def test_dashboard_defaults_to_kamis_futures_and_preserves_manual_selection(
         page.evaluate("applyBootstrap", responses["/api/v1/dashboard/bootstrap"])
         assert page.locator("#legend .chip:not(.off)").count() == 0
         page.locator('[data-key="kamis_retail"]').click()
-        page.mouse.move(chart_box["x"] + 74, chart_box["y"] + chart_box["height"] / 2)
+        # Table and legend clicks can scroll the chart behind the sticky header.
+        canvas = page.locator("#comparisonChart")
+        canvas.evaluate("element => element.scrollIntoView({block: 'center', behavior: 'instant'})")
+        chart_box = canvas.bounding_box()
+        assert chart_box is not None
+        point = {
+            "x": chart_box["x"] + 74,
+            "y": chart_box["y"] + 28 + (chart_box["height"] - 28 - 48) / 2,
+        }
+        assert page.evaluate(
+            "point => document.elementFromPoint(point.x, point.y)?.id", point
+        ) == "comparisonChart"
+        page.mouse.move(point["x"], point["y"])
         tooltip = page.locator("#chartTooltip")
         assert tooltip.is_visible()
         assert "2026-09-24" in tooltip.inner_text()
