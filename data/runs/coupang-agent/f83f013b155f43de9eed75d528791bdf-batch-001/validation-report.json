@@ -1,0 +1,46 @@
+{
+  "targets": {
+    "111:10": {
+      "comparable_count": 0,
+      "excluded_reasons": {}
+    },
+    "257:00": {
+      "comparable_count": 0,
+      "excluded_reasons": {}
+    },
+    "412:01": {
+      "comparable_count": 0,
+      "excluded_reasons": {}
+    },
+    "411:05": {
+      "comparable_count": 0,
+      "excluded_reasons": {}
+    },
+    "211:03": {
+      "comparable_count": 0,
+      "excluded_reasons": {}
+    },
+    "152:00": {
+      "comparable_count": 0,
+      "excluded_reasons": {}
+    },
+    "258:01": {
+      "comparable_count": 0,
+      "excluded_reasons": {}
+    },
+    "225:00": {
+      "comparable_count": 0,
+      "excluded_reasons": {}
+    },
+    "231:03": {
+      "comparable_count": 0,
+      "excluded_reasons": {}
+    },
+    "245:00": {
+      "comparable_count": 0,
+      "excluded_reasons": {}
+    }
+  },
+  "invalid_row_count": 0,
+  "errors": []
+}

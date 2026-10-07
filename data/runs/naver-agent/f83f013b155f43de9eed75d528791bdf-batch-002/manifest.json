@@ -1,0 +1,18 @@
+{
+  "run_id": "f83f013b155f43de9eed75d528791bdf-batch-002",
+  "observed_date": "2026-10-07",
+  "run_dir": "D:\\Python\\KAMIS\\data\\runs\\naver-agent\\f83f013b155f43de9eed75d528791bdf-batch-002",
+  "output_csv": "D:\\Python\\KAMIS\\data\\runs\\naver-agent\\f83f013b155f43de9eed75d528791bdf-batch-002\\offers.csv",
+  "minimum_delay_ms": 5000,
+  "max_offers_per_target": 8,
+  "targets": [
+    {
+      "item_code": "611",
+      "kind_code": "05",
+      "item_name": "고등어",
+      "variety": "국산(신선 냉장)",
+      "comparison_unit": "1마리",
+      "query": "고등어 국산 신선 냉장 1마리"
+    }
+  ]
+}
