@@ -1,0 +1,2626 @@
+{
+  "requested_date": "2026-10-07",
+  "started_at": "2026-10-07T20:07:49.600614+09:00",
+  "finished_at": "2026-10-07T20:08:21.599154+09:00",
+  "source": "Yahoo Finance chart API",
+  "results": [
+    {
+      "series_id": "kospi",
+      "ticker": "^KS11",
+      "url": "https://query2.finance.yahoo.com/v8/finance/chart/%5EKS11?range=7d&interval=1d",
+      "collected_at": "2026-10-07T20:07:56.936756+09:00",
+      "exchange_timezone": "Asia/Seoul",
+      "observations": [
+        {
+          "series_id": "kospi",
+          "ticker": "^KS11",
+          "observed_date": "2026-09-28",
+          "close": 6889.740234375
+        },
+        {
+          "series_id": "kospi",
+          "ticker": "^KS11",
+          "observed_date": "2026-09-29",
+          "close": 6870.81005859375
+        },
+        {
+          "series_id": "kospi",
+          "ticker": "^KS11",
+          "observed_date": "2026-09-30",
+          "close": 6838.0400390625
+        },
+        {
+          "series_id": "kospi",
+          "ticker": "^KS11",
+          "observed_date": "2026-10-01",
+          "close": 6971.35009765625
+        },
+        {
+          "series_id": "kospi",
+          "ticker": "^KS11",
+          "observed_date": "2026-10-02",
+          "close": 7003.740234375
+        },
+        {
+          "series_id": "kospi",
+          "ticker": "^KS11",
+          "observed_date": "2026-10-06",
+          "close": 6941.39013671875
+        },
+        {
+          "series_id": "kospi",
+          "ticker": "^KS11",
+          "observed_date": "2026-10-07",
+          "close": 6803.89990234375
+        }
+      ],
+      "response": {
+        "chart": {
+          "result": [
+            {
+              "meta": {
+                "currency": "KRW",
+                "symbol": "^KS11",
+                "exchangeName": "KSC",
+                "fullExchangeName": "KSE",
+                "instrumentType": "INDEX",
+                "firstTradeDate": 850262400,
+                "regularMarketTime": 1791354640,
+                "hasPrePostMarketData": false,
+                "gmtoffset": 32400,
+                "timezone": "KST",
+                "exchangeTimezoneName": "Asia/Seoul",
+                "regularMarketPrice": 6803.9,
+                "regularMarketChangePercent": -1.981,
+                "fulldayPrice": 6803.9,
+                "fulldayChange": -137.49,
+                "fulldayChangePercent": -1.981,
+                "fiftyTwoWeekHigh": 9385.59,
+                "fiftyTwoWeekLow": 3522.54,
+                "regularMarketDayHigh": 6977.77,
+                "regularMarketDayLow": 6803.81,
+                "regularMarketVolume": 256760,
+                "longName": "KOSPI Composite Index",
+                "shortName": "KOSPI Composite Index",
+                "chartPreviousClose": 7080.92,
+                "priceHint": 2,
+                "currentTradingPeriod": {
+                  "pre": {
+                    "timezone": "KST",
+                    "end": 1791331200,
+                    "start": 1791325800,
+                    "gmtoffset": 32400
+                  },
+                  "regular": {
+                    "timezone": "KST",
+                    "end": 1791352800,
+                    "start": 1791331200,
+                    "gmtoffset": 32400
+                  },
+                  "post": {
+                    "timezone": "KST",
+                    "end": 1791363600,
+                    "start": 1791352800,
+                    "gmtoffset": 32400
+                  }
+                },
+                "dataGranularity": "1d",
+                "range": "7d",
+                "validRanges": [
+                  "1d",
+                  "5d",
+                  "1mo",
+                  "3mo",
+                  "6mo",
+                  "1y",
+                  "2y",
+                  "5y",
+                  "10y",
+                  "ytd",
+                  "max"
+                ]
+              },
+              "timestamp": [
+                1790553600,
+                1790640000,
+                1790726400,
+                1790812800,
+                1790899200,
+                1791244800,
+                1791331200
+              ],
+              "indicators": {
+                "quote": [
+                  {
+                    "low": [
+                      6889.68017578125,
+                      6782.990234375,
+                      6818.39013671875,
+                      6765.06005859375,
+                      6927.8798828125,
+                      6897.3798828125,
+                      6803.81005859375
+                    ],
+                    "open": [
+                      7057.85986328125,
+                      6844.41015625,
+                      6943.47021484375,
+                      6814.490234375,
+                      6938.27001953125,
+                      7044.669921875,
+                      6864.25
+                    ],
+                    "high": [
+                      7065.89990234375,
+                      6898.35986328125,
+                      6965.64013671875,
+                      6971.35986328125,
+                      7011.0400390625,
+                      7044.669921875,
+                      6977.77001953125
+                    ],
+                    "close": [
+                      6889.740234375,
+                      6870.81005859375,
+                      6838.0400390625,
+                      6971.35009765625,
+                      7003.740234375,
+                      6941.39013671875,
+                      6803.89990234375
+                    ],
+                    "volume": [
+                      230000,
+                      221700,
+                      286000,
+                      292300,
+                      239000,
+                      269800,
+                      256760
+                    ]
+                  }
+                ],
+                "adjclose": [
+                  {
+                    "adjclose": [
+                      6889.740234375,
+                      6870.81005859375,
+                      6838.0400390625,
+                      6971.35009765625,
+                      7003.740234375,
+                      6941.39013671875,
+                      6803.89990234375
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "error": null
+        }
+      }
+    },
+    {
+      "series_id": "kosdaq",
+      "ticker": "^KQ11",
+      "url": "https://query2.finance.yahoo.com/v8/finance/chart/%5EKQ11?range=7d&interval=1d",
+      "collected_at": "2026-10-07T20:07:56.997339+09:00",
+      "exchange_timezone": "Asia/Seoul",
+      "observations": [
+        {
+          "series_id": "kosdaq",
+          "ticker": "^KQ11",
+          "observed_date": "2026-09-28",
+          "close": 846.5800170898438
+        },
+        {
+          "series_id": "kosdaq",
+          "ticker": "^KQ11",
+          "observed_date": "2026-09-29",
+          "close": 849.7999877929688
+        },
+        {
+          "series_id": "kosdaq",
+          "ticker": "^KQ11",
+          "observed_date": "2026-09-30",
+          "close": 855.9099731445312
+        },
+        {
+          "series_id": "kosdaq",
+          "ticker": "^KQ11",
+          "observed_date": "2026-10-01",
+          "close": 894.2899780273438
+        },
+        {
+          "series_id": "kosdaq",
+          "ticker": "^KQ11",
+          "observed_date": "2026-10-02",
+          "close": 893.2899780273438
+        },
+        {
+          "series_id": "kosdaq",
+          "ticker": "^KQ11",
+          "observed_date": "2026-10-06",
+          "close": 919.9199829101562
+        },
+        {
+          "series_id": "kosdaq",
+          "ticker": "^KQ11",
+          "observed_date": "2026-10-07",
+          "close": 898.4299926757812
+        }
+      ],
+      "response": {
+        "chart": {
+          "result": [
+            {
+              "meta": {
+                "currency": "KRW",
+                "symbol": "^KQ11",
+                "exchangeName": "KOE",
+                "fullExchangeName": "KOSDAQ",
+                "instrumentType": "INDEX",
+                "firstTradeDate": 971654400,
+                "regularMarketTime": 1791354770,
+                "hasPrePostMarketData": false,
+                "gmtoffset": 32400,
+                "timezone": "KST",
+                "exchangeTimezoneName": "Asia/Seoul",
+                "regularMarketPrice": 898.43,
+                "regularMarketChangePercent": -2.336,
+                "fulldayPrice": 898.43,
+                "fulldayChange": -21.49,
+                "fulldayChangePercent": -2.336,
+                "fiftyTwoWeekHigh": 1229.42,
+                "fiftyTwoWeekLow": 630.99,
+                "regularMarketDayHigh": 921.73,
+                "regularMarketDayLow": 898.25,
+                "regularMarketVolume": 551046,
+                "longName": "Kosdaq Composite Index",
+                "shortName": "Kosdaq Composite Index",
+                "chartPreviousClose": 844.48,
+                "priceHint": 2,
+                "currentTradingPeriod": {
+                  "pre": {
+                    "timezone": "KST",
+                    "end": 1791331200,
+                    "start": 1791325800,
+                    "gmtoffset": 32400
+                  },
+                  "regular": {
+                    "timezone": "KST",
+                    "end": 1791352800,
+                    "start": 1791331200,
+                    "gmtoffset": 32400
+                  },
+                  "post": {
+                    "timezone": "KST",
+                    "end": 1791363600,
+                    "start": 1791352800,
+                    "gmtoffset": 32400
+                  }
+                },
+                "dataGranularity": "1d",
+                "range": "7d",
+                "validRanges": [
+                  "1d",
+                  "5d",
+                  "1mo",
+                  "3mo",
+                  "6mo",
+                  "1y",
+                  "2y",
+                  "5y",
+                  "10y",
+                  "ytd",
+                  "max"
+                ]
+              },
+              "timestamp": [
+                1790553600,
+                1790640000,
+                1790726400,
+                1790812800,
+                1790899200,
+                1791244800,
+                1791331200
+              ],
+              "indicators": {
+                "quote": [
+                  {
+                    "high": [
+                      861.1500244140625,
+                      849.8200073242188,
+                      862.5,
+                      894.2899780273438,
+                      903.8800048828125,
+                      919.9199829101562,
+                      921.72998046875
+                    ],
+                    "low": [
+                      841.22998046875,
+                      833.6199951171875,
+                      852.0999755859375,
+                      851.9199829101562,
+                      885.6500244140625,
+                      901.4600219726562,
+                      898.25
+                    ],
+                    "open": [
+                      845.47998046875,
+                      843.8699951171875,
+                      854.780029296875,
+                      853.9600219726562,
+                      893.219970703125,
+                      902.1599731445312,
+                      917.4500122070312
+                    ],
+                    "close": [
+                      846.5800170898438,
+                      849.7999877929688,
+                      855.9099731445312,
+                      894.2899780273438,
+                      893.2899780273438,
+                      919.9199829101562,
+                      898.4299926757812
+                    ],
+                    "volume": [
+                      580000,
+                      604300,
+                      574000,
+                      530400,
+                      557000,
+                      613700,
+                      551046
+                    ]
+                  }
+                ],
+                "adjclose": [
+                  {
+                    "adjclose": [
+                      846.5800170898438,
+                      849.7999877929688,
+                      855.9099731445312,
+                      894.2899780273438,
+                      893.2899780273438,
+                      919.9199829101562,
+                      898.4299926757812
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "error": null
+        }
+      }
+    },
+    {
+      "series_id": "sp500",
+      "ticker": "^GSPC",
+      "url": "https://query2.finance.yahoo.com/v8/finance/chart/%5EGSPC?range=7d&interval=1d",
+      "collected_at": "2026-10-07T20:07:57.033461+09:00",
+      "exchange_timezone": "America/New_York",
+      "observations": [
+        {
+          "series_id": "sp500",
+          "ticker": "^GSPC",
+          "observed_date": "2026-09-28",
+          "close": 7683.68994140625
+        },
+        {
+          "series_id": "sp500",
+          "ticker": "^GSPC",
+          "observed_date": "2026-09-29",
+          "close": 7670.83984375
+        },
+        {
+          "series_id": "sp500",
+          "ticker": "^GSPC",
+          "observed_date": "2026-09-30",
+          "close": 7651.5400390625
+        },
+        {
+          "series_id": "sp500",
+          "ticker": "^GSPC",
+          "observed_date": "2026-10-01",
+          "close": 7666.4501953125
+        },
+        {
+          "series_id": "sp500",
+          "ticker": "^GSPC",
+          "observed_date": "2026-10-02",
+          "close": 7722.72021484375
+        },
+        {
+          "series_id": "sp500",
+          "ticker": "^GSPC",
+          "observed_date": "2026-10-05",
+          "close": 7773.9501953125
+        },
+        {
+          "series_id": "sp500",
+          "ticker": "^GSPC",
+          "observed_date": "2026-10-06",
+          "close": 7818.93017578125
+        }
+      ],
+      "response": {
+        "chart": {
+          "result": [
+            {
+              "meta": {
+                "currency": "USD",
+                "symbol": "^GSPC",
+                "exchangeName": "SNP",
+                "fullExchangeName": "SNP",
+                "instrumentType": "INDEX",
+                "firstTradeDate": -1325583000,
+                "regularMarketTime": 1791319207,
+                "hasPrePostMarketData": false,
+                "gmtoffset": -14400,
+                "timezone": "EDT",
+                "exchangeTimezoneName": "America/New_York",
+                "regularMarketPrice": 7818.93,
+                "regularMarketChangePercent": 0.579,
+                "fulldayPrice": 7818.93,
+                "fulldayChange": 44.98,
+                "fulldayChangePercent": 0.579,
+                "fiftyTwoWeekHigh": 7844.52,
+                "fiftyTwoWeekLow": 6316.91,
+                "regularMarketDayHigh": 7844.52,
+                "regularMarketDayLow": 7805.96,
+                "regularMarketVolume": 2717394000,
+                "longName": "S&P 500",
+                "shortName": "S&P 500",
+                "chartPreviousClose": 7743.41,
+                "priceHint": 2,
+                "currentTradingPeriod": {
+                  "pre": {
+                    "timezone": "EDT",
+                    "end": 1791379800,
+                    "start": 1791360000,
+                    "gmtoffset": -14400
+                  },
+                  "regular": {
+                    "timezone": "EDT",
+                    "end": 1791403200,
+                    "start": 1791379800,
+                    "gmtoffset": -14400
+                  },
+                  "post": {
+                    "timezone": "EDT",
+                    "end": 1791417600,
+                    "start": 1791403200,
+                    "gmtoffset": -14400
+                  }
+                },
+                "dataGranularity": "1d",
+                "range": "7d",
+                "validRanges": [
+                  "1d",
+                  "5d",
+                  "1mo",
+                  "3mo",
+                  "6mo",
+                  "1y",
+                  "2y",
+                  "5y",
+                  "10y",
+                  "ytd",
+                  "max"
+                ]
+              },
+              "timestamp": [
+                1790602200,
+                1790688600,
+                1790775000,
+                1790861400,
+                1790947800,
+                1791207000,
+                1791293400
+              ],
+              "indicators": {
+                "quote": [
+                  {
+                    "low": [
+                      7666.60009765625,
+                      7653.5498046875,
+                      7651.5400390625,
+                      7616.77978515625,
+                      7700.509765625,
+                      7727.58984375,
+                      7805.9599609375
+                    ],
+                    "volume": [
+                      5129710000,
+                      5023590000,
+                      4276550000,
+                      5783800000,
+                      5277430000,
+                      5840900000,
+                      5019650000
+                    ],
+                    "open": [
+                      7721.7001953125,
+                      7699.60009765625,
+                      7688.990234375,
+                      7666.47021484375,
+                      7726.240234375,
+                      7730.85986328125,
+                      7805.9599609375
+                    ],
+                    "close": [
+                      7683.68994140625,
+                      7670.83984375,
+                      7651.5400390625,
+                      7666.4501953125,
+                      7722.72021484375,
+                      7773.9501953125,
+                      7818.93017578125
+                    ],
+                    "high": [
+                      7724.14990234375,
+                      7699.60009765625,
+                      7722.8798828125,
+                      7684.75,
+                      7754.669921875,
+                      7794.35009765625,
+                      7844.52001953125
+                    ]
+                  }
+                ],
+                "adjclose": [
+                  {
+                    "adjclose": [
+                      7683.68994140625,
+                      7670.83984375,
+                      7651.5400390625,
+                      7666.4501953125,
+                      7722.72021484375,
+                      7773.9501953125,
+                      7818.93017578125
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "error": null
+        }
+      }
+    },
+    {
+      "series_id": "nasdaq",
+      "ticker": "^IXIC",
+      "url": "https://query2.finance.yahoo.com/v8/finance/chart/%5EIXIC?range=7d&interval=1d",
+      "collected_at": "2026-10-07T20:07:56.985380+09:00",
+      "exchange_timezone": "America/New_York",
+      "observations": [
+        {
+          "series_id": "nasdaq",
+          "ticker": "^IXIC",
+          "observed_date": "2026-09-28",
+          "close": 26820.380859375
+        },
+        {
+          "series_id": "nasdaq",
+          "ticker": "^IXIC",
+          "observed_date": "2026-09-29",
+          "close": 26797.5390625
+        },
+        {
+          "series_id": "nasdaq",
+          "ticker": "^IXIC",
+          "observed_date": "2026-09-30",
+          "close": 26861.060546875
+        },
+        {
+          "series_id": "nasdaq",
+          "ticker": "^IXIC",
+          "observed_date": "2026-10-01",
+          "close": 26871.599609375
+        },
+        {
+          "series_id": "nasdaq",
+          "ticker": "^IXIC",
+          "observed_date": "2026-10-02",
+          "close": 27190.859375
+        },
+        {
+          "series_id": "nasdaq",
+          "ticker": "^IXIC",
+          "observed_date": "2026-10-05",
+          "close": 27477.310546875
+        },
+        {
+          "series_id": "nasdaq",
+          "ticker": "^IXIC",
+          "observed_date": "2026-10-06",
+          "close": 27599.7890625
+        }
+      ],
+      "response": {
+        "chart": {
+          "result": [
+            {
+              "meta": {
+                "currency": "USD",
+                "symbol": "^IXIC",
+                "exchangeName": "NIM",
+                "fullExchangeName": "Nasdaq GIDS",
+                "instrumentType": "INDEX",
+                "firstTradeDate": 34612200,
+                "regularMarketTime": 1791325893,
+                "hasPrePostMarketData": false,
+                "gmtoffset": -14400,
+                "timezone": "EDT",
+                "exchangeTimezoneName": "America/New_York",
+                "regularMarketPrice": 27599.887,
+                "regularMarketChangePercent": 0.446,
+                "fulldayPrice": 27599.887,
+                "fulldayChange": 122.576,
+                "fulldayChangePercent": 0.446,
+                "fiftyTwoWeekHigh": 27722.75,
+                "fiftyTwoWeekLow": 20690.25,
+                "regularMarketDayHigh": 27722.748,
+                "regularMarketDayLow": 27592.557,
+                "regularMarketVolume": 7658736000,
+                "longName": "NASDAQ Composite",
+                "shortName": "NASDAQ Composite",
+                "chartPreviousClose": 27068.72,
+                "priceHint": 2,
+                "currentTradingPeriod": {
+                  "pre": {
+                    "timezone": "EDT",
+                    "end": 1791379800,
+                    "start": 1791360000,
+                    "gmtoffset": -14400
+                  },
+                  "regular": {
+                    "timezone": "EDT",
+                    "end": 1791403200,
+                    "start": 1791379800,
+                    "gmtoffset": -14400
+                  },
+                  "post": {
+                    "timezone": "EDT",
+                    "end": 1791417600,
+                    "start": 1791403200,
+                    "gmtoffset": -14400
+                  }
+                },
+                "dataGranularity": "1d",
+                "range": "7d",
+                "validRanges": [
+                  "1d",
+                  "5d",
+                  "1mo",
+                  "3mo",
+                  "6mo",
+                  "1y",
+                  "2y",
+                  "5y",
+                  "10y",
+                  "ytd",
+                  "max"
+                ]
+              },
+              "timestamp": [
+                1790602200,
+                1790688600,
+                1790775000,
+                1790861400,
+                1790947800,
+                1791207000,
+                1791293400
+              ],
+              "indicators": {
+                "quote": [
+                  {
+                    "volume": [
+                      7030730000,
+                      7097250000,
+                      8300260000,
+                      7329610000,
+                      7954430000,
+                      7828480000,
+                      8451470000
+                    ],
+                    "open": [
+                      26935.759765625,
+                      26908.759765625,
+                      26892.80078125,
+                      26992.310546875,
+                      27216.91015625,
+                      27225.9296875,
+                      27641.169921875
+                    ],
+                    "close": [
+                      26820.380859375,
+                      26797.5390625,
+                      26861.060546875,
+                      26871.599609375,
+                      27190.859375,
+                      27477.310546875,
+                      27599.7890625
+                    ],
+                    "low": [
+                      26709.689453125,
+                      26717.94921875,
+                      26861.060546875,
+                      26733.890625,
+                      27112.240234375,
+                      27223.490234375,
+                      27592.560546875
+                    ],
+                    "high": [
+                      26990.01953125,
+                      26919.720703125,
+                      27108.19921875,
+                      27014.470703125,
+                      27353.6796875,
+                      27544.060546875,
+                      27722.75
+                    ]
+                  }
+                ],
+                "adjclose": [
+                  {
+                    "adjclose": [
+                      26820.380859375,
+                      26797.5390625,
+                      26861.060546875,
+                      26871.599609375,
+                      27190.859375,
+                      27477.310546875,
+                      27599.7890625
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "error": null
+        }
+      }
+    },
+    {
+      "series_id": "dow_jones",
+      "ticker": "^DJI",
+      "url": "https://query2.finance.yahoo.com/v8/finance/chart/%5EDJI?range=7d&interval=1d",
+      "collected_at": "2026-10-07T20:08:05.075885+09:00",
+      "exchange_timezone": "America/New_York",
+      "observations": [
+        {
+          "series_id": "dow_jones",
+          "ticker": "^DJI",
+          "observed_date": "2026-09-28",
+          "close": 51481.51171875
+        },
+        {
+          "series_id": "dow_jones",
+          "ticker": "^DJI",
+          "observed_date": "2026-09-29",
+          "close": 51349.921875
+        },
+        {
+          "series_id": "dow_jones",
+          "ticker": "^DJI",
+          "observed_date": "2026-09-30",
+          "close": 50906.05078125
+        },
+        {
+          "series_id": "dow_jones",
+          "ticker": "^DJI",
+          "observed_date": "2026-10-01",
+          "close": 50926.55859375
+        },
+        {
+          "series_id": "dow_jones",
+          "ticker": "^DJI",
+          "observed_date": "2026-10-02",
+          "close": 51176.9609375
+        },
+        {
+          "series_id": "dow_jones",
+          "ticker": "^DJI",
+          "observed_date": "2026-10-05",
+          "close": 51267.8984375
+        },
+        {
+          "series_id": "dow_jones",
+          "ticker": "^DJI",
+          "observed_date": "2026-10-06",
+          "close": 51521.28125
+        }
+      ],
+      "response": {
+        "chart": {
+          "result": [
+            {
+              "meta": {
+                "currency": "USD",
+                "symbol": "^DJI",
+                "exchangeName": "DJI",
+                "fullExchangeName": "DJI",
+                "instrumentType": "INDEX",
+                "firstTradeDate": 694362600,
+                "regularMarketTime": 1791319357,
+                "hasPrePostMarketData": false,
+                "gmtoffset": -14400,
+                "timezone": "EDT",
+                "exchangeTimezoneName": "America/New_York",
+                "regularMarketPrice": 51521.28,
+                "regularMarketChangePercent": 0.494,
+                "fulldayPrice": 51521.28,
+                "fulldayChange": 253.383,
+                "fulldayChangePercent": 0.494,
+                "fiftyTwoWeekHigh": 54744.33,
+                "fiftyTwoWeekLow": 45057.28,
+                "regularMarketDayHigh": 51672.25,
+                "regularMarketDayLow": 51422.9,
+                "regularMarketVolume": 404919021,
+                "longName": "Dow Jones Industrial Average",
+                "shortName": "Dow Jones Industrial Average",
+                "chartPreviousClose": 51828.62,
+                "priceHint": 2,
+                "currentTradingPeriod": {
+                  "pre": {
+                    "timezone": "EDT",
+                    "start": 1791360000,
+                    "end": 1791379800,
+                    "gmtoffset": -14400
+                  },
+                  "regular": {
+                    "timezone": "EDT",
+                    "start": 1791379800,
+                    "end": 1791403200,
+                    "gmtoffset": -14400
+                  },
+                  "post": {
+                    "timezone": "EDT",
+                    "start": 1791403200,
+                    "end": 1791417600,
+                    "gmtoffset": -14400
+                  }
+                },
+                "dataGranularity": "1d",
+                "range": "7d",
+                "validRanges": [
+                  "1d",
+                  "5d",
+                  "1mo",
+                  "3mo",
+                  "6mo",
+                  "1y",
+                  "2y",
+                  "5y",
+                  "10y",
+                  "ytd",
+                  "max"
+                ]
+              },
+              "timestamp": [
+                1790602200,
+                1790688600,
+                1790775000,
+                1790861400,
+                1790947800,
+                1791207000,
+                1791293400
+              ],
+              "indicators": {
+                "quote": [
+                  {
+                    "close": [
+                      51481.51171875,
+                      51349.921875,
+                      50906.05078125,
+                      50926.55859375,
+                      51176.9609375,
+                      51267.8984375,
+                      51521.28125
+                    ],
+                    "low": [
+                      51409.6484375,
+                      51129.1796875,
+                      50906.05078125,
+                      50546.5390625,
+                      50950.609375,
+                      50862.8515625,
+                      51422.8984375
+                    ],
+                    "volume": [
+                      455450000,
+                      386240000,
+                      487860000,
+                      476440000,
+                      548950000,
+                      472440000,
+                      404910000
+                    ],
+                    "high": [
+                      51780.5,
+                      51505.19140625,
+                      51473.9296875,
+                      51179.78125,
+                      51382.87890625,
+                      51404.859375,
+                      51672.25
+                    ],
+                    "open": [
+                      51648.48046875,
+                      51416.9609375,
+                      51424.83984375,
+                      51008.359375,
+                      51241.1796875,
+                      51199.25,
+                      51444.1015625
+                    ]
+                  }
+                ],
+                "adjclose": [
+                  {
+                    "adjclose": [
+                      51481.51171875,
+                      51349.921875,
+                      50906.05078125,
+                      50926.55859375,
+                      51176.9609375,
+                      51267.8984375,
+                      51521.28125
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "error": null
+        }
+      }
+    },
+    {
+      "series_id": "usd_krw",
+      "ticker": "KRW=X",
+      "url": "https://query2.finance.yahoo.com/v8/finance/chart/KRW%3DX?range=7d&interval=1d",
+      "collected_at": "2026-10-07T20:08:05.059246+09:00",
+      "exchange_timezone": "Europe/London",
+      "observations": [
+        {
+          "series_id": "usd_krw",
+          "ticker": "KRW=X",
+          "observed_date": "2026-09-29",
+          "close": 1359.56005859375
+        },
+        {
+          "series_id": "usd_krw",
+          "ticker": "KRW=X",
+          "observed_date": "2026-09-30",
+          "close": 1350.5
+        },
+        {
+          "series_id": "usd_krw",
+          "ticker": "KRW=X",
+          "observed_date": "2026-10-01",
+          "close": 1356.8399658203125
+        },
+        {
+          "series_id": "usd_krw",
+          "ticker": "KRW=X",
+          "observed_date": "2026-10-02",
+          "close": 1360.5899658203125
+        },
+        {
+          "series_id": "usd_krw",
+          "ticker": "KRW=X",
+          "observed_date": "2026-10-05",
+          "close": 1342.56005859375
+        },
+        {
+          "series_id": "usd_krw",
+          "ticker": "KRW=X",
+          "observed_date": "2026-10-06",
+          "close": 1343.75
+        },
+        {
+          "series_id": "usd_krw",
+          "ticker": "KRW=X",
+          "observed_date": "2026-10-07",
+          "close": 1338.550048828125
+        }
+      ],
+      "response": {
+        "chart": {
+          "result": [
+            {
+              "meta": {
+                "currency": "KRW",
+                "symbol": "KRW=X",
+                "exchangeName": "CCY",
+                "fullExchangeName": "CCY",
+                "instrumentType": "CURRENCY",
+                "firstTradeDate": 1070236800,
+                "regularMarketTime": 1791371276,
+                "hasPrePostMarketData": false,
+                "gmtoffset": 3600,
+                "timezone": "BST",
+                "exchangeTimezoneName": "Europe/London",
+                "regularMarketPrice": 1338.55,
+                "regularMarketChangePercent": 0.1242,
+                "fulldayPrice": 1338.55,
+                "fulldayChange": 1.66,
+                "fulldayChangePercent": 0.1242,
+                "fiftyTwoWeekHigh": 1587.7,
+                "fiftyTwoWeekLow": 1322.42,
+                "regularMarketDayHigh": 1341.28,
+                "regularMarketDayLow": 1336.38,
+                "regularMarketVolume": 0,
+                "longName": "USD/KRW",
+                "shortName": "USD/KRW",
+                "chartPreviousClose": 1359.56,
+                "priceHint": 4,
+                "currentTradingPeriod": {
+                  "pre": {
+                    "timezone": "BST",
+                    "end": 1791327600,
+                    "start": 1791327600,
+                    "gmtoffset": 3600
+                  },
+                  "regular": {
+                    "timezone": "BST",
+                    "end": 1791413940,
+                    "start": 1791327600,
+                    "gmtoffset": 3600
+                  },
+                  "post": {
+                    "timezone": "BST",
+                    "end": 1791413940,
+                    "start": 1791413940,
+                    "gmtoffset": 3600
+                  }
+                },
+                "dataGranularity": "1d",
+                "range": "7d",
+                "validRanges": [
+                  "1d",
+                  "5d",
+                  "1mo",
+                  "3mo",
+                  "6mo",
+                  "1y",
+                  "2y",
+                  "5y",
+                  "10y",
+                  "ytd",
+                  "max"
+                ]
+              },
+              "timestamp": [
+                1790636400,
+                1790722800,
+                1790809200,
+                1790895600,
+                1791154800,
+                1791241200,
+                1791327600,
+                1791371276
+              ],
+              "indicators": {
+                "quote": [
+                  {
+                    "high": [
+                      1361.1800537109375,
+                      1359.2099609375,
+                      1366.77001953125,
+                      1365.9000244140625,
+                      1349.3699951171875,
+                      1346.1199951171875,
+                      1341.280029296875,
+                      1341.280029296875
+                    ],
+                    "low": [
+                      1352.2900390625,
+                      1349.300048828125,
+                      1356.0999755859375,
+                      1342.010009765625,
+                      1338.8699951171875,
+                      1335.6500244140625,
+                      1336.3800048828125,
+                      1336.3800048828125
+                    ],
+                    "volume": [
+                      0,
+                      0,
+                      0,
+                      0,
+                      0,
+                      0,
+                      0,
+                      0
+                    ],
+                    "open": [
+                      1358.9100341796875,
+                      1351.18994140625,
+                      1358.72998046875,
+                      1359.949951171875,
+                      1342.5999755859375,
+                      1344.2900390625,
+                      1336.8900146484375,
+                      1336.8900146484375
+                    ],
+                    "close": [
+                      1359.56005859375,
+                      1350.5,
+                      1356.8399658203125,
+                      1360.5899658203125,
+                      1342.56005859375,
+                      1343.75,
+                      null,
+                      1338.550048828125
+                    ]
+                  }
+                ],
+                "adjclose": [
+                  {
+                    "adjclose": [
+                      1359.56005859375,
+                      1350.5,
+                      1356.8399658203125,
+                      1360.5899658203125,
+                      1342.56005859375,
+                      1343.75,
+                      null,
+                      1338.550048828125
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "error": null
+        }
+      }
+    },
+    {
+      "series_id": "corn_futures",
+      "ticker": "ZC=F",
+      "url": "https://query2.finance.yahoo.com/v8/finance/chart/ZC%3DF?range=7d&interval=1d",
+      "collected_at": "2026-10-07T20:08:05.021229+09:00",
+      "exchange_timezone": "America/New_York",
+      "observations": [
+        {
+          "series_id": "corn_futures",
+          "ticker": "ZC=F",
+          "observed_date": "2026-09-30",
+          "close": 500.75
+        },
+        {
+          "series_id": "corn_futures",
+          "ticker": "ZC=F",
+          "observed_date": "2026-10-01",
+          "close": 502.25
+        },
+        {
+          "series_id": "corn_futures",
+          "ticker": "ZC=F",
+          "observed_date": "2026-10-02",
+          "close": 497.75
+        },
+        {
+          "series_id": "corn_futures",
+          "ticker": "ZC=F",
+          "observed_date": "2026-10-05",
+          "close": 497.25
+        },
+        {
+          "series_id": "corn_futures",
+          "ticker": "ZC=F",
+          "observed_date": "2026-10-06",
+          "close": 508
+        },
+        {
+          "series_id": "corn_futures",
+          "ticker": "ZC=F",
+          "observed_date": "2026-10-07",
+          "close": 504.25
+        }
+      ],
+      "response": {
+        "chart": {
+          "result": [
+            {
+              "meta": {
+                "currency": "USX",
+                "symbol": "ZC=F",
+                "exchangeName": "CBT",
+                "fullExchangeName": "CBOT",
+                "instrumentType": "FUTURE",
+                "firstTradeDate": 963806400,
+                "regularMarketTime": 1791370667,
+                "hasPrePostMarketData": false,
+                "gmtoffset": -14400,
+                "timezone": "EDT",
+                "exchangeTimezoneName": "America/New_York",
+                "regularMarketPrice": 504.25,
+                "regularMarketChangePercent": -0.738,
+                "fulldayPrice": 504.25,
+                "fulldayChange": -3.75,
+                "fulldayChangePercent": -0.738,
+                "fiftyTwoWeekHigh": 544.5,
+                "fiftyTwoWeekLow": 398.5,
+                "regularMarketDayHigh": 509.75,
+                "regularMarketDayLow": 504.25,
+                "regularMarketVolume": 21657,
+                "shortName": "Corn Futures,Dec-2026",
+                "chartPreviousClose": 500.75,
+                "priceHint": 2,
+                "currentTradingPeriod": {
+                  "pre": {
+                    "timezone": "EDT",
+                    "start": 1791345600,
+                    "end": 1791345600,
+                    "gmtoffset": -14400
+                  },
+                  "regular": {
+                    "timezone": "EDT",
+                    "start": 1791345600,
+                    "end": 1791431940,
+                    "gmtoffset": -14400
+                  },
+                  "post": {
+                    "timezone": "EDT",
+                    "start": 1791431940,
+                    "end": 1791431940,
+                    "gmtoffset": -14400
+                  }
+                },
+                "dataGranularity": "1d",
+                "range": "7d",
+                "validRanges": [
+                  "1d",
+                  "5d",
+                  "1mo",
+                  "3mo",
+                  "6mo",
+                  "1y",
+                  "2y",
+                  "5y",
+                  "10y",
+                  "ytd",
+                  "max"
+                ]
+              },
+              "timestamp": [
+                1790740800,
+                1790827200,
+                1790913600,
+                1791172800,
+                1791259200,
+                1791345600
+              ],
+              "indicators": {
+                "quote": [
+                  {
+                    "volume": [
+                      498214,
+                      353583,
+                      223974,
+                      226841,
+                      226841,
+                      21657
+                    ],
+                    "open": [
+                      522,
+                      501,
+                      501.5,
+                      497.5,
+                      499.25,
+                      508.25
+                    ],
+                    "close": [
+                      500.75,
+                      502.25,
+                      497.75,
+                      497.25,
+                      508,
+                      504.25
+                    ],
+                    "high": [
+                      526.25,
+                      505,
+                      502.25,
+                      503.25,
+                      509,
+                      509.75
+                    ],
+                    "low": [
+                      498.75,
+                      495,
+                      495,
+                      495,
+                      496,
+                      504.25
+                    ]
+                  }
+                ],
+                "adjclose": [
+                  {
+                    "adjclose": [
+                      500.75,
+                      502.25,
+                      497.75,
+                      497.25,
+                      508,
+                      504.25
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "error": null
+        }
+      }
+    },
+    {
+      "series_id": "wheat_futures",
+      "ticker": "ZW=F",
+      "url": "https://query2.finance.yahoo.com/v8/finance/chart/ZW%3DF?range=7d&interval=1d",
+      "collected_at": "2026-10-07T20:08:05.070774+09:00",
+      "exchange_timezone": "America/New_York",
+      "observations": [
+        {
+          "series_id": "wheat_futures",
+          "ticker": "ZW=F",
+          "observed_date": "2026-09-30",
+          "close": 675.75
+        },
+        {
+          "series_id": "wheat_futures",
+          "ticker": "ZW=F",
+          "observed_date": "2026-10-01",
+          "close": 682.75
+        },
+        {
+          "series_id": "wheat_futures",
+          "ticker": "ZW=F",
+          "observed_date": "2026-10-02",
+          "close": 683
+        },
+        {
+          "series_id": "wheat_futures",
+          "ticker": "ZW=F",
+          "observed_date": "2026-10-05",
+          "close": 692.25
+        },
+        {
+          "series_id": "wheat_futures",
+          "ticker": "ZW=F",
+          "observed_date": "2026-10-06",
+          "close": 704.25
+        },
+        {
+          "series_id": "wheat_futures",
+          "ticker": "ZW=F",
+          "observed_date": "2026-10-07",
+          "close": 698.75
+        }
+      ],
+      "response": {
+        "chart": {
+          "result": [
+            {
+              "meta": {
+                "currency": "USX",
+                "symbol": "ZW=F",
+                "exchangeName": "CBT",
+                "fullExchangeName": "CBOT",
+                "instrumentType": "FUTURE",
+                "firstTradeDate": 963806400,
+                "regularMarketTime": 1791370647,
+                "hasPrePostMarketData": false,
+                "gmtoffset": -14400,
+                "timezone": "EDT",
+                "exchangeTimezoneName": "America/New_York",
+                "regularMarketPrice": 698.75,
+                "regularMarketChangePercent": -0.781,
+                "fulldayPrice": 698.75,
+                "fulldayChange": -5.5,
+                "fulldayChangePercent": -0.781,
+                "fiftyTwoWeekHigh": 775.75,
+                "fiftyTwoWeekLow": 492.25,
+                "regularMarketDayHigh": 706.5,
+                "regularMarketDayLow": 698.25,
+                "regularMarketVolume": 7890,
+                "shortName": "Chicago SRW Wheat Futures,Dec-2",
+                "chartPreviousClose": 675.75,
+                "priceHint": 2,
+                "currentTradingPeriod": {
+                  "pre": {
+                    "timezone": "EDT",
+                    "end": 1791345600,
+                    "start": 1791345600,
+                    "gmtoffset": -14400
+                  },
+                  "regular": {
+                    "timezone": "EDT",
+                    "end": 1791431940,
+                    "start": 1791345600,
+                    "gmtoffset": -14400
+                  },
+                  "post": {
+                    "timezone": "EDT",
+                    "end": 1791431940,
+                    "start": 1791431940,
+                    "gmtoffset": -14400
+                  }
+                },
+                "dataGranularity": "1d",
+                "range": "7d",
+                "validRanges": [
+                  "1d",
+                  "5d",
+                  "1mo",
+                  "3mo",
+                  "6mo",
+                  "1y",
+                  "2y",
+                  "5y",
+                  "10y",
+                  "ytd",
+                  "max"
+                ]
+              },
+              "timestamp": [
+                1790740800,
+                1790827200,
+                1790913600,
+                1791172800,
+                1791259200,
+                1791345600
+              ],
+              "indicators": {
+                "quote": [
+                  {
+                    "high": [
+                      700.25,
+                      684,
+                      689,
+                      698.5,
+                      705,
+                      706.5
+                    ],
+                    "volume": [
+                      113213,
+                      128137,
+                      55389,
+                      66861,
+                      66861,
+                      7890
+                    ],
+                    "close": [
+                      675.75,
+                      682.75,
+                      683,
+                      692.25,
+                      704.25,
+                      698.75
+                    ],
+                    "open": [
+                      692.75,
+                      675.25,
+                      681.75,
+                      683,
+                      693.25,
+                      704
+                    ],
+                    "low": [
+                      673.25,
+                      670.75,
+                      677.75,
+                      679.75,
+                      689,
+                      698.25
+                    ]
+                  }
+                ],
+                "adjclose": [
+                  {
+                    "adjclose": [
+                      675.75,
+                      682.75,
+                      683,
+                      692.25,
+                      704.25,
+                      698.75
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "error": null
+        }
+      }
+    },
+    {
+      "series_id": "soybean_futures",
+      "ticker": "ZS=F",
+      "url": "https://query2.finance.yahoo.com/v8/finance/chart/ZS%3DF?range=7d&interval=1d",
+      "collected_at": "2026-10-07T20:08:13.790391+09:00",
+      "exchange_timezone": "America/New_York",
+      "observations": [
+        {
+          "series_id": "soybean_futures",
+          "ticker": "ZS=F",
+          "observed_date": "2026-09-30",
+          "close": 1293
+        },
+        {
+          "series_id": "soybean_futures",
+          "ticker": "ZS=F",
+          "observed_date": "2026-10-01",
+          "close": 1284
+        },
+        {
+          "series_id": "soybean_futures",
+          "ticker": "ZS=F",
+          "observed_date": "2026-10-02",
+          "close": 1278.25
+        },
+        {
+          "series_id": "soybean_futures",
+          "ticker": "ZS=F",
+          "observed_date": "2026-10-05",
+          "close": 1280.75
+        },
+        {
+          "series_id": "soybean_futures",
+          "ticker": "ZS=F",
+          "observed_date": "2026-10-06",
+          "close": 1303
+        },
+        {
+          "series_id": "soybean_futures",
+          "ticker": "ZS=F",
+          "observed_date": "2026-10-07",
+          "close": 1303.75
+        }
+      ],
+      "response": {
+        "chart": {
+          "result": [
+            {
+              "meta": {
+                "currency": "USX",
+                "symbol": "ZS=F",
+                "exchangeName": "CBT",
+                "fullExchangeName": "CBOT",
+                "instrumentType": "FUTURE",
+                "firstTradeDate": 968990400,
+                "regularMarketTime": 1791370680,
+                "hasPrePostMarketData": false,
+                "gmtoffset": -14400,
+                "timezone": "EDT",
+                "exchangeTimezoneName": "America/New_York",
+                "regularMarketPrice": 1303.75,
+                "regularMarketChangePercent": 0.058,
+                "fulldayPrice": 1303.75,
+                "fulldayChange": 0.75,
+                "fulldayChangePercent": 0.058,
+                "fiftyTwoWeekHigh": 1332.25,
+                "fiftyTwoWeekLow": 1001,
+                "regularMarketDayHigh": 1309,
+                "regularMarketDayLow": 1301,
+                "regularMarketVolume": 20636,
+                "shortName": "Soybean Futures,Nov-2026",
+                "chartPreviousClose": 1293,
+                "priceHint": 2,
+                "currentTradingPeriod": {
+                  "pre": {
+                    "timezone": "EDT",
+                    "end": 1791345600,
+                    "start": 1791345600,
+                    "gmtoffset": -14400
+                  },
+                  "regular": {
+                    "timezone": "EDT",
+                    "end": 1791431940,
+                    "start": 1791345600,
+                    "gmtoffset": -14400
+                  },
+                  "post": {
+                    "timezone": "EDT",
+                    "end": 1791431940,
+                    "start": 1791431940,
+                    "gmtoffset": -14400
+                  }
+                },
+                "dataGranularity": "1d",
+                "range": "7d",
+                "validRanges": [
+                  "1d",
+                  "5d",
+                  "1mo",
+                  "3mo",
+                  "6mo",
+                  "1y",
+                  "2y",
+                  "5y",
+                  "10y",
+                  "ytd",
+                  "max"
+                ]
+              },
+              "timestamp": [
+                1790740800,
+                1790827200,
+                1790913600,
+                1791172800,
+                1791259200,
+                1791345600
+              ],
+              "indicators": {
+                "quote": [
+                  {
+                    "open": [
+                      1296.75,
+                      1291,
+                      1283,
+                      1278,
+                      1280,
+                      1302.75
+                    ],
+                    "high": [
+                      1311.5,
+                      1295,
+                      1285.75,
+                      1297.25,
+                      1305,
+                      1309
+                    ],
+                    "close": [
+                      1293,
+                      1284,
+                      1278.25,
+                      1280.75,
+                      1303,
+                      1303.75
+                    ],
+                    "low": [
+                      1289.75,
+                      1273.75,
+                      1273.25,
+                      1273.75,
+                      1278.25,
+                      1301
+                    ],
+                    "volume": [
+                      178661,
+                      157732,
+                      125114,
+                      147665,
+                      147665,
+                      20636
+                    ]
+                  }
+                ],
+                "adjclose": [
+                  {
+                    "adjclose": [
+                      1293,
+                      1284,
+                      1278.25,
+                      1280.75,
+                      1303,
+                      1303.75
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "error": null
+        }
+      }
+    },
+    {
+      "series_id": "rough_rice_futures",
+      "ticker": "ZR=F",
+      "url": "https://query2.finance.yahoo.com/v8/finance/chart/ZR%3DF?range=7d&interval=1d",
+      "collected_at": "2026-10-07T20:08:13.802361+09:00",
+      "exchange_timezone": "America/New_York",
+      "observations": [
+        {
+          "series_id": "rough_rice_futures",
+          "ticker": "ZR=F",
+          "observed_date": "2026-09-30",
+          "close": 16.165000915527344
+        },
+        {
+          "series_id": "rough_rice_futures",
+          "ticker": "ZR=F",
+          "observed_date": "2026-10-01",
+          "close": 16.514999389648438
+        },
+        {
+          "series_id": "rough_rice_futures",
+          "ticker": "ZR=F",
+          "observed_date": "2026-10-02",
+          "close": 16.360000610351562
+        },
+        {
+          "series_id": "rough_rice_futures",
+          "ticker": "ZR=F",
+          "observed_date": "2026-10-05",
+          "close": 16.235000610351562
+        },
+        {
+          "series_id": "rough_rice_futures",
+          "ticker": "ZR=F",
+          "observed_date": "2026-10-06",
+          "close": 16.344999313354492
+        }
+      ],
+      "response": {
+        "chart": {
+          "result": [
+            {
+              "meta": {
+                "currency": "USD",
+                "symbol": "ZR=F",
+                "exchangeName": "CBT",
+                "fullExchangeName": "CBOT",
+                "instrumentType": "FUTURE",
+                "firstTradeDate": 937281600,
+                "regularMarketTime": 1791335531,
+                "hasPrePostMarketData": false,
+                "gmtoffset": -14400,
+                "timezone": "EDT",
+                "exchangeTimezoneName": "America/New_York",
+                "regularMarketPrice": 16.425,
+                "regularMarketChangePercent": 0.489,
+                "fulldayPrice": 16.425,
+                "fulldayChange": 0.08,
+                "fulldayChangePercent": 0.489,
+                "fiftyTwoWeekHigh": 16.7,
+                "fiftyTwoWeekLow": 9.245,
+                "regularMarketDayHigh": 16.465,
+                "regularMarketDayLow": 16.3,
+                "regularMarketVolume": 43,
+                "shortName": "Rough Rice Futures,Nov-2026",
+                "chartPreviousClose": 16.165,
+                "priceHint": 3,
+                "currentTradingPeriod": {
+                  "pre": {
+                    "timezone": "EDT",
+                    "start": 1791345600,
+                    "end": 1791345600,
+                    "gmtoffset": -14400
+                  },
+                  "regular": {
+                    "timezone": "EDT",
+                    "start": 1791345600,
+                    "end": 1791431940,
+                    "gmtoffset": -14400
+                  },
+                  "post": {
+                    "timezone": "EDT",
+                    "start": 1791431940,
+                    "end": 1791431940,
+                    "gmtoffset": -14400
+                  }
+                },
+                "dataGranularity": "1d",
+                "range": "7d",
+                "validRanges": [
+                  "1d",
+                  "5d",
+                  "1mo",
+                  "3mo",
+                  "6mo",
+                  "1y",
+                  "2y",
+                  "5y",
+                  "10y",
+                  "ytd",
+                  "max"
+                ]
+              },
+              "timestamp": [
+                1790740800,
+                1790827200,
+                1790913600,
+                1791172800,
+                1791259200,
+                1791345600
+              ],
+              "indicators": {
+                "quote": [
+                  {
+                    "open": [
+                      16.415000915527344,
+                      16.274999618530273,
+                      16.434999465942383,
+                      16.395000457763672,
+                      16.204999923706055,
+                      null
+                    ],
+                    "volume": [
+                      744,
+                      1081,
+                      368,
+                      810,
+                      810,
+                      null
+                    ],
+                    "close": [
+                      16.165000915527344,
+                      16.514999389648438,
+                      16.360000610351562,
+                      16.235000610351562,
+                      16.344999313354492,
+                      null
+                    ],
+                    "low": [
+                      16.09000015258789,
+                      16.100000381469727,
+                      16.280000686645508,
+                      16.170000076293945,
+                      16.149999618530273,
+                      null
+                    ],
+                    "high": [
+                      16.420000076293945,
+                      16.700000762939453,
+                      16.565000534057617,
+                      16.44499969482422,
+                      16.3700008392334,
+                      null
+                    ]
+                  }
+                ],
+                "adjclose": [
+                  {
+                    "adjclose": [
+                      16.165000915527344,
+                      16.514999389648438,
+                      16.360000610351562,
+                      16.235000610351562,
+                      16.344999313354492,
+                      null
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "error": null
+        }
+      }
+    },
+    {
+      "series_id": "coffee_futures",
+      "ticker": "KC=F",
+      "url": "https://query2.finance.yahoo.com/v8/finance/chart/KC%3DF?range=7d&interval=1d",
+      "collected_at": "2026-10-07T20:08:13.716532+09:00",
+      "exchange_timezone": "America/New_York",
+      "observations": [
+        {
+          "series_id": "coffee_futures",
+          "ticker": "KC=F",
+          "observed_date": "2026-09-30",
+          "close": 290.70001220703125
+        },
+        {
+          "series_id": "coffee_futures",
+          "ticker": "KC=F",
+          "observed_date": "2026-10-01",
+          "close": 288.25
+        },
+        {
+          "series_id": "coffee_futures",
+          "ticker": "KC=F",
+          "observed_date": "2026-10-02",
+          "close": 288.75
+        },
+        {
+          "series_id": "coffee_futures",
+          "ticker": "KC=F",
+          "observed_date": "2026-10-05",
+          "close": 292.54998779296875
+        },
+        {
+          "series_id": "coffee_futures",
+          "ticker": "KC=F",
+          "observed_date": "2026-10-06",
+          "close": 304.45001220703125
+        },
+        {
+          "series_id": "coffee_futures",
+          "ticker": "KC=F",
+          "observed_date": "2026-10-07",
+          "close": 298.1499938964844
+        }
+      ],
+      "response": {
+        "chart": {
+          "result": [
+            {
+              "meta": {
+                "currency": "USX",
+                "symbol": "KC=F",
+                "exchangeName": "NYB",
+                "fullExchangeName": "ICE Futures",
+                "instrumentType": "FUTURE",
+                "firstTradeDate": 946875600,
+                "regularMarketTime": 1791370059,
+                "hasPrePostMarketData": false,
+                "gmtoffset": -14400,
+                "timezone": "EDT",
+                "exchangeTimezoneName": "America/New_York",
+                "regularMarketPrice": 298.15,
+                "regularMarketChangePercent": -2.069,
+                "fulldayPrice": 298.15,
+                "fulldayChange": -6.3,
+                "fulldayChangePercent": -2.069,
+                "fiftyTwoWeekHigh": 437.95,
+                "fiftyTwoWeekLow": 242.7,
+                "regularMarketDayHigh": 308.35,
+                "regularMarketDayLow": 297.6,
+                "regularMarketVolume": 3469,
+                "shortName": "Coffee Dec 26",
+                "chartPreviousClose": 290.7,
+                "priceHint": 2,
+                "currentTradingPeriod": {
+                  "pre": {
+                    "timezone": "EDT",
+                    "start": 1791345600,
+                    "end": 1791345600,
+                    "gmtoffset": -14400
+                  },
+                  "regular": {
+                    "timezone": "EDT",
+                    "start": 1791345600,
+                    "end": 1791431940,
+                    "gmtoffset": -14400
+                  },
+                  "post": {
+                    "timezone": "EDT",
+                    "start": 1791431940,
+                    "end": 1791431940,
+                    "gmtoffset": -14400
+                  }
+                },
+                "dataGranularity": "1d",
+                "range": "7d",
+                "validRanges": [
+                  "1d",
+                  "5d",
+                  "1mo",
+                  "3mo",
+                  "6mo",
+                  "1y",
+                  "2y",
+                  "5y",
+                  "10y",
+                  "ytd",
+                  "max"
+                ]
+              },
+              "timestamp": [
+                1790740800,
+                1790827200,
+                1790913600,
+                1791172800,
+                1791259200,
+                1791345600
+              ],
+              "indicators": {
+                "quote": [
+                  {
+                    "low": [
+                      289.04998779296875,
+                      283.29998779296875,
+                      288.1000061035156,
+                      291.29998779296875,
+                      291.5,
+                      297.6000061035156
+                    ],
+                    "open": [
+                      292,
+                      288.5,
+                      290.5,
+                      293.1499938964844,
+                      293.1000061035156,
+                      302.8999938964844
+                    ],
+                    "volume": [
+                      14153,
+                      13368,
+                      13126,
+                      15448,
+                      15448,
+                      3469
+                    ],
+                    "close": [
+                      290.70001220703125,
+                      288.25,
+                      288.75,
+                      292.54998779296875,
+                      304.45001220703125,
+                      298.1499938964844
+                    ],
+                    "high": [
+                      298.79998779296875,
+                      290.8999938964844,
+                      298.54998779296875,
+                      299.6000061035156,
+                      306.45001220703125,
+                      308.3500061035156
+                    ]
+                  }
+                ],
+                "adjclose": [
+                  {
+                    "adjclose": [
+                      290.70001220703125,
+                      288.25,
+                      288.75,
+                      292.54998779296875,
+                      304.45001220703125,
+                      298.1499938964844
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "error": null
+        }
+      }
+    },
+    {
+      "series_id": "sugar_futures",
+      "ticker": "SB=F",
+      "url": "https://query2.finance.yahoo.com/v8/finance/chart/SB%3DF?range=7d&interval=1d",
+      "collected_at": "2026-10-07T20:08:13.819585+09:00",
+      "exchange_timezone": "America/New_York",
+      "observations": [
+        {
+          "series_id": "sugar_futures",
+          "ticker": "SB=F",
+          "observed_date": "2026-09-30",
+          "close": 17.6299991607666
+        },
+        {
+          "series_id": "sugar_futures",
+          "ticker": "SB=F",
+          "observed_date": "2026-10-01",
+          "close": 18.940000534057617
+        },
+        {
+          "series_id": "sugar_futures",
+          "ticker": "SB=F",
+          "observed_date": "2026-10-02",
+          "close": 19.93000030517578
+        },
+        {
+          "series_id": "sugar_futures",
+          "ticker": "SB=F",
+          "observed_date": "2026-10-05",
+          "close": 20.729999542236328
+        },
+        {
+          "series_id": "sugar_futures",
+          "ticker": "SB=F",
+          "observed_date": "2026-10-06",
+          "close": 20.81999969482422
+        },
+        {
+          "series_id": "sugar_futures",
+          "ticker": "SB=F",
+          "observed_date": "2026-10-07",
+          "close": 20.670000076293945
+        }
+      ],
+      "response": {
+        "chart": {
+          "result": [
+            {
+              "meta": {
+                "currency": "USX",
+                "symbol": "SB=F",
+                "exchangeName": "NYB",
+                "fullExchangeName": "ICE Futures",
+                "instrumentType": "FUTURE",
+                "firstTradeDate": 951886800,
+                "regularMarketTime": 1791370087,
+                "hasPrePostMarketData": false,
+                "gmtoffset": -14400,
+                "timezone": "EDT",
+                "exchangeTimezoneName": "America/New_York",
+                "regularMarketPrice": 20.67,
+                "regularMarketChangePercent": -0.72,
+                "fulldayPrice": 20.67,
+                "fulldayChange": -0.15,
+                "fulldayChangePercent": -0.72,
+                "fiftyTwoWeekHigh": 21.24,
+                "fiftyTwoWeekLow": 13.22,
+                "regularMarketDayHigh": 21.24,
+                "regularMarketDayLow": 20.62,
+                "regularMarketVolume": 24019,
+                "chartPreviousClose": 17.63,
+                "priceHint": 2,
+                "currentTradingPeriod": {
+                  "pre": {
+                    "timezone": "EDT",
+                    "start": 1791345600,
+                    "end": 1791345600,
+                    "gmtoffset": -14400
+                  },
+                  "regular": {
+                    "timezone": "EDT",
+                    "start": 1791345600,
+                    "end": 1791431940,
+                    "gmtoffset": -14400
+                  },
+                  "post": {
+                    "timezone": "EDT",
+                    "start": 1791431940,
+                    "end": 1791431940,
+                    "gmtoffset": -14400
+                  }
+                },
+                "dataGranularity": "1d",
+                "range": "7d",
+                "validRanges": [
+                  "1d",
+                  "5d",
+                  "1mo",
+                  "3mo",
+                  "6mo",
+                  "1y",
+                  "2y",
+                  "5y",
+                  "10y",
+                  "ytd",
+                  "max"
+                ]
+              },
+              "timestamp": [
+                1790740800,
+                1790827200,
+                1790913600,
+                1791172800,
+                1791259200,
+                1791345600
+              ],
+              "indicators": {
+                "quote": [
+                  {
+                    "high": [
+                      18.010000228881836,
+                      19.049999237060547,
+                      19.959999084472656,
+                      20.809999465942383,
+                      20.950000762939453,
+                      21.239999771118164
+                    ],
+                    "close": [
+                      17.6299991607666,
+                      18.940000534057617,
+                      19.93000030517578,
+                      20.729999542236328,
+                      20.81999969482422,
+                      20.670000076293945
+                    ],
+                    "low": [
+                      17.420000076293945,
+                      18.549999237060547,
+                      18.93000030517578,
+                      19.850000381469727,
+                      20.579999923706055,
+                      20.6200008392334
+                    ],
+                    "volume": [
+                      69890,
+                      63244,
+                      131581,
+                      126882,
+                      126882,
+                      24019
+                    ],
+                    "open": [
+                      17.81999969482422,
+                      18.610000610351562,
+                      18.93000030517578,
+                      19.969999313354492,
+                      20.700000762939453,
+                      20.729999542236328
+                    ]
+                  }
+                ],
+                "adjclose": [
+                  {
+                    "adjclose": [
+                      17.6299991607666,
+                      18.940000534057617,
+                      19.93000030517578,
+                      20.729999542236328,
+                      20.81999969482422,
+                      20.670000076293945
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "error": null
+        }
+      }
+    },
+    {
+      "series_id": "cotton_futures",
+      "ticker": "CT=F",
+      "url": "https://query2.finance.yahoo.com/v8/finance/chart/CT%3DF?range=7d&interval=1d",
+      "collected_at": "2026-10-07T20:08:21.457841+09:00",
+      "exchange_timezone": "America/New_York",
+      "observations": [
+        {
+          "series_id": "cotton_futures",
+          "ticker": "CT=F",
+          "observed_date": "2026-09-30",
+          "close": 74.79000091552734
+        },
+        {
+          "series_id": "cotton_futures",
+          "ticker": "CT=F",
+          "observed_date": "2026-10-01",
+          "close": 74.02999877929688
+        },
+        {
+          "series_id": "cotton_futures",
+          "ticker": "CT=F",
+          "observed_date": "2026-10-02",
+          "close": 75.1500015258789
+        },
+        {
+          "series_id": "cotton_futures",
+          "ticker": "CT=F",
+          "observed_date": "2026-10-05",
+          "close": 77.12999725341797
+        },
+        {
+          "series_id": "cotton_futures",
+          "ticker": "CT=F",
+          "observed_date": "2026-10-06",
+          "close": 77.4800033569336
+        },
+        {
+          "series_id": "cotton_futures",
+          "ticker": "CT=F",
+          "observed_date": "2026-10-07",
+          "close": 80.6500015258789
+        }
+      ],
+      "response": {
+        "chart": {
+          "result": [
+            {
+              "meta": {
+                "currency": "USX",
+                "symbol": "CT=F",
+                "exchangeName": "NYM",
+                "fullExchangeName": "NY Mercantile",
+                "instrumentType": "ALTSYMBOL",
+                "firstTradeDate": 946875600,
+                "regularMarketTime": 1791365444,
+                "hasPrePostMarketData": false,
+                "gmtoffset": -14400,
+                "timezone": "EDT",
+                "exchangeTimezoneName": "America/New_York",
+                "regularMarketPrice": 80.65,
+                "regularMarketChangePercent": -0.69,
+                "fulldayPrice": 80.65,
+                "fulldayChange": -0.56,
+                "fulldayChangePercent": -0.69,
+                "fiftyTwoWeekHigh": 92.15,
+                "fiftyTwoWeekLow": 60.71,
+                "regularMarketDayHigh": 78.93,
+                "regularMarketDayLow": 77.23,
+                "regularMarketVolume": 2296,
+                "chartPreviousClose": 74.79,
+                "priceHint": 2,
+                "currentTradingPeriod": {
+                  "pre": {
+                    "timezone": "EDT",
+                    "start": 1791345600,
+                    "end": 1791345600,
+                    "gmtoffset": -14400
+                  },
+                  "regular": {
+                    "timezone": "EDT",
+                    "start": 1791345600,
+                    "end": 1791431940,
+                    "gmtoffset": -14400
+                  },
+                  "post": {
+                    "timezone": "EDT",
+                    "start": 1791431940,
+                    "end": 1791431940,
+                    "gmtoffset": -14400
+                  }
+                },
+                "dataGranularity": "1d",
+                "range": "7d",
+                "validRanges": [
+                  "1d",
+                  "5d",
+                  "1mo",
+                  "3mo",
+                  "6mo",
+                  "1y",
+                  "2y",
+                  "5y",
+                  "10y",
+                  "ytd",
+                  "max"
+                ]
+              },
+              "timestamp": [
+                1790740800,
+                1790827200,
+                1790913600,
+                1791086400,
+                1791172800,
+                1791259200,
+                1791345600
+              ],
+              "indicators": {
+                "quote": [
+                  {
+                    "high": [
+                      74.79000091552734,
+                      74.02999877929688,
+                      75.1500015258789,
+                      null,
+                      77.12999725341797,
+                      77.4800033569336,
+                      78.93000030517578
+                    ],
+                    "volume": [
+                      0,
+                      0,
+                      0,
+                      null,
+                      0,
+                      0,
+                      2296
+                    ],
+                    "low": [
+                      74.79000091552734,
+                      74.02999877929688,
+                      75.1500015258789,
+                      null,
+                      77.12999725341797,
+                      77.4800033569336,
+                      77.2300033569336
+                    ],
+                    "open": [
+                      74.79000091552734,
+                      74.02999877929688,
+                      75.1500015258789,
+                      null,
+                      77.12999725341797,
+                      77.4800033569336,
+                      0
+                    ],
+                    "close": [
+                      74.79000091552734,
+                      74.02999877929688,
+                      75.1500015258789,
+                      null,
+                      77.12999725341797,
+                      77.4800033569336,
+                      80.6500015258789
+                    ]
+                  }
+                ],
+                "adjclose": [
+                  {
+                    "adjclose": [
+                      74.79000091552734,
+                      74.02999877929688,
+                      75.1500015258789,
+                      null,
+                      77.12999725341797,
+                      77.4800033569336,
+                      80.6500015258789
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "error": null
+        }
+      }
+    },
+    {
+      "series_id": "orange_juice_futures",
+      "ticker": "OJ=F",
+      "url": "https://query2.finance.yahoo.com/v8/finance/chart/OJ%3DF?range=7d&interval=1d",
+      "collected_at": "2026-10-07T20:08:21.598740+09:00",
+      "exchange_timezone": "America/New_York",
+      "observations": [
+        {
+          "series_id": "orange_juice_futures",
+          "ticker": "OJ=F",
+          "observed_date": "2026-09-30",
+          "close": 151.6999969482422
+        },
+        {
+          "series_id": "orange_juice_futures",
+          "ticker": "OJ=F",
+          "observed_date": "2026-10-01",
+          "close": 141.6999969482422
+        },
+        {
+          "series_id": "orange_juice_futures",
+          "ticker": "OJ=F",
+          "observed_date": "2026-10-02",
+          "close": 135.1999969482422
+        },
+        {
+          "series_id": "orange_juice_futures",
+          "ticker": "OJ=F",
+          "observed_date": "2026-10-05",
+          "close": 144.35000610351562
+        },
+        {
+          "series_id": "orange_juice_futures",
+          "ticker": "OJ=F",
+          "observed_date": "2026-10-06",
+          "close": 150.3000030517578
+        }
+      ],
+      "response": {
+        "chart": {
+          "result": [
+            {
+              "meta": {
+                "currency": "USX",
+                "symbol": "OJ=F",
+                "exchangeName": "NYB",
+                "fullExchangeName": "ICE Futures",
+                "instrumentType": "FUTURE",
+                "firstTradeDate": 1000699200,
+                "regularMarketTime": 1791309598,
+                "hasPrePostMarketData": false,
+                "gmtoffset": -14400,
+                "timezone": "EDT",
+                "exchangeTimezoneName": "America/New_York",
+                "regularMarketPrice": 150.7,
+                "regularMarketChangePercent": 0.266,
+                "fulldayPrice": 150.7,
+                "fulldayChange": 0.4,
+                "fulldayChangePercent": 0.266,
+                "fiftyTwoWeekHigh": 240,
+                "fiftyTwoWeekLow": 116.5,
+                "regularMarketDayHigh": 151.25,
+                "regularMarketDayLow": 144.95,
+                "regularMarketVolume": 1614,
+                "shortName": "Orange Juice Nov 26",
+                "chartPreviousClose": 151.7,
+                "priceHint": 2,
+                "currentTradingPeriod": {
+                  "pre": {
+                    "timezone": "EDT",
+                    "start": 1791345600,
+                    "end": 1791345600,
+                    "gmtoffset": -14400
+                  },
+                  "regular": {
+                    "timezone": "EDT",
+                    "start": 1791345600,
+                    "end": 1791431940,
+                    "gmtoffset": -14400
+                  },
+                  "post": {
+                    "timezone": "EDT",
+                    "start": 1791431940,
+                    "end": 1791431940,
+                    "gmtoffset": -14400
+                  }
+                },
+                "dataGranularity": "1d",
+                "range": "7d",
+                "validRanges": [
+                  "1d",
+                  "5d",
+                  "1mo",
+                  "3mo",
+                  "6mo",
+                  "1y",
+                  "2y",
+                  "5y",
+                  "10y",
+                  "ytd",
+                  "max"
+                ]
+              },
+              "timestamp": [
+                1790740800,
+                1790827200,
+                1790913600,
+                1791172800,
+                1791259200,
+                1791345600
+              ],
+              "indicators": {
+                "quote": [
+                  {
+                    "open": [
+                      152.89999389648438,
+                      150.9499969482422,
+                      141.5500030517578,
+                      140.0500030517578,
+                      145.60000610351562,
+                      null
+                    ],
+                    "close": [
+                      151.6999969482422,
+                      141.6999969482422,
+                      135.1999969482422,
+                      144.35000610351562,
+                      150.3000030517578,
+                      null
+                    ],
+                    "high": [
+                      158.14999389648438,
+                      152.39999389648438,
+                      143.4499969482422,
+                      144.9499969482422,
+                      151.35000610351562,
+                      null
+                    ],
+                    "volume": [
+                      1375,
+                      1556,
+                      2148,
+                      1435,
+                      1435,
+                      null
+                    ],
+                    "low": [
+                      150.75,
+                      141.6999969482422,
+                      135.10000610351562,
+                      136.25,
+                      144.9499969482422,
+                      null
+                    ]
+                  }
+                ],
+                "adjclose": [
+                  {
+                    "adjclose": [
+                      151.6999969482422,
+                      141.6999969482422,
+                      135.1999969482422,
+                      144.35000610351562,
+                      150.3000030517578,
+                      null
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "error": null
+        }
+      }
+    }
+  ]
+}

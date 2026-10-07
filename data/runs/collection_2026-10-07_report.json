@@ -1,0 +1,94 @@
+{
+  "base_commit": "bde0f7d953f38bf7606137efd00ed57a377acfb2",
+  "requested_date": "2026-10-07",
+  "status": "partial_failure",
+  "started_at": "2026-10-07T20:07:49.600614+09:00",
+  "finished_at": "2026-10-07T20:08:21.599154+09:00",
+  "market": {
+    "status": "partial_failure",
+    "source": "Yahoo Finance chart API",
+    "queried_series_count": 14,
+    "added_row_count": 15,
+    "current_date_added_count": 9,
+    "recovered_history": [
+      {
+        "line": "sp500,^GSPC,2026-10-06,7818.93017578125,index,index points,2026-10-07T20:07:57.033461+09:00",
+        "series_id": "sp500",
+        "observed_date": "2026-10-06",
+        "close": 7818.93017578125
+      },
+      {
+        "line": "nasdaq,^IXIC,2026-10-06,27599.7890625,index,index points,2026-10-07T20:07:56.985380+09:00",
+        "series_id": "nasdaq",
+        "observed_date": "2026-10-06",
+        "close": 27599.7890625
+      },
+      {
+        "line": "dow_jones,^DJI,2026-10-06,51521.28125,index,index points,2026-10-07T20:08:05.075885+09:00",
+        "series_id": "dow_jones",
+        "observed_date": "2026-10-06",
+        "close": 51521.28125
+      },
+      {
+        "line": "rough_rice_futures,ZR=F,2026-10-06,16.344999313354492,USD,contract quote,2026-10-07T20:08:13.802361+09:00",
+        "series_id": "rough_rice_futures",
+        "observed_date": "2026-10-06",
+        "close": 16.344999313354492
+      },
+      {
+        "line": "sugar_futures,SB=F,2026-10-05,20.729999542236328,USD,contract quote,2026-10-07T20:08:13.819585+09:00",
+        "series_id": "sugar_futures",
+        "observed_date": "2026-10-05",
+        "close": 20.729999542236328
+      },
+      {
+        "line": "orange_juice_futures,OJ=F,2026-10-06,150.3000030517578,USD,contract quote,2026-10-07T20:08:21.598740+09:00",
+        "series_id": "orange_juice_futures",
+        "observed_date": "2026-10-06",
+        "close": 150.3000030517578
+      }
+    ],
+    "not_returned_for_requested_date": [
+      {
+        "scope": "sp500",
+        "error_type": "PendingMarketData",
+        "message": "No 2026-10-07 daily Close returned at collection time; retry after the session/update"
+      },
+      {
+        "scope": "nasdaq",
+        "error_type": "PendingMarketData",
+        "message": "No 2026-10-07 daily Close returned at collection time; retry after the session/update"
+      },
+      {
+        "scope": "dow_jones",
+        "error_type": "PendingMarketData",
+        "message": "No 2026-10-07 daily Close returned at collection time; retry after the session/update"
+      },
+      {
+        "scope": "rough_rice_futures",
+        "error_type": "PendingMarketData",
+        "message": "No 2026-10-07 daily Close returned at collection time; retry after the session/update"
+      },
+      {
+        "scope": "orange_juice_futures",
+        "error_type": "PendingMarketData",
+        "message": "No 2026-10-07 daily Close returned at collection time; retry after the session/update"
+      }
+    ],
+    "existing_quotes_overwritten": false,
+    "current_day_quotes_may_be_provisional": true,
+    "raw_response_path": "data/raw/market/2026-10-07/yahoo_chart_responses.json"
+  },
+  "kamis": {
+    "status": "not_run",
+    "reason": "KAMIS_CERT_KEY and KAMIS_CERT_ID are not configured in this execution environment"
+  },
+  "online": {
+    "status": "not_run",
+    "platforms": [
+      "naver",
+      "coupang"
+    ],
+    "reason": "Existing collectors require an interactive Windows desktop, Chrome and Windows UI Automation; this execution environment is Linux"
+  }
+}
