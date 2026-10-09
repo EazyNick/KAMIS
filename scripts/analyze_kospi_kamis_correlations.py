@@ -268,7 +268,10 @@ def load_kamis_series(
     """
 
     with duckdb.connect(config={"threads": 4}) as connection:
-        return connection.execute(query, parameters).fetchdf()
+        frame = connection.execute(query, parameters).fetchdf()
+    if not frame.empty:
+        frame["observed_date"] = pd.to_datetime(frame["observed_date"])
+    return frame
 
 
 def load_kospi(
@@ -311,7 +314,10 @@ def load_kospi(
         ORDER BY observed_date
     """
     with duckdb.connect(config={"threads": 4}) as connection:
-        return connection.execute(query, parameters).fetchdf()
+        frame = connection.execute(query, parameters).fetchdf()
+    if not frame.empty:
+        frame["observed_date"] = pd.to_datetime(frame["observed_date"])
+    return frame
 
 
 def analyze_group(group: pd.DataFrame, kospi: pd.DataFrame) -> CorrelationResult:
