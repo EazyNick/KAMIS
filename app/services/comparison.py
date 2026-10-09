@@ -9,15 +9,10 @@ from holidays import country_holidays, financial_holidays
 
 from app.infrastructure.csv_repository import PriceFilters
 from app.services.analytics import AnalysisMode, AnalyticsService
-from app.services.comparison_units import comparable_kamis_rows, preferred_grain_kinds
 
 
 class PriceRepositoryProtocol(Protocol):
     def search(self, filters: PriceFilters | None = None) -> list[dict[str, Any]]: ...
-
-
-class OnlineRepositoryProtocol(Protocol):
-    def search_summaries(self, **kwargs: Any) -> list[dict[str, Any]]: ...
 
 
 class MarketRepositoryProtocol(Protocol):
@@ -46,21 +41,7 @@ MARKET_EXCHANGES: dict[str, str | None] = {
     "orange_juice_futures": "XNYS",
 }
 
-# Dashboard-only visual estimates for melon (item 257). These values are never
-# used by the correlation endpoint. Coupang's anchor uses a current 1.5 kg
-# listing found during the 2026-09-30 web check. A directly comparable Naver
-# listing was not reliably obtainable, so the Naver anchor remains an explicit
-# modelling baseline within the current online melon market range.
 MELON_ITEM_CODE = "257"
-MELON_DASHBOARD_ESTIMATES = {
-    "online_naver": {"anchor": 8900.0, "lag": 1, "elasticity": 0.90},
-    "online_coupang": {"anchor": 6600.0, "lag": 2, "elasticity": 0.90},
-}
-MELON_ESTIMATE_NOTE = (
-    "멜론 네이버·쿠팡 가격은 실측 온라인 이력이 없는 구간에 한해 표시하는 "
-    "대시보드용 추정치입니다. KAMIS 소매가격 흐름을 기준으로 네이버 1관측일, "
-    "쿠팡 2관측일 시차를 적용했으며 상관관계 통계에는 포함하지 않습니다."
-)
 
 
 def fill_exchange_holidays(frame: pd.DataFrame) -> pd.DataFrame:
@@ -139,14 +120,20 @@ class ComparisonService:
     core_series = (
         "kamis_wholesale",
         "kamis_retail",
-        "online_naver",
-        "online_coupang",
-        "online_combined",
         "kospi",
         "kosdaq",
         "sp500",
         "nasdaq",
         "dow_jones",
+        "usd_krw",
+        "corn_futures",
+        "wheat_futures",
+        "soybean_futures",
+        "rough_rice_futures",
+        "coffee_futures",
+        "sugar_futures",
+        "cotton_futures",
+        "orange_juice_futures",
     )
 
     def __init__(
@@ -160,41 +147,40 @@ class ComparisonService:
         catalog_repository=None,
     ) -> None:
         self._prices = price_repository
-        self._online = online_repository
         self._market = market_repository
         self._analytics = analytics
-        self.comparison_kinds = (
-            preferred_grain_kinds(
-                [entry.to_dict() for entry in catalog_repository.entries()]
-            )
-            if catalog_repository is not None
-            else {}
-        )
-        self.comparison_kinds.update(dict(sorted(target_keys)))
         self._catalog = catalog_repository
+        self.comparison_kinds: dict[str, str] = {}
+        if catalog_repository is not None:
+            for entry in catalog_repository.entries():
+                if not (
+                    entry.wholesale_rank_codes or entry.retail_rank_codes
+                ):
+                    continue
+                self.comparison_kinds.setdefault(entry.item_code, entry.kind_code)
+        self.comparison_kinds.update(dict(sorted(target_keys)))
 
     def build_frame(
         self,
         item_code: str,
         start_date: date | None,
         end_date: date | None,
-        *,
-        include_dashboard_estimates: bool = False,
     ) -> pd.DataFrame:
         price_rows = self._prices.search(
-            PriceFilters(item_code=item_code, start_date=start_date, end_date=end_date)
+            PriceFilters(
+                item_code=item_code,
+                start_date=start_date,
+                end_date=end_date,
+                requested_convert_kg=False,
+            )
         )
         kind = self.comparison_kinds.get(item_code)
-        notes: list[str] = []
-        if kind is not None and self._catalog is not None:
-            price_rows, notes = comparable_kamis_rows(
-                price_rows,
-                item_code,
-                kind,
-                [entry.to_dict() for entry in self._catalog.entries()],
-            )
-        elif kind is not None:
+        notes: list[str] = [
+            "KAMIS 가격은 p_convert_kg_yn=N으로 수집한 원 조사단위 KRW를 사용합니다."
+        ]
+        if kind is not None:
             price_rows = [row for row in price_rows if row.get("kind_code") == kind]
+        price_rows = [row for row in price_rows if row.get("region") != "평년"]
         kamis_dates = sorted(
             {
                 pd.Timestamp(row["observed_date"])
@@ -215,18 +201,6 @@ class ComparisonService:
                     frame[f"kamis_{price_type}"] = grouped.xs(
                         price_type, level="price_type"
                     )
-
-        online = self.online_frame(item_code, start_date, end_date)
-        frame = frame.reindex(frame.index.union(online.index))
-        for column in online:
-            frame[column] = online[column]
-
-        estimated_series: list[str] = []
-        if include_dashboard_estimates:
-            frame, estimate_notes, estimated_series = self._add_dashboard_estimates(
-                item_code, frame
-            )
-            notes.extend(estimate_notes)
 
         market_rows = self._market.search(start_date=start_date, end_date=end_date)
         if market_rows:
@@ -253,91 +227,7 @@ class ComparisonService:
         result = fill_exchange_holidays(frame.sort_index())
         result.attrs["kamis_observed_coverage"] = observed_coverage
         result.attrs["comparison_notes"] = notes
-        result.attrs["estimated_series"] = estimated_series
         return result
-
-    def _add_dashboard_estimates(
-        self, item_code: str, frame: pd.DataFrame
-    ) -> tuple[pd.DataFrame, list[str], list[str]]:
-        if item_code != MELON_ITEM_CODE or "kamis_retail" not in frame:
-            return frame, [], []
-
-        kamis = frame["kamis_retail"].dropna().sort_index()
-        if len(kamis) < 3:
-            return frame, [], []
-
-        daily_index = pd.date_range(kamis.index.min(), kamis.index.max(), freq="D")
-        result = frame.reindex(frame.index.union(daily_index)).sort_index()
-        daily_kamis = kamis.reindex(daily_index).ffill().bfill()
-
-        estimated_series: list[str] = []
-        for column, config in MELON_DASHBOARD_ESTIMATES.items():
-            lag = int(config["lag"])
-            driver = daily_kamis.shift(lag).bfill()
-            reference_driver = float(driver.iloc[-1])
-            modeled = (
-                float(config["anchor"])
-                * (driver / reference_driver) ** float(config["elasticity"])
-            ).map(lambda value: float(round(float(value) / 10.0) * 10))
-            modeled = modeled.reindex(result.index)
-
-            existing = (
-                result[column]
-                if column in result
-                else pd.Series(np.nan, index=result.index, dtype=float)
-            )
-            missing = existing.isna() & modeled.notna()
-            if not missing.any():
-                continue
-            result[column] = existing.where(~missing, modeled)
-            estimated_series.append(column)
-
-        if estimated_series:
-            platforms = [
-                column
-                for column in ("online_naver", "online_coupang")
-                if column in result and result[column].notna().any()
-            ]
-            if platforms:
-                result["online_combined"] = result[platforms].mean(axis=1)
-                estimated_series.append("online_combined")
-            return result, [MELON_ESTIMATE_NOTE], estimated_series
-
-        return result, [], []
-
-    def online_frame(
-        self,
-        item_code: str,
-        start_date: date | None = None,
-        end_date: date | None = None,
-    ) -> pd.DataFrame:
-        rows = self._online.search_summaries(item_code=item_code)
-        kind = self.comparison_kinds.get(item_code)
-        if kind is not None:
-            rows = [row for row in rows if row.get("kind_code") == kind]
-        if not rows:
-            return pd.DataFrame(index=pd.DatetimeIndex([]))
-        online = pd.DataFrame(rows)
-        online["observed_date"] = pd.to_datetime(online["observed_date"])
-        online["average_unit_price"] = pd.to_numeric(
-            online["average_unit_price"], errors="coerce"
-        )
-        online = online.dropna(subset=["average_unit_price"])
-        if start_date:
-            online = online[online["observed_date"] >= pd.Timestamp(start_date)]
-        if end_date:
-            online = online[online["observed_date"] <= pd.Timestamp(end_date)]
-        frame = online.pivot_table(
-            index="observed_date",
-            columns="platform",
-            values="average_unit_price",
-            aggfunc="mean",
-        )
-        # Agent-only collection updates platform summaries before the combined cache.
-        platforms = [column for column in ("naver", "coupang") if column in frame]
-        if platforms:
-            frame["combined"] = frame[platforms].mean(axis=1)
-        return frame.rename(columns=lambda column: f"online_{column}").sort_index()
 
     def chart(
         self,
@@ -346,12 +236,7 @@ class ComparisonService:
         end_date: date | None,
         mode: AnalysisMode = "base100",
     ) -> dict[str, Any]:
-        raw_frame = self.build_frame(
-            item_code,
-            start_date,
-            end_date,
-            include_dashboard_estimates=True,
-        )
+        raw_frame = self.build_frame(item_code, start_date, end_date)
         frame = self._analytics.transform(raw_frame, mode)
         result = chart_from_frame(
             item_code, mode, frame, self.core_series, raw_frame=raw_frame
@@ -371,7 +256,6 @@ class ComparisonService:
             result["comparison_notes"].append(
                 "이 조회 조건에 맞는 KAMIS 관측 가격이 없습니다. 시장 지수만 표시될 수 있습니다."
             )
-        result["estimated_series"] = raw_frame.attrs.get("estimated_series", [])
         if any(column.startswith("kamis_") for column in raw_frame):
             result["comparison_notes"] = [
                 *result["comparison_notes"],
@@ -403,28 +287,6 @@ class ComparisonService:
                         count + 1,
                     )
 
-        online_rows = self._online.search_summaries()
-        online_item_codes: set[str] = set()
-        for row in online_rows:
-            if (
-                row.get("item_code")
-                and row.get("observed_date")
-                and row.get("average_unit_price") not in {None, ""}
-            ):
-                item_code = str(row["item_code"])
-                observed = date.fromisoformat(str(row["observed_date"]))
-                online_item_codes.add(item_code)
-                current = item_stats.get(item_code)
-                if current is None:
-                    item_stats[item_code] = (observed, observed, 1)
-                else:
-                    earliest, latest, count = current
-                    item_stats[item_code] = (
-                        min(earliest, observed),
-                        max(latest, observed),
-                        count + 1,
-                    )
-
         if not item_stats:
             return {
                 "item_code": None,
@@ -438,11 +300,7 @@ class ComparisonService:
             if MELON_ITEM_CODE in item_stats
             else max(
                 item_stats,
-                key=lambda code: (
-                    code in online_item_codes,
-                    item_stats[code][1],
-                    item_stats[code][2],
-                ),
+                key=lambda code: (item_stats[code][1], item_stats[code][2]),
             )
         )
         earliest, end_date, _ = item_stats[item_code]
