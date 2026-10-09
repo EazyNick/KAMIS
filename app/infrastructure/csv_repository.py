@@ -504,7 +504,9 @@ class PriceRepository(_AtomicCsvRepository):
                 ) from error
         return result
 
-    def observed_date_range(self) -> tuple[date, date] | None:
+    def observed_date_range(
+        self, *, requested_convert_kg: bool | None = None
+    ) -> tuple[date, date] | None:
         """Scan the date column without loading the full price history into memory."""
         with self._lock:
             if not self.path.exists():
@@ -514,6 +516,17 @@ class PriceRepository(_AtomicCsvRepository):
             try:
                 with self.path.open(encoding="utf-8-sig", newline="") as handle:
                     for row in csv.DictReader(handle):
+                        if requested_convert_kg is not None:
+                            stored_convert = str(
+                                row.get("requested_convert_kg", "")
+                            ).strip().casefold()
+                            expected_values = (
+                                {"true", "y", "1"}
+                                if requested_convert_kg
+                                else {"false", "n", "0"}
+                            )
+                            if stored_convert not in expected_values:
+                                continue
                         observed = date.fromisoformat(row["observed_date"])
                         earliest = min(earliest, observed) if earliest else observed
                         latest = max(latest, observed) if latest else observed
