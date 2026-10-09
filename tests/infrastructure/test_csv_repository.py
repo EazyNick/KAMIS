@@ -117,8 +117,28 @@ def price_row(price: str = "1000") -> PriceObservation:
         region="서울",
         market_name="A-유통",
         price_krw=Decimal(price),
-        requested_convert_kg=True,
+        requested_convert_kg=False,
     )
+
+
+def test_price_repository_can_select_only_original_kamis_prices(
+    tmp_path: Path,
+) -> None:
+    repository = PriceRepository(tmp_path, app_logger)
+    raw = price_row("28980.57")
+    converted = replace(
+        raw,
+        price_krw=Decimal("8800"),
+        requested_convert_kg=True,
+        market_name="legacy-converted",
+    )
+    repository.upsert([raw, converted], "seed")
+
+    rows = repository.search(PriceFilters(requested_convert_kg=False))
+
+    assert len(rows) == 1
+    assert rows[0]["price_krw"] == 28980.57
+    assert repository.item_date_stats(requested_convert_kg=False)["111"][2] == 1
 
 
 def test_price_repository_item_date_stats_stream_long_history(tmp_path: Path) -> None:
