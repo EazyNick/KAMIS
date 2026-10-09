@@ -156,6 +156,8 @@ class ApplicationContainer:
             app_logger,
             timezone=settings.timezone,
             window_days=90,
+            catalog_provider=catalog.entries,
+            required_keys=set(settings.online_target_keys),
         )
 
         def recent_market_range():
