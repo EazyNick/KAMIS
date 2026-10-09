@@ -379,6 +379,53 @@ class PriceRepository(_AtomicCsvRepository):
                 ) from error
         return counts
 
+    def scope_month_counts(
+        self,
+        year: int,
+        *,
+        requested_convert_kg: bool | None = None,
+    ) -> dict[tuple[str, str, str, str, int], int]:
+        """Count stored rows per item/kind/type/rank/month for one year."""
+        counts: dict[tuple[str, str, str, str, int], int] = {}
+        with self._lock:
+            if not self.path.exists() or self.path.stat().st_size == 0:
+                return counts
+            try:
+                prefix = f"{year:04d}-"
+                with self.path.open(encoding="utf-8-sig", newline="") as handle:
+                    for row in csv.DictReader(handle):
+                        if requested_convert_kg is not None:
+                            stored_convert = str(
+                                row.get("requested_convert_kg", "")
+                            ).strip().casefold()
+                            expected_values = (
+                                {"true", "y", "1"}
+                                if requested_convert_kg
+                                else {"false", "n", "0"}
+                            )
+                            if stored_convert not in expected_values:
+                                continue
+                        observed_text = str(row.get("observed_date", ""))
+                        if not observed_text.startswith(prefix):
+                            continue
+                        try:
+                            month = int(observed_text[5:7])
+                        except ValueError:
+                            continue
+                        key = (
+                            str(row.get("item_code", "")),
+                            str(row.get("kind_code", "")),
+                            str(row.get("price_type", "")),
+                            str(row.get("rank_code", "")),
+                            month,
+                        )
+                        counts[key] = counts.get(key, 0) + 1
+            except (OSError, csv.Error) as error:
+                raise StorageError(
+                    f"failed to inspect KAMIS scope/month counts in {self.path}: {error}"
+                ) from error
+        return counts
+
     def count(self) -> int:
         return len(self._read())
 
