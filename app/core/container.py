@@ -158,6 +158,11 @@ class ApplicationContainer:
             window_days=90,
             catalog_provider=catalog.entries,
             required_keys=set(settings.online_target_keys),
+            successful_dates_provider=lambda start, end: runs.successful_covered_dates(
+                "kamis",
+                start,
+                end,
+            ),
         )
 
         def recent_market_range():
