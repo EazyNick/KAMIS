@@ -97,7 +97,7 @@ class StartupCollectionService:
             "startup.daily.skipped" if daily_completed else "startup.daily.pending",
             "오늘 통합 수집의 성공 이력이 있어 재수집하지 않습니다."
             if daily_completed
-            else "과거 시장 데이터와 분석 캐시 확인 후 오늘 KAMIS·네이버·쿠팡·시장 수집을 시작합니다.",
+            else "과거 누락 데이터 확인 후 오늘 KAMIS 원가격·시장 데이터 수집을 시작합니다.",
             observed_date=observed_date,
             reason="successful_checkpoint_exists" if daily_completed else "history_check_first",
         )
