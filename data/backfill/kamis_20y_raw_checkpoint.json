@@ -1,6 +1,6 @@
 {
   "version": 3,
-  "storage_scope": "official_average_raw_v1",
+  "storage_scope": "official_average_raw_v2",
   "completed_queries": [
     "111:01:retail:04:2006-01-01:2006-12-31",
     "111:01:retail:04:2007-01-01:2007-12-31",
