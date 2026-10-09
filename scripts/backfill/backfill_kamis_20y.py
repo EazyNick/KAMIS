@@ -11,7 +11,8 @@ if __package__ in {None, ""}:
 """Backfill about 20 years of original-unit KAMIS wholesale/retail prices.
 
 Prices are requested with p_convert_kg_yn=N and stored without kg/count/package
-conversion. The dashboard uses only these raw-survey rows.
+conversion. Only KAMIS' official region='평균' rows are kept in the normalized
+research CSV because the dashboard no longer recomputes regional averages.
 
 The same checkpoint is used by this CLI and main.py startup. Completed
 item/kind/type/rank/year queries are skipped on later runs, so startup requests
@@ -190,6 +191,14 @@ def run_backfill(
         completed_queries, checkpoint_counts = set(), {}
     else:
         completed_queries, checkpoint_counts = load_checkpoint(checkpoint_path)
+
+    # The research dataset now uses only KAMIS' official nationwide average
+    # (region='평균') in original survey units. Compact old regional/market and
+    # kg-converted rows before reconciliation so subsequent reads/writes remain small.
+    prices.compact_to_official_average_raw(
+        f"kamis-average-compact-{uuid4().hex}"
+    )
+
     stored_scope_year_counts = prices.scope_year_counts(
         first_year,
         last_year,
@@ -329,6 +338,7 @@ def run_backfill(
                     row
                     for row in rows
                     if query.start_date <= row.observed_date <= query.end_date
+                    and row.region == "평균"
                 ]
                 unique = {}
                 for row in rows:
