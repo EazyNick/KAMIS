@@ -332,6 +332,12 @@ class PriceRepository(_AtomicCsvRepository):
                             kind_code,
                             min(observed_date) AS first_date,
                             max(observed_date) AS last_date,
+                            count(DISTINCT CASE
+                                WHEN price_type='wholesale'
+                                THEN observed_date END) AS wholesale_days,
+                            count(DISTINCT CASE
+                                WHEN price_type='retail'
+                                THEN observed_date END) AS retail_days,
                             count(*) AS observations
                         FROM read_csv(?, header=true, all_varchar=true)
                         WHERE """
@@ -344,6 +350,8 @@ class PriceRepository(_AtomicCsvRepository):
                             row_number() OVER (
                                 PARTITION BY item_code
                                 ORDER BY
+                                    least(wholesale_days, retail_days) DESC,
+                                    wholesale_days + retail_days DESC,
                                     observations DESC,
                                     date_diff(
                                         'day',
