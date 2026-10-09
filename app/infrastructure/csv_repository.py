@@ -361,17 +361,20 @@ class PriceRepository(_AtomicCsvRepository):
                             [str(self.path)],
                         ).fetchone()[0]
                     )
+                    target_path = (
+                        temporary.resolve().as_posix().replace("'", "''")
+                    )
                     connection.execute(
-                        """
+                        f"""
                         COPY (
                             SELECT *
                             FROM read_csv(?, header=true, all_varchar=true)
                             WHERE lower(requested_convert_kg) IN ('false', 'n', '0')
                               AND region = '평균'
                             ORDER BY observed_date, item_code, kind_code, price_type, rank_code
-                        ) TO ? (HEADER, DELIMITER ',')
+                        ) TO '{target_path}' (HEADER, DELIMITER ',')
                         """,
-                        [str(self.path), str(temporary)],
+                        [str(self.path)],
                     )
                     total_after = int(
                         connection.execute(
