@@ -23,6 +23,7 @@ from app.services.dashboard_bootstrap import DashboardBootstrapService
 from app.services.kamis_history import KamisHistoryService
 from app.services.market_history import MarketHistoryService
 from app.services.startup_collection import StartupCollectionService
+from scripts.backfill.backfill_kamis_20y import run_backfill
 from config.server_config import Settings
 from log import app_logger
 
@@ -131,7 +132,7 @@ class ApplicationContainer:
             except Exception as error:  # noqa: BLE001 - independent history source
                 app_logger.exception(
                     "startup.kamis_history.failed",
-                    "KAMIS history backfill failed; market history will continue",
+                    "Recent KAMIS history backfill failed; long history will still be attempted",
                     error,
                 )
             try:
@@ -140,6 +141,19 @@ class ApplicationContainer:
                 app_logger.exception(
                     "startup.market_history.failed",
                     "Market history backfill failed; startup will continue",
+                    error,
+                )
+            try:
+                raw_history = run_backfill(
+                    settings,
+                    workers=4,
+                    chunk_days=31,
+                )
+                total += raw_history.fetched_rows
+            except Exception as error:  # noqa: BLE001 - long history is retryable
+                app_logger.exception(
+                    "startup.kamis_long_history.failed",
+                    "20-year raw KAMIS history reconciliation failed; incomplete query-years will retry next startup",
                     error,
                 )
             if settings.analytics_auto_refresh:
