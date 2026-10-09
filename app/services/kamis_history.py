@@ -132,12 +132,15 @@ class KamisHistoryService:
         return total
 
     def _required_scopes(self) -> frozenset[tuple[str, str, str, str]]:
-        if self._catalog_provider is None or not self._required_keys:
+        if self._catalog_provider is None:
             return frozenset()
 
         scopes: set[tuple[str, str, str, str]] = set()
         for entry in self._catalog_provider():
-            if (entry.item_code, entry.kind_code) not in self._required_keys:
+            if (
+                self._required_keys
+                and (entry.item_code, entry.kind_code) not in self._required_keys
+            ):
                 continue
             scopes.update(
                 (entry.item_code, entry.kind_code, "wholesale", rank_code)
