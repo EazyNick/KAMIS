@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo
 
 from holidays import country_holidays
 
+from app.domain.models import ProductCatalogEntry
 from log.logger import StructuredLogger
 
 
@@ -14,6 +15,14 @@ class PriceHistoryRepositoryProtocol(Protocol):
     def observed_date_range(self) -> tuple[date, date] | None: ...
 
     def observed_dates(self, start_date: date, end_date: date) -> set[date]: ...
+
+    def covered_dates(
+        self,
+        start_date: date,
+        end_date: date,
+        required_scopes: set[tuple[str, str, str, str]]
+        | frozenset[tuple[str, str, str, str]],
+    ) -> set[date]: ...
 
 
 class KamisCollectorProtocol(Protocol):
@@ -32,6 +41,9 @@ class KamisHistoryService:
         timezone: str = "Asia/Seoul",
         window_days: int = 90,
         today_provider: Callable[[], date] | None = None,
+        catalog_provider: Callable[[], list[ProductCatalogEntry]] | None = None,
+        required_keys: set[tuple[str, str]]
+        | frozenset[tuple[str, str]] = frozenset(),
     ) -> None:
         if window_days < 2:
             raise ValueError("window_days must be at least 2")
@@ -39,6 +51,8 @@ class KamisHistoryService:
         self._collector = collector
         self._logger = logger
         self._window_days = window_days
+        self._catalog_provider = catalog_provider
+        self._required_keys = frozenset(required_keys)
         self._today_provider = today_provider or (
             lambda: datetime.now(ZoneInfo(timezone)).date()
         )
@@ -62,7 +76,18 @@ class KamisHistoryService:
             overlap_start = max(earliest, target_start)
             overlap_end = min(latest, target_end)
             if overlap_start <= overlap_end:
-                stored_dates = self._prices.observed_dates(overlap_start, overlap_end)
+                required_scopes = self._required_scopes()
+                if required_scopes:
+                    stored_dates = self._prices.covered_dates(
+                        overlap_start,
+                        overlap_end,
+                        required_scopes,
+                    )
+                else:
+                    stored_dates = self._prices.observed_dates(
+                        overlap_start,
+                        overlap_end,
+                    )
                 expected_dates = self._expected_dates(overlap_start, overlap_end)
                 ranges.extend(self._missing_ranges(expected_dates, stored_dates))
 
@@ -97,6 +122,24 @@ class KamisHistoryService:
                 status=getattr(run, "status", None),
             )
         return total
+
+    def _required_scopes(self) -> frozenset[tuple[str, str, str, str]]:
+        if self._catalog_provider is None or not self._required_keys:
+            return frozenset()
+
+        scopes: set[tuple[str, str, str, str]] = set()
+        for entry in self._catalog_provider():
+            if (entry.item_code, entry.kind_code) not in self._required_keys:
+                continue
+            scopes.update(
+                (entry.item_code, entry.kind_code, "wholesale", rank_code)
+                for rank_code in entry.wholesale_rank_codes
+            )
+            scopes.update(
+                (entry.item_code, entry.kind_code, "retail", rank_code)
+                for rank_code in entry.retail_rank_codes
+            )
+        return frozenset(scopes)
 
     @staticmethod
     def _expected_dates(start: date, end: date) -> list[date]:
