@@ -154,7 +154,7 @@ def test_price_and_market_routes_support_latest_first_paging(
                 region="서울",
                 market_name="테스트",
                 price_krw=Decimal(price),
-                requested_convert_kg=True,
+                requested_convert_kg=False,
             )
             for observed_date, price in (
                 (date(2026, 9, 24), "1000"),
