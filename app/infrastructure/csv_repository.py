@@ -45,6 +45,7 @@ class PriceFilters:
     start_date: date | None = None
     end_date: date | None = None
     requested_convert_kg: bool | None = None
+    region: str | None = None
 
 
 class _AtomicCsvRepository:
@@ -242,6 +243,7 @@ class PriceRepository(_AtomicCsvRepository):
                     ("price_type", filters.price_type, "="),
                     ("observed_date", filters.start_date, ">="),
                     ("observed_date", filters.end_date, "<="),
+                    ("region", filters.region, "="),
                 ):
                     if value is not None:
                         conditions.append(f"{column} {operator} ?")
@@ -288,47 +290,117 @@ class PriceRepository(_AtomicCsvRepository):
         return result
 
     def item_date_stats(
-        self, *, requested_convert_kg: bool | None = None
+        self,
+        *,
+        requested_convert_kg: bool | None = None,
+        region: str | None = None,
     ) -> dict[str, tuple[date, date, int]]:
-        """Return earliest/latest/count per item without materializing price rows."""
-        stats: dict[str, tuple[date, date, int]] = {}
+        """Return earliest/latest/count per item using DuckDB CSV aggregation."""
+        if not self.path.exists() or self.path.stat().st_size == 0:
+            return {}
+        conditions = [
+            "observed_date IS NOT NULL",
+            "observed_date <> ''",
+            "item_code IS NOT NULL",
+            "item_code <> ''",
+        ]
+        parameters: list[Any] = [str(self.path)]
+        if requested_convert_kg is not None:
+            conditions.append("lower(requested_convert_kg) IN (?, ?, ?)")
+            parameters.extend(
+                ["true", "y", "1"]
+                if requested_convert_kg
+                else ["false", "n", "0"]
+            )
+        if region is not None:
+            conditions.append("region = ?")
+            parameters.append(region)
+        try:
+            with duckdb.connect(config={"threads": 2}) as connection:
+                rows = connection.execute(
+                    """
+                    SELECT item_code, min(observed_date), max(observed_date), count(*)
+                    FROM read_csv(?, header=true, all_varchar=true)
+                    WHERE """
+                    + " AND ".join(conditions)
+                    + " GROUP BY item_code",
+                    parameters,
+                ).fetchall()
+        except duckdb.Error as error:
+            raise StorageError(
+                f"failed to inspect item date stats in {self.path}: {error}"
+            ) from error
+        return {
+            str(item_code): (
+                date.fromisoformat(str(first)),
+                date.fromisoformat(str(last)),
+                int(count),
+            )
+            for item_code, first, last, count in rows
+            if item_code and first and last
+        }
+
+    def compact_to_official_average_raw(self, run_id: str) -> RepositoryWriteResult:
+        """Keep only original-unit KAMIS nationwide-average rows in normalized CSV.
+
+        The research dashboard intentionally uses p_convert_kg_yn=N and
+        region='평균'. Regional/market rows and legacy kg-converted rows are not
+        needed in the normalized research dataset.
+        """
+        if not self.path.exists() or self.path.stat().st_size == 0:
+            return RepositoryWriteResult(0, 0, 0, self.path)
+
+        temporary = self.path.with_suffix(f"{self.path.suffix}.{run_id}.tmp")
+        started = perf_counter()
         with self._lock:
-            if not self.path.exists() or self.path.stat().st_size == 0:
-                return stats
             try:
-                with self.path.open(encoding="utf-8-sig", newline="") as handle:
-                    for row in csv.DictReader(handle):
-                        if requested_convert_kg is not None:
-                            stored_convert = str(
-                                row.get("requested_convert_kg", "")
-                            ).strip().casefold()
-                            expected_values = (
-                                {"true", "y", "1"}
-                                if requested_convert_kg
-                                else {"false", "n", "0"}
-                            )
-                            if stored_convert not in expected_values:
-                                continue
-                        item_code = str(row.get("item_code", ""))
-                        observed_text = row.get("observed_date", "")
-                        if not item_code or not observed_text:
-                            continue
-                        observed = date.fromisoformat(observed_text)
-                        current = stats.get(item_code)
-                        if current is None:
-                            stats[item_code] = (observed, observed, 1)
-                        else:
-                            earliest, latest, count = current
-                            stats[item_code] = (
-                                min(earliest, observed),
-                                max(latest, observed),
-                                count + 1,
-                            )
-            except (OSError, csv.Error, ValueError) as error:
+                with duckdb.connect(config={"threads": 4}) as connection:
+                    total_before = int(
+                        connection.execute(
+                            "SELECT count(*) FROM read_csv(?, header=true, all_varchar=true)",
+                            [str(self.path)],
+                        ).fetchone()[0]
+                    )
+                    connection.execute(
+                        """
+                        COPY (
+                            SELECT *
+                            FROM read_csv(?, header=true, all_varchar=true)
+                            WHERE lower(requested_convert_kg) IN ('false', 'n', '0')
+                              AND region = '평균'
+                            ORDER BY observed_date, item_code, kind_code, price_type, rank_code
+                        ) TO ? (HEADER, DELIMITER ',')
+                        """,
+                        [str(self.path), str(temporary)],
+                    )
+                    total_after = int(
+                        connection.execute(
+                            "SELECT count(*) FROM read_csv(?, header=true, all_varchar=true)",
+                            [str(temporary)],
+                        ).fetchone()[0]
+                    )
+                os.replace(temporary, self.path)
+                self._logger.info(
+                    "csv.compact.succeeded",
+                    "KAMIS normalized CSV compacted to official average raw rows",
+                    path=self.path,
+                    run_id=run_id,
+                    record_count_before=total_before,
+                    record_count_after=total_after,
+                    duration_ms=round((perf_counter() - started) * 1000),
+                )
+                return RepositoryWriteResult(
+                    inserted=0,
+                    updated=0,
+                    total=total_after,
+                    path=self.path,
+                )
+            except (OSError, duckdb.Error) as error:
+                temporary.unlink(missing_ok=True)
                 raise StorageError(
-                    f"failed to inspect item date stats in {self.path}: {error}"
+                    f"failed to compact {self.path}: {error}"
                 ) from error
-        return stats
+
 
     def scope_year_counts(
         self,
