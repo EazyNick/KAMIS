@@ -55,7 +55,7 @@ def main(argv: list[str] | None = None) -> int:
     failures = 0
     total = 0
     summaries = defaultdict(list)
-    dashboard_rank_daily = defaultdict(list)
+    dashboard_average_rows = {}
     print(f"[RANGE] {start} ~ {end}; item=257; convert_kg=N", flush=True)
     print("[NOTE] Prices are KRW, not base100. Catalog units are CURRENT units, not historical proof.", flush=True)
     with build_requests_session() as session:
@@ -107,14 +107,15 @@ def main(argv: list[str] | None = None) -> int:
                             if row.price_krw is not None:
                                 group = (row.observed_date.year, entry.kind_code, price_type.value, rank, row.region, row.market_name)
                                 summaries[group].append(row.price_krw)
-                                dashboard_rank_daily[
-                                    (
-                                        row.observed_date,
-                                        entry.kind_code,
-                                        price_type.value,
-                                        rank,
-                                    )
-                                ].append(row.price_krw)
+                                if row.region == "평균":
+                                    dashboard_average_rows[
+                                        (
+                                            row.observed_date,
+                                            entry.kind_code,
+                                            price_type.value,
+                                            rank,
+                                        )
+                                    ] = row.price_krw
                         if not count:
                             print("[NO DATA] No observations in this requested range", flush=True)
     print("\n[YEAR SUMMARY] Kept separate by variety/type/rank/region/market; not inflation-adjusted", flush=True)
@@ -123,12 +124,12 @@ def main(argv: list[str] | None = None) -> int:
               + f" count={len(values)} min={min(values)} max={max(values)} mean={sum(values)/len(values):.2f}", flush=True)
     print("\n[DASHBOARD-EQUIVALENT SUMMARY]", flush=True)
     print(
-        "[NOTE] Same aggregation rule as ComparisonService: for each date/type, "
-        "use one stable rank (04 when available), then average regions/markets per day.",
+        "[NOTE] Same rule as ComparisonService: use one stable rank "
+        "(04 when available) and the KAMIS-provided region=평균 price as-is.",
         flush=True,
     )
     available_ranks = defaultdict(set)
-    for observed, kind, price_type, rank in dashboard_rank_daily:
+    for observed, kind, price_type, rank in dashboard_average_rows:
         available_ranks[(kind, price_type)].add(rank)
 
     selected_rank = {
@@ -137,13 +138,12 @@ def main(argv: list[str] | None = None) -> int:
         if ranks
     }
     by_year_type = defaultdict(list)
-    for (observed, kind, price_type, rank), values in sorted(
-        dashboard_rank_daily.items()
+    for (observed, kind, price_type, rank), value in sorted(
+        dashboard_average_rows.items()
     ):
-        if not values or selected_rank.get((kind, price_type)) != rank:
+        if selected_rank.get((kind, price_type)) != rank:
             continue
-        daily_mean = sum(values) / len(values)
-        by_year_type[(observed.year, kind, price_type, rank)].append(daily_mean)
+        by_year_type[(observed.year, kind, price_type, rank)].append(value)
     for (year, kind, price_type, rank), values in sorted(by_year_type.items()):
         print(
             f"year={year} kind={kind} type={price_type} rank={rank} "
