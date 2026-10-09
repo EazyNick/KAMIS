@@ -26,7 +26,7 @@
 <header><div class="brand"><div class="mark"><img src="/favicon.ico" alt="" aria-hidden="true"></div><div><h1>KAMIS Market Lens</h1><div class="subtitle">농산물 가격과 시장 흐름을 한 화면에서</div></div></div><div class="top-actions"><nav class="top-nav" aria-label="주요 메뉴"><a href="#dashboard">통합 대시보드</a><a href="#overview">현황</a><a href="#data">데이터</a><a href="#correlations-panel">상관관계</a></nav><div class="live"><i class="dot"></i><span id="systemStatus">시스템 확인 중</span></div></div></header>
 <main>
   <section id="overview" class="hero"><div class="hero-copy"><div class="eyebrow">Daily price intelligence</div><h2>농산물 가격과 금융시장,<br>장기 흐름을 함께 읽습니다.</h2><p>KAMIS 도매·소매 원가격과 원자재 선물, 국내외 주가지수를 동일한 관측일에 비교합니다.</p></div><div class="stats"><div class="stat"><span>전체 품목·품종</span><strong id="catalogCount">—</strong></div><div class="stat"><span>KAMIS 가격 기준</span><strong>원 조사단위</strong></div><div class="stat"><span>시장 시계열</span><strong>14</strong></div><div class="stat"><span>최근 실행</span><strong id="lastRun">—</strong></div></div></section>
-  <section id="dashboard" class="panel"><div class="panel-head"><div><h3>통합 가격 비교</h3><p>KAMIS 원 조사단위 가격과 시장 시계열 비교 · 범례를 눌러 시계열을 켜고 끌 수 있습니다.</p></div><div class="controls"><div class="item-picker"><input id="itemSearch" class="control" type="search" role="combobox" aria-controls="itemDropdown" aria-expanded="false" aria-autocomplete="list" placeholder="품목 선택 · 검색" autocomplete="off"><div id="itemDropdown" class="item-dropdown" role="listbox"></div><select id="itemSelect" hidden><option value="">품목 선택</option></select></div><select id="modeSelect" class="control"><option value="base100">조회 시작값 = 100 (기본)</option><option value="raw">원값</option><option value="return_1d">1일 변화율</option><option value="return_7d">7일 변화율</option></select><select id="periodPreset" class="control" aria-label="조회 기간"><option value="1">1년</option><option value="5">5년</option><option value="10">10년</option><option value="20" selected>20년</option><option value="custom">직접 설정</option></select><input id="startDate" class="control" type="date"><input id="endDate" class="control" type="date"><button id="refresh" class="control">조회</button></div></div><div class="chart-wrap"><div class="chart-zoom-tools"><span>드래그: 기간 확대 · 휠: 확대/축소 · 휠 버튼 드래그: X축 이동 · Ctrl+클릭: 비교 기준선 · 더블클릭: 초기화</span><span id="chartZoomRange" class="chart-zoom-range">전체 기간</span><button id="chartZoomReset" type="button" disabled>확대 초기화</button></div><canvas id="comparisonChart" aria-label="가격 비교 그래프"></canvas><div id="chartTooltip" class="chart-tooltip" role="status"><span id="chartTooltipDate"></span><strong id="chartTooltipLabel"></strong><span id="chartTooltipValue"></span></div></div><div id="legend" class="legend"></div><p class="footnote">휴장일·미관측 구간은 앞뒤 관측점을 선으로 연결합니다. 연결선은 해당 날짜의 실제 가격을 의미하지 않습니다.</p><div class="footnote">조회 시작값 = 100: 조회 기간에서 각 항목의 첫 유효값을 100으로 맞춰 비교합니다. 110은 시작값보다 10% 상승, 90은 10% 하락을 뜻합니다.</div></section>
+  <section id="dashboard" class="panel"><div class="panel-head"><div><h3>통합 가격 비교</h3><p>KAMIS 원 조사단위 가격과 시장 시계열 비교 · 범례를 눌러 시계열을 켜고 끌 수 있습니다.</p></div><div class="controls"><div class="item-picker"><input id="itemSearch" class="control" type="search" role="combobox" aria-controls="itemDropdown" aria-expanded="false" aria-autocomplete="list" placeholder="품목 선택 · 검색" autocomplete="off"><div id="itemDropdown" class="item-dropdown" role="listbox"></div><select id="itemSelect" hidden><option value="">품목 선택</option></select></div><select id="modeSelect" class="control"><option value="base100">조회 시작값 = 100 (기본)</option><option value="raw">원값</option><option value="return_1d">1일 변화율</option><option value="return_7d">7일 변화율</option></select><select id="periodPreset" class="control" aria-label="조회 기간"><option value="1">1년</option><option value="5">5년</option><option value="10">10년</option><option value="20" selected>20년</option><option value="custom">직접 설정</option></select><input id="startDate" class="control" type="date"><input id="endDate" class="control" type="date"><button id="refresh" class="control">조회</button></div></div><div class="chart-wrap"><div class="chart-zoom-tools"><span>마우스 이동: 임시 기준선 · 클릭: 기준선 고정 · 드래그: 기간 확대 · 휠: 확대/축소 · 휠 버튼 드래그: X축 이동 · Esc: 기준선 해제</span><span id="chartZoomRange" class="chart-zoom-range">전체 기간</span><button id="chartZoomReset" type="button" disabled>확대 초기화</button></div><canvas id="comparisonChart" aria-label="가격 비교 그래프"></canvas><div id="chartTooltip" class="chart-tooltip" role="status"><span id="chartTooltipDate"></span><strong id="chartTooltipLabel"></strong><span id="chartTooltipValue"></span></div></div><div id="legend" class="legend"></div><p class="footnote">휴장일·미관측 구간은 앞뒤 관측점을 선으로 연결합니다. 연결선은 해당 날짜의 실제 가격을 의미하지 않습니다.</p><div class="footnote">조회 시작값 = 100: 조회 기간에서 각 항목의 첫 유효값을 100으로 맞춰 비교합니다. 110은 시작값보다 10% 상승, 90은 10% 하락을 뜻합니다.</div></section>
   <div class="grid"><section id="data" class="panel"><div class="panel-head"><div><h3>데이터 테이블</h3><p>CSV에 저장된 품목·KAMIS 원가격·시장 데이터를 웹에서 조회</p></div></div><div class="table-tools"><select id="tableDataset" class="control"><option value="catalog">품목 사전</option><option value="kamis">KAMIS 가격</option><option value="market">시장 데이터</option></select><input id="tableSearch" class="control search" placeholder="품목명·코드 검색"><select id="categoryFilter" class="control"><option value="">전체 부류</option></select></div><div class="table-scroll"><table><thead><tr id="dataHead"></tr></thead><tbody id="catalogBody"></tbody></table></div><div id="tablePager" class="table-pager"><button id="tablePrev" class="control" type="button">이전</button><span id="tablePageInfo">—</span><button id="tableNext" class="control" type="button">다음</button></div></section>
   <section id="correlations-panel" class="panel"><div class="panel-head"><div><h3>상관관계 탐색</h3><p>Pearson 계수 · 공식 휴장일만 직전값 유지 · 그 외 결측치는 공통 관측일만 사용</p></div></div><div id="correlations" class="corr-list"><div class="empty">품목을 선택하면 분석 결과가 표시됩니다.</div></div><div class="footnote">상관관계는 인과관계를 의미하지 않습니다. 관측치 수와 FDR 보정값을 함께 확인하세요.</div></section></div>
 
@@ -34,18 +34,18 @@
 <script>
 const palette=['#0c6b4f','#e2743f','#4176c2','#9a5cc1','#d0a326','#2d9c9c','#cf4e72','#6d7f37','#4a5568','#a85c2d','#7686d8','#2f855a','#b7791f','#805ad5'];
 const labels={kamis_wholesale:'KAMIS 도매',kamis_retail:'KAMIS 소매',kospi:'KOSPI',kosdaq:'KOSDAQ',sp500:'S&P 500',nasdaq:'NASDAQ',dow_jones:'Dow Jones',usd_krw:'USD/KRW',corn_futures:'옥수수 선물',wheat_futures:'밀 선물',soybean_futures:'대두 선물',rough_rice_futures:'쌀 선물',coffee_futures:'커피 선물',sugar_futures:'설탕 선물',cotton_futures:'면화 선물',orange_juice_futures:'오렌지주스 선물'};
-const tablePageSize=100;let catalog=[],itemChoices=[],chartData=null,enabled=new Set(),hoveredPoint=null,seriesInitialized=false,activeItemIndex=-1,zoomRange=null,zoomDrag=null,panDrag=null,pinnedIndex=null;const tableState={kamis:{offset:0,total:0},market:{offset:0,total:0}};
+const tablePageSize=100;let catalog=[],itemChoices=[],chartData=null,enabled=new Set(),hoveredPoint=null,hoverIndex=null,seriesInitialized=false,activeItemIndex=-1,zoomRange=null,zoomDrag=null,panDrag=null,pinnedIndex=null;const tableState={kamis:{offset:0,total:0},market:{offset:0,total:0}};
 async function api(path){const r=await fetch(path);if(!r.ok)throw new Error(`${r.status} ${await r.text()}`);return r.json()}
 const fmt=n=>n==null?'—':new Intl.NumberFormat('ko-KR',{maximumFractionDigits:2}).format(n);
 const defaultSeries=['kamis_wholesale','kamis_retail','kospi','kosdaq','sp500','nasdaq'];
 const seriesLabel=key=>chartData?.series_labels?.[key]||labels[key]||key;
-function resetZoom(redraw=true){zoomRange=null;zoomDrag=null;panDrag=null;pinnedIndex=null;hoveredPoint=null;document.querySelector('#comparisonChart')?.classList.remove('panning');updateZoomUi();if(redraw&&chartData)draw()}
+function resetZoom(redraw=true){zoomRange=null;zoomDrag=null;panDrag=null;pinnedIndex=null;hoverIndex=null;hoveredPoint=null;document.querySelector('#comparisonChart')?.classList.remove('panning');updateZoomUi();if(redraw&&chartData)draw()}
 function getZoomBounds(){const count=chartData?.dates?.length||0;if(!count)return {start:0,end:-1};if(!zoomRange)return {start:0,end:count-1};return {start:Math.max(0,Math.min(zoomRange.start,count-1)),end:Math.max(0,Math.min(zoomRange.end,count-1))}}
 function visibleDates(){const bounds=getZoomBounds();return bounds.end>=bounds.start?chartData.dates.slice(bounds.start,bounds.end+1):[]}
 function updateZoomUi(){const label=document.querySelector('#chartZoomRange'),button=document.querySelector('#chartZoomReset');if(!label||!button)return;const dates=visibleDates();if(!zoomRange||!dates.length){label.textContent='전체 기간';button.disabled=true;return}label.textContent=dates.length===1?dates[0]:dates[0]+' ~ '+dates[dates.length-1];button.disabled=false}
 function chartPlotGeometry(canvas){const rect=canvas.getBoundingClientRect(),w=rect.width,h=Math.max(420,Math.round(rect.height||600)),p={l:74,r:24,t:28,b:48};return {rect,w,h,p,plotWidth:w-p.l-p.r}}
 function localIndexFromX(x,plotWidth,p,count){if(count<=1)return 0;const ratio=Math.max(0,Math.min(1,(x-p.l)/plotWidth));return Math.max(0,Math.min(count-1,Math.round(ratio*(count-1))))}
-function applyZoom(start,end){const count=chartData?.dates?.length||0;if(count<2)return;const nextStart=Math.max(0,Math.min(start,end,count-1)),nextEnd=Math.max(0,Math.min(Math.max(start,end),count-1));if(nextEnd-nextStart<1)return;if(nextStart===0&&nextEnd===count-1)zoomRange=null;else zoomRange={start:nextStart,end:nextEnd};zoomDrag=null;hoveredPoint=null;updateZoomUi();draw()}
+function applyZoom(start,end){const count=chartData?.dates?.length||0;if(count<2)return;const nextStart=Math.max(0,Math.min(start,end,count-1)),nextEnd=Math.max(0,Math.min(Math.max(start,end),count-1));if(nextEnd-nextStart<1)return;if(nextStart===0&&nextEnd===count-1)zoomRange=null;else zoomRange={start:nextStart,end:nextEnd};zoomDrag=null;hoverIndex=null;hoveredPoint=null;updateZoomUi();draw()}
 function initializeSeries(){if(seriesInitialized)return;enabled.clear();defaultSeries.filter(key=>key in chartData.series).forEach(key=>enabled.add(key));seriesInitialized=true}
 async function init(){
   try{
@@ -148,6 +148,33 @@ function changeTablePage(direction){const type=document.querySelector('#tableDat
 async function loadChart(){const item=document.querySelector('#itemSelect').value;if(!item)return;const p=new URLSearchParams({item_code:item,mode:document.querySelector('#modeSelect').value});['startDate','endDate'].forEach(id=>{const v=document.querySelector('#'+id).value;if(v)p.set(id==='startDate'?'start_date':'end_date',v)});try{chartData=await api('/api/v1/comparison?'+p);resetZoom(false);initializeSeries();renderLegend();draw();loadCorrelations(item)}catch(e){console.error(e)}}
 function renderLegend(){document.querySelector('#legend').innerHTML=Object.keys(chartData.series).map((key,i)=>`<div class="chip ${enabled.has(key)?'':'off'}" data-key="${key}"><i class="swatch" style="background:${palette[i%palette.length]}"></i>${seriesLabel(key)}</div>`).join('');document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{enabled.has(c.dataset.key)?enabled.delete(c.dataset.key):enabled.add(c.dataset.key);renderLegend();draw()})}
 function axisDateLabel(value,dates){if(!dates?.length)return value;const first=new Date(dates[0]+'T00:00:00'),last=new Date(dates[dates.length-1]+'T00:00:00'),days=(last-first)/86400000;if(days>730)return value.slice(0,4);if(days>180)return value.slice(0,7);return value.slice(5)}
+
+function comparisonLines(index){
+  if(index==null||!chartData?.dates?.[index])return [];
+  const mode=chartData.mode;
+  return Object.entries(chartData.series)
+    .filter(([key])=>enabled.has(key))
+    .map(([key,values])=>{
+      const value=values[index];
+      if(value==null)return null;
+      const raw=chartData.raw_series?.[key]?.[index];
+      let shown=mode==='raw'?fmt(value):mode==='base100'?fmt(value):fmt(value)+'%';
+      if(mode!=='raw'&&raw!=null)shown+=' · 원값 '+fmt(raw);
+      return seriesLabel(key)+'  '+shown;
+    })
+    .filter(Boolean);
+}
+function showComparisonTooltip(index,canvasX,canvasY){
+  if(index==null||!chartData?.dates?.[index])return;
+  const tooltip=document.querySelector('#chartTooltip'),canvas=document.querySelector('#comparisonChart'),wrap=canvas.parentElement,lines=comparisonLines(index);
+  document.querySelector('#chartTooltipDate').textContent=chartData.dates[index];
+  document.querySelector('#chartTooltipLabel').textContent=pinnedIndex===index?'고정 비교':'동일 날짜 비교';
+  document.querySelector('#chartTooltipValue').textContent=lines.length?lines.join('\n'):'활성 시계열의 값이 없습니다.';
+  tooltip.classList.add('visible');
+  const left=Math.max(8,Math.min(wrap.clientWidth-tooltip.offsetWidth-8,canvas.offsetLeft+canvasX+14));
+  const top=Math.max(8,Math.min(wrap.clientHeight-tooltip.offsetHeight-8,canvas.offsetTop+canvasY-tooltip.offsetHeight-12));
+  tooltip.style.left=left+'px';tooltip.style.top=top+'px';
+}
 function draw(){
   if(!chartData)return;
   const canvas=document.querySelector('#comparisonChart'),dpr=devicePixelRatio||1,geometry=chartPlotGeometry(canvas),w=geometry.w,h=geometry.h,p=geometry.p,bounds=getZoomBounds(),dates=visibleDates();
@@ -162,90 +189,82 @@ function draw(){
   const yTicks=7;
   for(let i=0;i<yTicks;i++){const ratio=i/(yTicks-1),yy=p.t+(h-p.t-p.b)*ratio;ctx.beginPath();ctx.moveTo(p.l,yy);ctx.lineTo(w-p.r,yy);ctx.stroke();ctx.textAlign='right';ctx.fillText(fmt(max-(max-min)*ratio),p.l-10,yy+4)}
   active.forEach(([key,values])=>{const color=palette[Object.keys(chartData.series).indexOf(key)%palette.length];ctx.strokeStyle=color;ctx.lineWidth=2;ctx.beginPath();let open=false;values.forEach((value,index)=>{if(value==null)return;open?ctx.lineTo(x(index),y(value)):ctx.moveTo(x(index),y(value));open=true});ctx.stroke();values.forEach((value,index)=>{if(value==null)return;const hasPrevious=index>0&&values[index-1]!=null,hasNext=index<values.length-1&&values[index+1]!=null;if(hasPrevious||hasNext)return;ctx.fillStyle=color;ctx.beginPath();ctx.arc(x(index),y(value),3.5,0,Math.PI*2);ctx.fill()})});
-  if(hoveredPoint&&enabled.has(hoveredPoint.key)&&hoveredPoint.index>=bounds.start&&hoveredPoint.index<=bounds.end){const value=chartData.series[hoveredPoint.key]?.[hoveredPoint.index];if(value!=null){const localIndex=hoveredPoint.index-bounds.start;ctx.fillStyle=hoveredPoint.color;ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x(localIndex),y(value),6,0,Math.PI*2);ctx.fill();ctx.stroke()}}
-  if(pinnedIndex!=null&&pinnedIndex>=bounds.start&&pinnedIndex<=bounds.end){
-    const localIndex=pinnedIndex-bounds.start,xx=x(localIndex),dateLabel=chartData.dates[pinnedIndex];
+  const crosshairIndex=pinnedIndex!=null?pinnedIndex:hoverIndex;
+  if(crosshairIndex!=null&&crosshairIndex>=bounds.start&&crosshairIndex<=bounds.end){
+    const localIndex=crosshairIndex-bounds.start,xx=x(localIndex),dateLabel=chartData.dates[crosshairIndex],isPinned=pinnedIndex===crosshairIndex;
     ctx.save();
-    ctx.strokeStyle='rgba(32,45,41,.72)';
-    ctx.lineWidth=1.5;
-    ctx.setLineDash([5,4]);
+    ctx.strokeStyle=isPinned?'rgba(32,45,41,.78)':'rgba(32,45,41,.34)';
+    ctx.lineWidth=isPinned?1.6:1;
+    ctx.setLineDash(isPinned?[5,4]:[3,4]);
     ctx.beginPath();ctx.moveTo(xx,p.t);ctx.lineTo(xx,h-p.b);ctx.stroke();
     ctx.setLineDash([]);
     Object.entries(chartData.series).forEach(([key,values])=>{
       if(!enabled.has(key))return;
-      const value=values[pinnedIndex];
+      const value=values[crosshairIndex];
       if(value==null)return;
       const color=palette[Object.keys(chartData.series).indexOf(key)%palette.length];
-      ctx.fillStyle=color;ctx.strokeStyle='#fff';ctx.lineWidth=2;
-      ctx.beginPath();ctx.arc(xx,y(value),5,0,Math.PI*2);ctx.fill();ctx.stroke();
+      ctx.fillStyle=color;ctx.strokeStyle='#fff';ctx.lineWidth=isPinned?2:1.5;
+      ctx.beginPath();ctx.arc(xx,y(value),isPinned?5:4,0,Math.PI*2);ctx.fill();ctx.stroke();
     });
-    ctx.font='700 11px sans-serif';
-    const labelWidth=Math.max(78,ctx.measureText(dateLabel).width+16);
-    const labelX=Math.max(p.l,Math.min(w-p.r-labelWidth,xx-labelWidth/2));
-    ctx.fillStyle='rgba(32,45,41,.92)';
-    ctx.fillRect(labelX,p.t+4,labelWidth,24);
-    ctx.fillStyle='#fff';ctx.textAlign='center';
-    ctx.fillText(dateLabel,labelX+labelWidth/2,p.t+20);
+    if(isPinned){
+      ctx.font='700 11px sans-serif';
+      const labelWidth=Math.max(78,ctx.measureText(dateLabel).width+16);
+      const labelX=Math.max(p.l,Math.min(w-p.r-labelWidth,xx-labelWidth/2));
+      ctx.fillStyle='rgba(32,45,41,.92)';
+      ctx.fillRect(labelX,p.t+4,labelWidth,24);
+      ctx.fillStyle='#fff';ctx.textAlign='center';
+      ctx.fillText(dateLabel,labelX+labelWidth/2,p.t+20);
+    }
     ctx.restore();
   }
   ctx.fillStyle='#6e7d77';ctx.textAlign='center';const step=Math.max(1,Math.ceil(dates.length/6));dates.forEach((dateValue,index)=>{if(index%step===0||index===dates.length-1)ctx.fillText(axisDateLabel(dateValue,dates),x(index),h-15)});
-  if(zoomDrag){const left=Math.max(p.l,Math.min(zoomDrag.startX,zoomDrag.currentX)),right=Math.min(w-p.r,Math.max(zoomDrag.startX,zoomDrag.currentX));ctx.save();ctx.fillStyle='rgba(12,107,79,.12)';ctx.strokeStyle='rgba(12,107,79,.65)';ctx.lineWidth=1;ctx.fillRect(left,p.t,Math.max(0,right-left),h-p.t-p.b);ctx.strokeRect(left,p.t,Math.max(0,right-left),h-p.t-p.b);ctx.restore()}
+  if(zoomDrag?.dragging){const left=Math.max(p.l,Math.min(zoomDrag.startX,zoomDrag.currentX)),right=Math.min(w-p.r,Math.max(zoomDrag.startX,zoomDrag.currentX));ctx.save();ctx.fillStyle='rgba(12,107,79,.12)';ctx.strokeStyle='rgba(12,107,79,.65)';ctx.lineWidth=1;ctx.fillRect(left,p.t,Math.max(0,right-left),h-p.t-p.b);ctx.strokeRect(left,p.t,Math.max(0,right-left),h-p.t-p.b);ctx.restore()}
   updateZoomUi();
 }
-function hideChartTooltip(){const tooltip=document.querySelector('#chartTooltip');tooltip.classList.remove('visible');if(hoveredPoint){hoveredPoint=null;if(chartData)draw()}}
+function hideChartTooltip(clearHover=true){
+  const tooltip=document.querySelector('#chartTooltip');
+  tooltip.classList.remove('visible');
+  if(clearHover&&hoverIndex!=null){hoverIndex=null;if(chartData)draw()}
+}
 function hoverChart(event){
   if(!chartData?.dates.length||zoomDrag||panDrag)return;
   const canvas=event.currentTarget,geometry=chartPlotGeometry(canvas),rect=geometry.rect,w=geometry.w,h=geometry.h,p=geometry.p,plotWidth=geometry.plotWidth,mx=event.clientX-rect.left,my=event.clientY-rect.top,bounds=getZoomBounds(),dates=visibleDates();
-  if(mx<p.l||mx>w-p.r||my<p.t||my>h-p.b){hideChartTooltip();return}
-  const active=Object.entries(chartData.series).filter(([key])=>enabled.has(key)).map(([key,values])=>[key,values.slice(bounds.start,bounds.end+1)]);
-  const vals=active.flatMap(([,values])=>values.filter(value=>value!=null));if(!vals.length)return;
-  let min=Math.min(...vals),max=Math.max(...vals);if(min===max){min-=1;max+=1}
-  const localIndex=localIndexFromX(mx,plotWidth,p,dates.length),absoluteIndex=bounds.start+localIndex,pointX=p.l+plotWidth*(localIndex/Math.max(1,dates.length-1)),pointY=value=>p.t+(h-p.t-p.b)*(1-(value-min)/(max-min));
-  const candidates=active.filter(([,values])=>values[localIndex]!=null).map(([key,values])=>({key,index:absoluteIndex,value:values[localIndex],x:pointX,y:pointY(values[localIndex]),color:palette[Object.keys(chartData.series).indexOf(key)%palette.length]})).sort((a,b)=>Math.abs(a.y-my)-Math.abs(b.y-my));
-  const point=candidates[0];if(!point||Math.abs(point.y-my)>20){hideChartTooltip();return}
-  hoveredPoint=point;draw();
-  const tooltip=document.querySelector('#chartTooltip'),wrap=canvas.parentElement,rawValue=chartData.raw_series?.[point.key]?.[absoluteIndex],mode=chartData.mode;
-  document.querySelector('#chartTooltipDate').textContent=chartData.dates[absoluteIndex];document.querySelector('#chartTooltipLabel').textContent=seriesLabel(point.key);
-  const displayValue=mode==='base100'?'시작값 지수 '+fmt(point.value):mode==='raw'?'실제값 '+fmt(point.value):'변화율 '+fmt(point.value)+'%',rawText=mode!=='raw'&&rawValue!=null?'\n실제값 '+fmt(rawValue):'';
-  document.querySelector('#chartTooltipValue').textContent=displayValue+rawText;tooltip.classList.add('visible');
-  const left=Math.max(8,Math.min(wrap.clientWidth-tooltip.offsetWidth-8,canvas.offsetLeft+point.x+14)),top=Math.max(8,Math.min(wrap.clientHeight-tooltip.offsetHeight-8,canvas.offsetTop+point.y-tooltip.offsetHeight-12));tooltip.style.left=left+'px';tooltip.style.top=top+'px';
+  if(mx<p.l||mx>w-p.r||my<p.t||my>h-p.b){hideChartTooltip(true);return}
+  const localIndex=localIndexFromX(mx,plotWidth,p,dates.length),absoluteIndex=bounds.start+localIndex;
+  hoverIndex=absoluteIndex;
+  draw();
+  showComparisonTooltip(pinnedIndex!=null?pinnedIndex:absoluteIndex,p.l+plotWidth*(localIndex/Math.max(1,dates.length-1)),my);
 }
+
 function startChartZoom(event){
   if(!chartData?.dates?.length)return;
-  const canvas=event.currentTarget,geometry=chartPlotGeometry(canvas),rect=geometry.rect,w=geometry.w,p=geometry.p,x=event.clientX-rect.left;
-  if(x<p.l||x>w-p.r)return;
-  if(event.button===0&&(event.ctrlKey||event.metaKey)){
-    event.preventDefault();
-    hideChartTooltip();
-    const bounds=getZoomBounds(),dates=visibleDates(),localIndex=localIndexFromX(x,geometry.plotWidth,p,dates.length);
-    pinnedIndex=bounds.start+localIndex;
-    zoomDrag=null;
-    draw();
-    return;
-  }
+  const canvas=event.currentTarget,geometry=chartPlotGeometry(canvas),rect=geometry.rect,w=geometry.w,h=geometry.h,p=geometry.p,x=event.clientX-rect.left,y=event.clientY-rect.top;
+  const insidePlot=x>=p.l&&x<=w-p.r&&y>=p.t&&y<=h-p.b;
   if(event.button===1){
-    if(!zoomRange)return;
+    if(!zoomRange||!insidePlot)return;
     event.preventDefault();
-    hideChartTooltip();
+    hideChartTooltip(false);
     const bounds=getZoomBounds();
-    panDrag={
-      startX:x,
-      initialStart:bounds.start,
-      initialEnd:bounds.end
-    };
+    panDrag={startX:x,initialStart:bounds.start,initialEnd:bounds.end};
     canvas.classList.add('panning');
     canvas.setPointerCapture?.(event.pointerId);
     return;
   }
   if(event.button!==0)return;
-  if(pinnedIndex!=null){
-    pinnedIndex=null;
-    draw();
+  if(!insidePlot){
+    if(pinnedIndex!=null){pinnedIndex=null;hoverIndex=null;hideChartTooltip(false);draw()}
+    return;
   }
-  hideChartTooltip();
-  zoomDrag={startX:x,currentX:x};
+  const bounds=getZoomBounds(),dates=visibleDates(),localIndex=localIndexFromX(x,geometry.plotWidth,p,dates.length);
+  zoomDrag={
+    startX:x,
+    currentX:x,
+    startY:y,
+    currentY:y,
+    dragging:false,
+    clickIndex:bounds.start+localIndex
+  };
   canvas.setPointerCapture?.(event.pointerId);
-  draw();
 }
 function moveChartZoom(event){
   const canvas=event.currentTarget;
@@ -258,37 +277,53 @@ function moveChartZoom(event){
     const maxStart=Math.max(0,total-visibleCount);
     const nextStart=Math.max(0,Math.min(maxStart,panDrag.initialStart+indexShift));
     zoomRange={start:nextStart,end:nextStart+visibleCount-1};
-    hoveredPoint=null;
-    updateZoomUi();
-    draw();
+    hoverIndex=null;hoveredPoint=null;
+    updateZoomUi();draw();return;
+  }
+  if(zoomDrag){
+    const geometry=chartPlotGeometry(canvas),rect=geometry.rect,w=geometry.w,p=geometry.p;
+    zoomDrag.currentX=Math.max(p.l,Math.min(w-p.r,event.clientX-rect.left));
+    zoomDrag.currentY=event.clientY-rect.top;
+    const distance=Math.hypot(zoomDrag.currentX-zoomDrag.startX,zoomDrag.currentY-zoomDrag.startY);
+    if(!zoomDrag.dragging&&distance>=8){
+      zoomDrag.dragging=true;
+      pinnedIndex=null;hoverIndex=null;
+      hideChartTooltip(false);
+    }
+    if(zoomDrag.dragging)draw();
     return;
   }
-  if(!zoomDrag){hoverChart(event);return}
-  const geometry=chartPlotGeometry(canvas),rect=geometry.rect,w=geometry.w,p=geometry.p;
-  zoomDrag.currentX=Math.max(p.l,Math.min(w-p.r,event.clientX-rect.left));
-  draw();
+  hoverChart(event);
 }
 function endChartZoom(event){
   const canvas=event.currentTarget;
   if(panDrag){
     event.preventDefault();
-    panDrag=null;
-    canvas.classList.remove('panning');
-    canvas.releasePointerCapture?.(event.pointerId);
-    updateZoomUi();
-    draw();
-    return;
+    panDrag=null;canvas.classList.remove('panning');canvas.releasePointerCapture?.(event.pointerId);
+    updateZoomUi();draw();return;
   }
   if(!zoomDrag)return;
-  const geometry=chartPlotGeometry(canvas),plotWidth=geometry.plotWidth,p=geometry.p,bounds=getZoomBounds(),dates=visibleDates(),distance=Math.abs(zoomDrag.currentX-zoomDrag.startX);
-  if(distance<12){zoomDrag=null;canvas.releasePointerCapture?.(event.pointerId);draw();return}
-  const first=localIndexFromX(Math.min(zoomDrag.startX,zoomDrag.currentX),plotWidth,p,dates.length),last=localIndexFromX(Math.max(zoomDrag.startX,zoomDrag.currentX),plotWidth,p,dates.length);
-  applyZoom(bounds.start+first,bounds.start+last);
+  const intent=zoomDrag;
+  zoomDrag=null;
   canvas.releasePointerCapture?.(event.pointerId);
+  if(intent.dragging){
+    const geometry=chartPlotGeometry(canvas),plotWidth=geometry.plotWidth,p=geometry.p,bounds=getZoomBounds(),dates=visibleDates();
+    const first=localIndexFromX(Math.min(intent.startX,intent.currentX),plotWidth,p,dates.length),last=localIndexFromX(Math.max(intent.startX,intent.currentX),plotWidth,p,dates.length);
+    applyZoom(bounds.start+first,bounds.start+last);
+    return;
+  }
+  const nextIndex=intent.clickIndex;
+  pinnedIndex=pinnedIndex===nextIndex?null:nextIndex;
+  hoverIndex=pinnedIndex==null?nextIndex:null;
+  draw();
+  const geometry=chartPlotGeometry(canvas),bounds=getZoomBounds(),localIndex=nextIndex-bounds.start,pointX=geometry.p.l+geometry.plotWidth*(localIndex/Math.max(1,visibleDates().length-1));
+  if(pinnedIndex!=null)showComparisonTooltip(pinnedIndex,pointX,intent.startY);
+  else hideChartTooltip(false);
 }
+
 function wheelChartZoom(event){if(!chartData?.dates?.length)return;event.preventDefault();const canvas=event.currentTarget,geometry=chartPlotGeometry(canvas),rect=geometry.rect,plotWidth=geometry.plotWidth,p=geometry.p,bounds=getZoomBounds(),visibleCount=bounds.end-bounds.start+1,total=chartData.dates.length;if(total<3)return;const cursorX=event.clientX-rect.left,centerLocal=localIndexFromX(cursorX,plotWidth,p,visibleCount),center=bounds.start+centerLocal,factor=event.deltaY<0?.75:1.35,nextCount=Math.max(3,Math.min(total,Math.round(visibleCount*factor)));if(nextCount>=total){resetZoom();return}const ratio=visibleCount<=1?.5:centerLocal/Math.max(1,visibleCount-1);let start=Math.round(center-ratio*(nextCount-1)),end=start+nextCount-1;if(start<0){end-=start;start=0}if(end>=total){start-=end-(total-1);end=total-1}applyZoom(start,end)}
 
 async function loadCorrelations(item){try{const p=new URLSearchParams({item_code:item,mode:'return_1d'}),start=document.querySelector('#startDate').value,end=document.querySelector('#endDate').value;if(start)p.set('start_date',start);if(end)p.set('end_date',end);const rows=await api('/api/v1/correlations?'+p);document.querySelector('#correlations').innerHTML=rows.filter(x=>x.pearson!=null).sort((a,b)=>Math.abs(b.pearson)-Math.abs(a.pearson)).slice(0,12).map(x=>`<div class="corr"><span>${seriesLabel(x.comparison_series)}<small style="display:block;color:#84908b">n=${x.observations}</small></span><div class="bar"><i style="width:${Math.abs(x.pearson)*100}%"></i></div><b>${x.pearson.toFixed(2)}</b></div>`).join('')||'<div class="empty">분석에 필요한 공통 관측치가 부족합니다.</div>'}catch(e){document.querySelector('#correlations').innerHTML='<div class="empty">상관관계 데이터를 불러올 수 없습니다.</div>'}}
-document.querySelector('#refresh').onclick=loadChart;document.querySelector('#periodPreset').onchange=event=>applyPeriodPreset(event.target.value);document.querySelector('#startDate').onchange=markCustomPeriod;document.querySelector('#endDate').onchange=markCustomPeriod;document.querySelector('#itemSearch').oninput=handleItemSearchInput;document.querySelector('#itemSearch').onfocus=openItemDropdown;document.querySelector('#itemSearch').onclick=openItemDropdown;document.querySelector('#itemSearch').onkeydown=handleItemSearchKeydown;document.querySelector('#tableSearch').oninput=()=>renderTable();document.querySelector('#categoryFilter').onchange=()=>renderTable(true);document.querySelector('#tableDataset').onchange=()=>renderTable(true);document.querySelector('#tablePrev').onclick=()=>changeTablePage(-1);document.querySelector('#tableNext').onclick=()=>changeTablePage(1);const comparisonCanvas=document.querySelector('#comparisonChart');comparisonCanvas.onpointerdown=startChartZoom;comparisonCanvas.onpointermove=moveChartZoom;comparisonCanvas.onpointerup=endChartZoom;comparisonCanvas.onpointercancel=()=>{zoomDrag=null;panDrag=null;comparisonCanvas.classList.remove('panning');draw()};comparisonCanvas.onmouseleave=()=>{if(!zoomDrag&&!panDrag)hideChartTooltip()};comparisonCanvas.onwheel=wheelChartZoom;comparisonCanvas.onauxclick=event=>{if(event.button===1)event.preventDefault()};comparisonCanvas.ondblclick=()=>resetZoom();document.querySelector('#chartZoomReset').onclick=()=>resetZoom();document.addEventListener('keydown',event=>{if(event.key==='Escape'&&pinnedIndex!=null){pinnedIndex=null;draw()}});document.addEventListener('pointerdown',event=>{if(!event.target.closest('.item-picker'))closeItemDropdown()});window.addEventListener('resize',()=>{hideChartTooltip();chartData&&draw()});init();
+document.querySelector('#refresh').onclick=loadChart;document.querySelector('#periodPreset').onchange=event=>applyPeriodPreset(event.target.value);document.querySelector('#startDate').onchange=markCustomPeriod;document.querySelector('#endDate').onchange=markCustomPeriod;document.querySelector('#itemSearch').oninput=handleItemSearchInput;document.querySelector('#itemSearch').onfocus=openItemDropdown;document.querySelector('#itemSearch').onclick=openItemDropdown;document.querySelector('#itemSearch').onkeydown=handleItemSearchKeydown;document.querySelector('#tableSearch').oninput=()=>renderTable();document.querySelector('#categoryFilter').onchange=()=>renderTable(true);document.querySelector('#tableDataset').onchange=()=>renderTable(true);document.querySelector('#tablePrev').onclick=()=>changeTablePage(-1);document.querySelector('#tableNext').onclick=()=>changeTablePage(1);const comparisonCanvas=document.querySelector('#comparisonChart');comparisonCanvas.onpointerdown=startChartZoom;comparisonCanvas.onpointermove=moveChartZoom;comparisonCanvas.onpointerup=endChartZoom;comparisonCanvas.onpointercancel=()=>{zoomDrag=null;panDrag=null;hoverIndex=null;comparisonCanvas.classList.remove('panning');hideChartTooltip(false);draw()};comparisonCanvas.onmouseleave=()=>{if(!zoomDrag&&!panDrag){hideChartTooltip(true);}};comparisonCanvas.onwheel=wheelChartZoom;comparisonCanvas.onauxclick=event=>{if(event.button===1)event.preventDefault()};comparisonCanvas.ondblclick=()=>resetZoom();document.querySelector('#chartZoomReset').onclick=()=>resetZoom();document.addEventListener('keydown',event=>{if(event.key==='Escape'&&(pinnedIndex!=null||hoverIndex!=null)){pinnedIndex=null;hoverIndex=null;hideChartTooltip(false);draw()}});document.addEventListener('pointerdown',event=>{if(!event.target.closest('.item-picker'))closeItemDropdown()});window.addEventListener('resize',()=>{hideChartTooltip();chartData&&draw()});init();
   </script>
 </body></html>
