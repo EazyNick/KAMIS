@@ -141,6 +141,36 @@ def test_price_repository_can_select_only_original_kamis_prices(
     assert repository.item_date_stats(requested_convert_kg=False)["111"][2] == 1
 
 
+def test_preferred_kind_stats_chooses_kind_with_actual_average_coverage(
+    tmp_path: Path,
+) -> None:
+    repository = PriceRepository(tmp_path, app_logger)
+    base = replace(
+        price_row(),
+        item_code="152",
+        item_name="감자",
+        region="평균",
+        market_name=None,
+    )
+    repository.upsert(
+        [
+            replace(base, kind_code="00", observed_date=date(2026, 1, 3)),
+            replace(base, kind_code="01", observed_date=date(2024, 1, 3)),
+            replace(base, kind_code="01", observed_date=date(2025, 1, 3)),
+            replace(base, kind_code="01", observed_date=date(2026, 1, 3)),
+        ],
+        "seed",
+    )
+
+    stats = repository.preferred_kind_stats(
+        requested_convert_kg=False,
+        region="평균",
+    )
+
+    assert stats["152"][0] == "01"
+    assert stats["152"][3] == 3
+
+
 def test_compaction_keeps_only_official_average_raw_rows(
     tmp_path: Path,
 ) -> None:
