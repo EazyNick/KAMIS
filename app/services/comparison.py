@@ -151,23 +151,45 @@ class ComparisonService:
         self._analytics = analytics
         self._catalog = catalog_repository
         self.comparison_kinds: dict[str, str] = {}
-        if catalog_repository is not None:
-            for entry in catalog_repository.entries():
-                data = entry.to_dict() if hasattr(entry, "to_dict") else {}
-                item_code = getattr(entry, "item_code", None) or data.get("item_code")
-                kind_code = getattr(entry, "kind_code", None) or data.get("kind_code")
-                wholesale_ranks = getattr(
-                    entry, "wholesale_rank_codes", None
-                ) or data.get("wholesale_rank_codes")
-                retail_ranks = getattr(
-                    entry, "retail_rank_codes", None
-                ) or data.get("retail_rank_codes")
-                if not item_code or not kind_code or not (
-                    wholesale_ranks or retail_ranks
-                ):
-                    continue
-                self.comparison_kinds.setdefault(str(item_code), str(kind_code))
+        self.kamis_units: dict[str, dict[str, str]] = {}
+        entries = catalog_repository.entries() if catalog_repository is not None else []
+        for entry in entries:
+            data = entry.to_dict() if hasattr(entry, "to_dict") else {}
+            item_code = getattr(entry, "item_code", None) or data.get("item_code")
+            kind_code = getattr(entry, "kind_code", None) or data.get("kind_code")
+            wholesale_ranks = getattr(
+                entry, "wholesale_rank_codes", None
+            ) or data.get("wholesale_rank_codes")
+            retail_ranks = getattr(
+                entry, "retail_rank_codes", None
+            ) or data.get("retail_rank_codes")
+            if not item_code or not kind_code or not (
+                wholesale_ranks or retail_ranks
+            ):
+                continue
+            self.comparison_kinds.setdefault(str(item_code), str(kind_code))
         self.comparison_kinds.update(dict(sorted(target_keys)))
+
+        for entry in entries:
+            item_code = str(getattr(entry, "item_code", ""))
+            kind_code = str(getattr(entry, "kind_code", ""))
+            if not item_code or self.comparison_kinds.get(item_code) != kind_code:
+                continue
+
+            def unit_text(prefix: str) -> str | None:
+                unit = getattr(entry, f"{prefix}_unit", None)
+                size = getattr(entry, f"{prefix}_unit_size", None)
+                if not unit:
+                    return None
+                return f"{size or ''}{unit}"
+
+            units: dict[str, str] = {}
+            if wholesale := unit_text("wholesale"):
+                units["kamis_wholesale"] = wholesale
+            if retail := unit_text("retail"):
+                units["kamis_retail"] = retail
+            if units:
+                self.kamis_units[item_code] = units
 
     def build_frame(
         self,
@@ -251,7 +273,27 @@ class ComparisonService:
             item_code, mode, frame, self.core_series, raw_frame=raw_frame
         )
         result["comparison_kinds"] = self.comparison_kinds
+        unit_map = self.kamis_units.get(item_code, {})
+        result["series_labels"] = {
+            key: (
+                f"KAMIS 도매 ({unit_map[key]})"
+                if key == "kamis_wholesale"
+                else f"KAMIS 소매 ({unit_map[key]})"
+            )
+            for key in ("kamis_wholesale", "kamis_retail")
+            if key in unit_map
+        }
         result["comparison_notes"] = raw_frame.attrs.get("comparison_notes", [])
+        if unit_map:
+            unit_parts = []
+            if "kamis_wholesale" in unit_map:
+                unit_parts.append(f"도매 {unit_map['kamis_wholesale']}")
+            if "kamis_retail" in unit_map:
+                unit_parts.append(f"소매 {unit_map['kamis_retail']}")
+            result["comparison_notes"].append(
+                "KAMIS 원 조사단위: " + ", ".join(unit_parts)
+                + ". 도매와 소매의 조사 단위가 다르면 절대가격 크기를 직접 비교하면 안 됩니다."
+            )
         coverage = raw_frame.attrs["kamis_observed_coverage"]
         for key, label in (("kamis_wholesale", "도매"), ("kamis_retail", "소매")):
             first = coverage[key]["first_date"]
