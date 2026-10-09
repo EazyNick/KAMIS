@@ -9,7 +9,7 @@ Run:
 
 It separates legacy kg-converted rows (requested_convert_kg=True) from the
 original KAMIS survey-unit rows (requested_convert_kg=False), then prints the
-same daily wholesale/retail mean used by ComparisonService.
+official KAMIS region=평균 rows used by ComparisonService.
 """
 
 from __future__ import annotations
@@ -84,7 +84,7 @@ def main(argv: list[str] | None = None) -> int:
 
     def summarize(label: str, rows: list[dict[str, str]]) -> None:
         groups: dict[tuple[str, str], list[Decimal]] = defaultdict(list)
-        by_date: dict[tuple[str, str], list[Decimal]] = defaultdict(list)
+        official: dict[tuple[str, str, str], Decimal] = {}
         for row in rows:
             try:
                 price = Decimal(str(row.get("price_krw", "")).replace(",", ""))
@@ -94,7 +94,8 @@ def main(argv: list[str] | None = None) -> int:
             rank = str(row.get("rank_code", ""))
             observed = str(row.get("observed_date", ""))
             groups[(price_type, rank)].append(price)
-            by_date[(observed, price_type)].append(price)
+            if row.get("region") == "평균":
+                official[(observed, price_type, rank)] = price
 
         print(f"\n[{label}]")
         if not rows:
@@ -108,22 +109,29 @@ def main(argv: list[str] | None = None) -> int:
                 f"min={min(values):.2f} max={max(values):.2f}"
             )
 
-        print("  [DASHBOARD EQUIVALENT: daily mean]")
-        daily_means: dict[str, list[Decimal]] = defaultdict(list)
-        for (observed, price_type), values in sorted(by_date.items()):
-            daily_mean = sum(values) / len(values)
-            daily_means[price_type].append(daily_mean)
+        print("  [DASHBOARD EQUIVALENT: KAMIS official average]")
+        available_ranks: dict[str, set[str]] = defaultdict(set)
+        for _, price_type, rank in official:
+            available_ranks[price_type].add(rank)
+        selected = {
+            price_type: ("04" if "04" in ranks else sorted(ranks)[0])
+            for price_type, ranks in available_ranks.items()
+            if ranks
+        }
+        values_by_type: dict[str, list[Decimal]] = defaultdict(list)
+        for (observed, price_type, rank), price in sorted(official.items()):
+            if selected.get(price_type) != rank:
+                continue
+            values_by_type[price_type].append(price)
             if args.date is not None:
                 print(
                     f"    {observed} {price_type:9s} "
-                    f"mean={daily_mean:.2f} rows={len(values)}"
+                    f"rank={rank} official_average={price:.2f}"
                 )
-        for price_type, values in sorted(daily_means.items()):
-            overall_daily_mean = sum(values) / len(values)
+        for price_type, values in sorted(values_by_type.items()):
             print(
-                f"    {price_type:9s} "
-                f"mean_of_daily_means={overall_daily_mean:.2f} "
-                f"days={len(values):,}"
+                f"    {price_type:9s} rank={selected[price_type]} "
+                f"mean={sum(values)/len(values):.2f} days={len(values):,}"
             )
 
     summarize("RAW p_convert_kg_yn=N", raw_rows)
