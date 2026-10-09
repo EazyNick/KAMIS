@@ -153,6 +153,7 @@ class ComparisonService:
         self.comparison_kinds: dict[str, str] = {}
         self.kamis_units: dict[str, dict[str, str]] = {}
         entries = catalog_repository.entries() if catalog_repository is not None else []
+        self._catalog_entries = entries
         for entry in entries:
             data = entry.to_dict() if hasattr(entry, "to_dict") else {}
             item_code = getattr(entry, "item_code", None) or data.get("item_code")
@@ -191,12 +192,45 @@ class ComparisonService:
             if units:
                 self.kamis_units[item_code] = units
 
+    def _refresh_comparison_kinds(self) -> None:
+        stats_reader = getattr(self._prices, "preferred_kind_stats", None)
+        if not callable(stats_reader):
+            return
+        stored = stats_reader(requested_convert_kg=False, region="평균")
+        if not stored:
+            return
+        for item_code, (kind_code, _first, _last, _count) in stored.items():
+            self.comparison_kinds[str(item_code)] = str(kind_code)
+
+        self.kamis_units = {}
+        for entry in self._catalog_entries:
+            item_code = str(getattr(entry, "item_code", ""))
+            kind_code = str(getattr(entry, "kind_code", ""))
+            if not item_code or self.comparison_kinds.get(item_code) != kind_code:
+                continue
+
+            def unit_text(prefix: str) -> str | None:
+                unit = getattr(entry, f"{prefix}_unit", None)
+                size = getattr(entry, f"{prefix}_unit_size", None)
+                if not unit:
+                    return None
+                return f"{size or ''}{unit}"
+
+            units: dict[str, str] = {}
+            if wholesale := unit_text("wholesale"):
+                units["kamis_wholesale"] = wholesale
+            if retail := unit_text("retail"):
+                units["kamis_retail"] = retail
+            if units:
+                self.kamis_units[item_code] = units
+
     def build_frame(
         self,
         item_code: str,
         start_date: date | None,
         end_date: date | None,
     ) -> pd.DataFrame:
+        self._refresh_comparison_kinds()
         price_rows = self._prices.search(
             PriceFilters(
                 item_code=item_code,
@@ -352,6 +386,7 @@ class ComparisonService:
         return result
 
     def dashboard_defaults(self) -> dict[str, str | None]:
+        self._refresh_comparison_kinds()
         item_stats: dict[str, tuple[date, date, int]] = {}
         stats_reader = getattr(self._prices, "item_date_stats", None)
         if callable(stats_reader):
