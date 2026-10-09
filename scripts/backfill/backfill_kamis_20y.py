@@ -222,7 +222,7 @@ def run_backfill(
     total_rows = 0
     failed_queries: list[str] = []
 
-    for year in range(first_year, last_year + 1):
+    for year in range(last_year, first_year - 1, -1):
         period_start = date(year, 1, 1)
         period_end = min(date(year, 12, 31), today)
         year_rows = []
