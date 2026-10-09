@@ -13,28 +13,19 @@ if __package__ in {None, ""}:
 Prices are requested with p_convert_kg_yn=N and stored without kg/count/package
 conversion. The dashboard uses only these raw-survey rows.
 
+The same checkpoint is used by this CLI and main.py startup. Completed
+item/kind/type/rank/year queries are skipped on later runs, so startup requests
+only history that has not yet been verified in raw-price mode.
+
 Run from the repository root:
     python scripts/backfill/backfill_kamis_20y.py
-
-Optional:
-    python scripts/backfill/backfill_kamis_20y.py --all-catalog
-    python scripts/backfill/backfill_kamis_20y.py --force
-    python scripts/backfill/backfill_kamis_20y.py --start-year 2006
-
-Required .env:
-    KAMIS_CERT_KEY=...
-    KAMIS_CERT_ID=...
-
-Output:
-    data/normalized/kamis_prices.csv
-    data/backfill/kamis_20y_raw_checkpoint.json
 """
 
 import argparse
 import json
 import os
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from uuid import uuid4
@@ -47,9 +38,16 @@ from config.server_config import Settings
 from log import app_logger
 
 
+@dataclass(frozen=True, slots=True)
+class BackfillResult:
+    fetched_rows: int
+    completed_queries: int
+    failed_queries: tuple[str, ...]
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Backfill KAMIS wholesale/retail prices for about 20 years."
+        description="Backfill KAMIS wholesale/retail original-unit prices."
     )
     parser.add_argument(
         "--all-catalog",
@@ -59,7 +57,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--force",
         action="store_true",
-        help="Ignore the checkpoint and query the full period again.",
+        help="Ignore the raw-price checkpoint and query the full period again.",
     )
     parser.add_argument(
         "--start-year",
@@ -140,74 +138,76 @@ def query_key(
     )
 
 
-def main() -> int:
-    args = parse_args()
-    settings = Settings.from_env()
+def run_backfill(
+    settings: Settings,
+    *,
+    start_year: int | None = None,
+    end_year: int | None = None,
+    category_code: str | None = None,
+    force: bool = False,
+    workers: int = 4,
+    chunk_days: int = 31,
+) -> BackfillResult:
+    """Fill unverified raw KAMIS history and persist progress after each year."""
     settings.require_kamis_credentials()
+    if not 1 <= workers <= 4:
+        raise ValueError("workers must be between 1 and 4")
+    if not 1 <= chunk_days <= 366:
+        raise ValueError("chunk_days must be between 1 and 366")
 
     prices = PriceRepository(settings.data_dir, app_logger)
     catalog_repository = CatalogRepository(settings.data_dir, app_logger)
     client = KamisClient(settings, build_requests_session(), app_logger)
 
     today = datetime.now(ZoneInfo(settings.timezone)).date()
-    start_year = args.start_year or (today.year - 20)
-    end_year = min(args.end_year or today.year, today.year)
+    first_year = start_year or (today.year - 20)
+    last_year = min(end_year or today.year, today.year)
     checkpoint_name = (
-        f"kamis_20y_raw_category_{args.category_code}.json"
-        if args.category_code
+        f"kamis_20y_raw_category_{category_code}.json"
+        if category_code
         else "kamis_20y_raw_checkpoint.json"
     )
     checkpoint_path = settings.data_dir / "backfill" / checkpoint_name
-    completed_queries = set() if args.force else load_checkpoint(checkpoint_path)
+    completed_queries = set() if force else load_checkpoint(checkpoint_path)
 
-    print("[CATALOG] fetching KAMIS productInfo")
+    app_logger.info(
+        "kamis.long_history.started",
+        "20-year raw KAMIS history reconciliation started",
+        start_year=first_year,
+        end_year=last_year,
+        checkpoint=checkpoint_path,
+        completed_query_count=len(completed_queries),
+    )
+
     catalog = client.fetch_catalog()
     if not catalog:
-        print("[FAILED] KAMIS catalog is empty")
-        return 1
-
+        raise RuntimeError("KAMIS catalog is empty")
     catalog_repository.save_snapshot(
         catalog,
         today,
         f"kamis-20y-catalog-{uuid4().hex}",
     )
-
-    if args.category_code:
-        targets = [
-            entry for entry in catalog if entry.category_code == args.category_code
-        ]
-    else:
-        targets = catalog
-
-    scope = f"category:{args.category_code}" if args.category_code else "full_catalog"
-    print(
-        f"[START] KAMIS raw survey prices: {start_year}-01-01 ~ {today}, "
-        f"targets={len(targets):,}, scope={scope}, convert_kg=N"
+    targets = (
+        [entry for entry in catalog if entry.category_code == category_code]
+        if category_code
+        else catalog
     )
-    print(f"[OUTPUT] {prices.path}")
-    print(f"[CHECKPOINT] {checkpoint_path}")
 
     total_rows = 0
     failed_queries: list[str] = []
 
-    for year in range(start_year, end_year + 1):
+    for year in range(first_year, last_year + 1):
         period_start = date(year, 1, 1)
         period_end = min(date(year, 12, 31), today)
         year_rows = []
         successful_keys: list[str] = []
-        attempted = 0
-        skipped = 0
-        pending = []
-
-        print("\n" + "=" * 72)
-        print(f"[YEAR] {period_start} ~ {period_end}")
+        pending: list[tuple[str, PriceQuery]] = []
 
         for entry in targets:
-            price_types = (
+            for price_type, rank_codes in (
                 (PriceType.WHOLESALE, entry.wholesale_rank_codes),
                 (PriceType.RETAIL, entry.retail_rank_codes),
-            )
-            for price_type, rank_codes in price_types:
+            ):
                 for rank_code in rank_codes:
                     key = query_key(
                         entry.item_code,
@@ -217,88 +217,109 @@ def main() -> int:
                         period_start,
                         period_end,
                     )
-
-                    if not args.force and key in completed_queries:
-                        skipped += 1
+                    if not force and key in completed_queries:
                         continue
-
-                    attempted += 1
-                    query = PriceQuery(
-                        price_type=price_type,
-                        start_date=period_start,
-                        end_date=period_end,
-                        catalog_entry=entry,
-                        rank_code=rank_code,
-                        country_code=None,
-                        convert_kg=False,
+                    pending.append(
+                        (
+                            key,
+                            PriceQuery(
+                                price_type=price_type,
+                                start_date=period_start,
+                                end_date=period_end,
+                                catalog_entry=entry,
+                                rank_code=rank_code,
+                                country_code=None,
+                                convert_kg=False,
+                            ),
+                        )
                     )
 
-                    print(
-                        f"[FETCH] {year} {entry.item_code}:{entry.kind_code} "
-                        f"{entry.item_name}/{entry.variety} "
-                        f"{price_type.value} rank={rank_code}"
-                    )
-                    pending.append((key, query))
+        if not pending:
+            continue
 
-        def fetch_one(job):
+        app_logger.info(
+            "kamis.long_history.year.started",
+            "Missing raw KAMIS query-years will be collected",
+            year=year,
+            pending_query_count=len(pending),
+        )
+
+        def fetch_one(job: tuple[str, PriceQuery]):
             key, query = job
             try:
-                # Each worker owns its HTTP session. Repository writes stay on this thread.
                 with build_requests_session() as session:
                     rows = fetch_in_chunks(
                         KamisClient(settings, session, app_logger),
                         query,
-                        args.chunk_days,
+                        chunk_days,
                     )
+                rows = [
+                    row
+                    for row in rows
+                    if period_start <= row.observed_date <= period_end
+                ]
                 return key, rows, None
             except Exception as fetch_error:  # noqa: BLE001
-                return key, [], type(fetch_error).__name__
+                return key, [], fetch_error
 
-        with ThreadPoolExecutor(max_workers=args.workers) as executor:
+        with ThreadPoolExecutor(max_workers=workers) as executor:
             for key, rows, error in executor.map(fetch_one, pending):
-                if error:
+                if error is not None:
                     failed_queries.append(key)
-                    print(f"[FAILED] {key}: {error}")
-                else:
-                    year_rows.extend(rows)
-                    successful_keys.append(key)
-                    print(f"[FETCHED] {key}: {len(rows):,} rows")
+                    app_logger.exception(
+                        "kamis.long_history.query.failed",
+                        "Raw KAMIS history query failed and will be retried next startup",
+                        error,
+                        query_key=key,
+                    )
+                    continue
+                year_rows.extend(rows)
+                successful_keys.append(key)
 
+        # Mark queries complete only after their returned rows are safely persisted.
         if year_rows:
-            result = prices.upsert(
-                year_rows,
-                f"kamis-20y-{year}-{uuid4().hex}",
-            )
+            prices.upsert(year_rows, f"kamis-20y-raw-{year}-{uuid4().hex}")
             total_rows += len(year_rows)
-            print(
-                f"[UPSERT] year={year}: fetched={len(year_rows):,}, "
-                f"inserted={result.inserted:,}, updated={result.updated:,}"
-            )
-        else:
-            print(
-                f"[UPSERT] year={year}: no new rows "
-                f"(attempted={attempted}, skipped={skipped})"
-            )
 
         completed_queries.update(successful_keys)
         save_checkpoint(checkpoint_path, completed_queries)
-        print(
-            f"[YEAR DONE] {year}: attempted={attempted:,}, "
-            f"checkpoint-skipped={skipped:,}, "
-            f"successful={len(successful_keys):,}"
+        app_logger.info(
+            "kamis.long_history.year.completed",
+            "Raw KAMIS history year reconciliation completed",
+            year=year,
+            fetched_rows=len(year_rows),
+            completed_query_count=len(successful_keys),
+            failed_query_count=len(pending) - len(successful_keys),
         )
 
-    print("\n" + "=" * 72)
-    print(f"[DONE] fetched rows this run: {total_rows:,}")
-    print(f"[CHECKPOINT COUNT] {len(completed_queries):,}")
-    print(f"[FAILED QUERY COUNT] {len(failed_queries):,}")
-    if failed_queries:
-        print(
-            "[INFO] Failed queries are not checkpointed. "
-            "Run the same command again to retry them."
-        )
+    result = BackfillResult(
+        fetched_rows=total_rows,
+        completed_queries=len(completed_queries),
+        failed_queries=tuple(failed_queries),
+    )
+    app_logger.info(
+        "kamis.long_history.completed",
+        "20-year raw KAMIS history reconciliation completed",
+        fetched_rows=result.fetched_rows,
+        completed_query_count=result.completed_queries,
+        failed_query_count=len(result.failed_queries),
+    )
+    return result
 
-    return 1 if failed_queries else 0
+
+def main(argv: list[str] | None = None) -> int:
+    args = parse_args(argv)
+    settings = Settings.from_env()
+    result = run_backfill(
+        settings,
+        start_year=args.start_year,
+        end_year=args.end_year,
+        category_code=args.category_code,
+        force=args.force,
+        workers=args.workers,
+        chunk_days=args.chunk_days,
+    )
+    return 1 if result.failed_queries else 0
 
 
 if __name__ == "__main__":
