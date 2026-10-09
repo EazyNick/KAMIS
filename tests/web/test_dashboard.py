@@ -34,9 +34,6 @@ def test_dashboard_defaults_to_kamis_futures_and_preserves_manual_selection(
         "series": {
             "kamis_retail": [100.0, 100.0],
             "kamis_wholesale": [100.0, 100.0],
-            "online_naver": [100.0, 100.0],
-            "online_coupang": [100.0, 100.0],
-            "online_combined": [100.0, 100.0],
             "kospi": [100.0, 100.0],
             "kosdaq": [100.0, 100.0],
             "sp500": [100.0, 100.0],
@@ -68,7 +65,6 @@ def test_dashboard_defaults_to_kamis_futures_and_preserves_manual_selection(
             ] if has_kamis_commodities else []),
             "total": 3 if has_kamis_commodities else 1,
         },
-        "/api/v1/online/summaries": {"items": [], "total": 0},
         "/api/v1/market": {
             "items": [
                 {
@@ -212,7 +208,7 @@ def test_dashboard_defaults_to_kamis_futures_and_preserves_manual_selection(
         assert tooltip.is_visible()
         assert "2026-09-24" in tooltip.inner_text()
         assert "KAMIS 소매" in tooltip.inner_text()
-        assert "시가 대비 100" in tooltip.inner_text()
+        assert "시작값 지수 100" in tooltip.inner_text()
         assert "실제값 2,350" in tooltip.inner_text()
         page.mouse.move(0, 0)
         assert not tooltip.is_visible()
@@ -348,7 +344,6 @@ def test_dashboard_draws_isolated_market_value_after_missing_date() -> None:
                 "latest_run": {"requested_end": "2026-09-23", "status": "success"},
             },
             "/api/v1/catalog": {"items": [], "total": 0},
-            "/api/v1/online/summaries": {"items": [], "total": 0},
             "/api/v1/dashboard/bootstrap": {
                 "defaults": {
                     "item_code": "111",
@@ -399,14 +394,11 @@ def test_dashboard_draws_isolated_market_value_after_missing_date() -> None:
 
 
 @pytest.mark.parametrize("missing_middle", [False, True])
-def test_dashboard_draws_all_19_series_as_continuous_paths(missing_middle: bool) -> None:
+def test_dashboard_draws_all_16_series_as_continuous_paths(missing_middle: bool) -> None:
     page_errors: list[str] = []
     series_ids = [
         "kamis_wholesale",
         "kamis_retail",
-        "online_naver",
-        "online_coupang",
-        "online_combined",
         "kospi",
         "kosdaq",
         "sp500",
@@ -463,7 +455,6 @@ def test_dashboard_draws_all_19_series_as_continuous_paths(missing_middle: bool)
                 "latest_run": {"requested_end": "2026-09-27", "status": "success"},
             },
             "/api/v1/catalog": {"items": [catalog_item], "total": 1},
-            "/api/v1/online/summaries": {"items": [], "total": 0},
             "/api/v1/dashboard/bootstrap": {
                 "defaults": {
                     "item_code": "111",
@@ -516,7 +507,7 @@ def test_dashboard_draws_all_19_series_as_continuous_paths(missing_middle: bool)
         page.goto("http://dashboard.test/")
         page.wait_for_timeout(200)
 
-        assert page.locator("#legend .chip").count() == 19
+        assert page.locator("#legend .chip").count() == 16
         page.evaluate(
             """
             () => {
@@ -528,9 +519,9 @@ def test_dashboard_draws_all_19_series_as_continuous_paths(missing_middle: bool)
             }
             """
         )
-        assert page.locator("#legend .chip:not(.off)").count() == 19
-        assert page.evaluate("window.__seriesMoveToCount") == 19
-        assert page.evaluate("window.__seriesLineToCount") == (19 if missing_middle else 38)
+        assert page.locator("#legend .chip:not(.off)").count() == 16
+        assert page.evaluate("window.__seriesMoveToCount") == 16
+        assert page.evaluate("window.__seriesLineToCount") == (16 if missing_middle else 32)
         assert page.evaluate("chartData.series") == chart_payload["series"]
         assert page.evaluate("chartData.raw_series") == chart_payload["raw_series"]
         assert page_errors == []
