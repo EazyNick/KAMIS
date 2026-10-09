@@ -55,7 +55,7 @@ def main(argv: list[str] | None = None) -> int:
     failures = 0
     total = 0
     summaries = defaultdict(list)
-    dashboard_daily = defaultdict(list)
+    dashboard_rank_daily = defaultdict(list)
     print(f"[RANGE] {start} ~ {end}; item=257; convert_kg=N", flush=True)
     print("[NOTE] Prices are KRW, not base100. Catalog units are CURRENT units, not historical proof.", flush=True)
     with build_requests_session() as session:
@@ -107,11 +107,12 @@ def main(argv: list[str] | None = None) -> int:
                             if row.price_krw is not None:
                                 group = (row.observed_date.year, entry.kind_code, price_type.value, rank, row.region, row.market_name)
                                 summaries[group].append(row.price_krw)
-                                dashboard_daily[
+                                dashboard_rank_daily[
                                     (
                                         row.observed_date,
                                         entry.kind_code,
                                         price_type.value,
+                                        rank,
                                     )
                                 ].append(row.price_krw)
                         if not count:
@@ -123,18 +124,29 @@ def main(argv: list[str] | None = None) -> int:
     print("\n[DASHBOARD-EQUIVALENT SUMMARY]", flush=True)
     print(
         "[NOTE] Same aggregation rule as ComparisonService: for each date/type, "
-        "average all ranks/regions/markets, then summarize those daily means.",
+        "use one stable rank (04 when available), then average regions/markets per day.",
         flush=True,
     )
+    available_ranks = defaultdict(set)
+    for observed, kind, price_type, rank in dashboard_rank_daily:
+        available_ranks[(kind, price_type)].add(rank)
+
+    selected_rank = {
+        key: ("04" if "04" in ranks else sorted(ranks)[0])
+        for key, ranks in available_ranks.items()
+        if ranks
+    }
     by_year_type = defaultdict(list)
-    for (observed, kind, price_type), values in sorted(dashboard_daily.items()):
-        if not values:
+    for (observed, kind, price_type, rank), values in sorted(
+        dashboard_rank_daily.items()
+    ):
+        if not values or selected_rank.get((kind, price_type)) != rank:
             continue
         daily_mean = sum(values) / len(values)
-        by_year_type[(observed.year, kind, price_type)].append(daily_mean)
-    for (year, kind, price_type), values in sorted(by_year_type.items()):
+        by_year_type[(observed.year, kind, price_type, rank)].append(daily_mean)
+    for (year, kind, price_type, rank), values in sorted(by_year_type.items()):
         print(
-            f"year={year} kind={kind} type={price_type} "
+            f"year={year} kind={kind} type={price_type} rank={rank} "
             f"days={len(values)} mean_of_daily_means={sum(values)/len(values):.2f} "
             f"min_daily={min(values):.2f} max_daily={max(values):.2f}",
             flush=True,
