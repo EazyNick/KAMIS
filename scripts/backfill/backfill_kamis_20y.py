@@ -151,6 +151,24 @@ def save_checkpoint(
     os.replace(temp, path)
 
 
+def should_skip_query(
+    *,
+    force: bool,
+    item_missing_from_dashboard: bool,
+    key_completed: bool,
+    expected_count: int | None,
+    stored_count: int,
+) -> bool:
+    """Skip only when persisted dashboard data proves the query is covered."""
+    return (
+        not force
+        and not item_missing_from_dashboard
+        and key_completed
+        and expected_count is not None
+        and stored_count >= expected_count
+    )
+
+
 def query_key(
     item_code: str,
     kind_code: str,
@@ -402,12 +420,14 @@ def run_backfill(
                                 0,
                             )
                         expected_count = checkpoint_counts.get(key)
-                        if (
-                            not force
-                            and entry.item_code not in missing_item_codes
-                            and key in completed_queries
-                            and expected_count is not None
-                            and stored_count >= expected_count
+                        if should_skip_query(
+                            force=force,
+                            item_missing_from_dashboard=(
+                                entry.item_code in missing_item_codes
+                            ),
+                            key_completed=key in completed_queries,
+                            expected_count=expected_count,
+                            stored_count=stored_count,
                         ):
                             skipped_count += 1
                             continue
