@@ -101,7 +101,7 @@ def fetch_in_chunks(client, query, chunk_days: int):
     return rows
 
 
-CHECKPOINT_STORAGE_SCOPE = "official_average_raw_v2"
+CHECKPOINT_STORAGE_SCOPE = "official_average_raw_v3_nonempty"
 
 
 def load_checkpoint(path: Path) -> tuple[set[str], dict[str, int], str | None]:
@@ -218,6 +218,12 @@ def run_backfill(
         today.year,
         requested_convert_kg=False,
     )
+    existing_item_codes = set(
+        prices.item_date_stats(
+            requested_convert_kg=False,
+            region="평균",
+        )
+    )
 
     if (
         not force
@@ -311,6 +317,27 @@ def run_backfill(
         if category_code
         else catalog
     )
+    missing_item_codes = {
+        entry.item_code
+        for entry in targets
+        if entry.item_code not in existing_item_codes
+        and (entry.wholesale_rank_codes or entry.retail_rank_codes)
+    }
+    targets = sorted(
+        targets,
+        key=lambda entry: (
+            entry.item_code not in missing_item_codes,
+            entry.item_code,
+            entry.kind_code,
+        ),
+    )
+    if missing_item_codes:
+        app_logger.warning(
+            "kamis.long_history.items.missing",
+            "[우선 복구] 대시보드 가격이 0건인 KAMIS 품목을 먼저 다시 수집합니다.",
+            missing_item_count=len(missing_item_codes),
+            missing_item_codes=",".join(sorted(missing_item_codes)),
+        )
 
     total_rows = 0
     failed_queries: list[str] = []
@@ -377,6 +404,7 @@ def run_backfill(
                         expected_count = checkpoint_counts.get(key)
                         if (
                             not force
+                            and entry.item_code not in missing_item_codes
                             and key in completed_queries
                             and expected_count is not None
                             and stored_count >= expected_count
@@ -429,6 +457,7 @@ def run_backfill(
                         query,
                         chunk_days,
                     )
+                raw_count = len(rows)
                 rows = [
                     row
                     for row in rows
@@ -449,12 +478,12 @@ def run_backfill(
                         row.requested_convert_kg,
                     )
                     unique[row_key] = row
-                return key, list(unique.values()), None
+                return key, list(unique.values()), raw_count, None
             except Exception as fetch_error:  # noqa: BLE001
-                return key, [], fetch_error
+                return key, [], 0, fetch_error
 
         with ThreadPoolExecutor(max_workers=workers) as executor:
-            for key, rows, error in executor.map(fetch_one, pending):
+            for key, rows, raw_count, error in executor.map(fetch_one, pending):
                 if error is not None:
                     failed_queries.append(key)
                     app_logger.exception(
@@ -462,6 +491,29 @@ def run_backfill(
                         "Raw KAMIS history query failed and will be retried next startup",
                         error,
                         query_key=key,
+                    )
+                    continue
+                item_code = key.split(":", 1)[0]
+                if not rows and raw_count > 0:
+                    failed_queries.append(key)
+                    app_logger.warning(
+                        "kamis.long_history.average.missing",
+                        "[미완료] KAMIS API 응답은 있지만 공식 평균값이 없어 checkpoint에 등록하지 않습니다.",
+                        query_key=key,
+                        api_record_count=raw_count,
+                        official_average_record_count=0,
+                    )
+                    continue
+                if (
+                    not rows
+                    and raw_count == 0
+                    and item_code in missing_item_codes
+                ):
+                    app_logger.warning(
+                        "kamis.long_history.item.no_data",
+                        "[확인 필요] 저장 데이터가 없는 품목인데 KAMIS API도 0건을 반환했습니다.",
+                        query_key=key,
+                        api_record_count=0,
                     )
                     continue
                 year_rows.extend(rows)
@@ -483,6 +535,26 @@ def run_backfill(
             fetched_rows=len(year_rows),
             completed_query_count=len(successful_keys),
             failed_query_count=len(pending) - len(successful_keys),
+        )
+
+    final_item_stats = prices.item_date_stats(
+        requested_convert_kg=False,
+        region="평균",
+    )
+    unresolved_items = sorted(
+        {
+            entry.item_code
+            for entry in targets
+            if (entry.wholesale_rank_codes or entry.retail_rank_codes)
+            and entry.item_code not in final_item_stats
+        }
+    )
+    if unresolved_items:
+        app_logger.warning(
+            "kamis.long_history.items.unresolved",
+            "[누락 경고] 수집 종료 후에도 대시보드 가격이 0건인 품목이 있습니다.",
+            missing_item_count=len(unresolved_items),
+            missing_item_codes=",".join(unresolved_items),
         )
 
     result = BackfillResult(
