@@ -220,18 +220,28 @@ class ComparisonService:
             }
         )
         frame = pd.DataFrame(index=pd.DatetimeIndex(kamis_dates))
+        selected_ranks: dict[str, str] = {}
         if price_rows:
             prices = pd.DataFrame(price_rows)
             prices["observed_date"] = pd.to_datetime(prices["observed_date"])
             prices["price_krw"] = pd.to_numeric(prices["price_krw"], errors="coerce")
-            grouped = prices.groupby(["observed_date", "price_type"])[
-                "price_krw"
-            ].mean()
+            prices["rank_code"] = prices["rank_code"].astype(str)
             for price_type in ("wholesale", "retail"):
-                if price_type in grouped.index.get_level_values("price_type"):
-                    frame[f"kamis_{price_type}"] = grouped.xs(
-                        price_type, level="price_type"
-                    )
+                typed = prices.loc[prices["price_type"].eq(price_type)].copy()
+                if typed.empty:
+                    continue
+                available_ranks = sorted(
+                    rank
+                    for rank in typed["rank_code"].dropna().unique().tolist()
+                    if rank
+                )
+                if available_ranks:
+                    selected_rank = "04" if "04" in available_ranks else available_ranks[0]
+                    selected_ranks[price_type] = selected_rank
+                    typed = typed.loc[typed["rank_code"].eq(selected_rank)]
+                frame[f"kamis_{price_type}"] = typed.groupby("observed_date")[
+                    "price_krw"
+                ].mean()
 
         market_rows = self._market.search(start_date=start_date, end_date=end_date)
         if market_rows:
@@ -258,6 +268,7 @@ class ComparisonService:
         result = fill_exchange_holidays(frame.sort_index())
         result.attrs["kamis_observed_coverage"] = observed_coverage
         result.attrs["comparison_notes"] = notes
+        result.attrs["kamis_selected_ranks"] = selected_ranks
         return result
 
     def chart(
@@ -284,6 +295,21 @@ class ComparisonService:
             if key in unit_map
         }
         result["comparison_notes"] = raw_frame.attrs.get("comparison_notes", [])
+        result["kamis_selected_ranks"] = raw_frame.attrs.get(
+            "kamis_selected_ranks", {}
+        )
+        selected_ranks = result["kamis_selected_ranks"]
+        if selected_ranks:
+            rank_parts = []
+            if "wholesale" in selected_ranks:
+                rank_parts.append(f"도매 rank {selected_ranks['wholesale']}")
+            if "retail" in selected_ranks:
+                rank_parts.append(f"소매 rank {selected_ranks['retail']}")
+            result["comparison_notes"].append(
+                "장기 비교의 등급 혼합을 피하기 위해 "
+                + ", ".join(rank_parts)
+                + "를 사용합니다. 상품(04)이 있으면 상품을 우선합니다."
+            )
         if unit_map:
             unit_parts = []
             if "kamis_wholesale" in unit_map:
