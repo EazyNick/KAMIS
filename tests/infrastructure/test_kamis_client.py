@@ -8,7 +8,7 @@ from typing import Any
 import pytest
 
 from app.core.errors import KamisAuthenticationError
-from app.domain.models import PriceQuery, PriceType, ProductCatalogEntry
+from app.domain.models import PriceObservation, PriceQuery, PriceType, ProductCatalogEntry
 from app.infrastructure.kamis_client import KamisClient
 from config.server_config import Settings
 from log.logger import StructuredLogger
@@ -131,3 +131,55 @@ def test_no_data_response_returns_empty_list(settings: Settings) -> None:
     )
 
     assert client.fetch_prices(query) == []
+
+
+def test_fetch_prices_requests_original_survey_unit_by_default(
+    settings: Settings,
+) -> None:
+    session = FakeSession()
+    session.queue_json(
+        {
+            "error_code": "000",
+            "data": {
+                "item": [
+                    {
+                        "yyyy": "2026",
+                        "regday": "10/08",
+                        "itemname": "멜론",
+                        "kindname": "멜론",
+                        "countyname": "서울",
+                        "marketname": "테스트시장",
+                        "price": "28,980.57",
+                    }
+                ]
+            },
+        }
+    )
+    client = KamisClient(
+        settings, session, StructuredLogger(logging.getLogger("test.kamis.raw"))
+    )
+    entry = ProductCatalogEntry.from_api(
+        {
+            **CATALOG_ROW,
+            "itemcategorycode": "200",
+            "itemcategoryname": "채소류",
+            "itemcode": "257",
+            "itemname": "멜론",
+            "kindcode": "00",
+            "kindname": "멜론",
+        }
+    )
+    rows = client.fetch_prices(
+        PriceQuery(
+            price_type=PriceType.RETAIL,
+            start_date=date(2026, 10, 8),
+            end_date=date(2026, 10, 8),
+            catalog_entry=entry,
+            rank_code="04",
+        )
+    )
+
+    assert session.last_params is not None
+    assert session.last_params["p_convert_kg_yn"] == "N"
+    assert rows[0].price_krw == PriceObservation.parse_price("28,980.57")
+    assert rows[0].requested_convert_kg is False
