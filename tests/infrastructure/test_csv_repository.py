@@ -141,6 +141,38 @@ def test_price_repository_can_select_only_original_kamis_prices(
     assert repository.item_date_stats(requested_convert_kg=False)["111"][2] == 1
 
 
+def test_compaction_keeps_only_official_average_raw_rows(
+    tmp_path: Path,
+) -> None:
+    repository = PriceRepository(tmp_path, app_logger)
+    official = replace(
+        price_row("13516.45"),
+        region="평균",
+        market_name=None,
+    )
+    regional = replace(
+        official,
+        region="서울",
+        market_name="A-유통",
+        price_krw=Decimal("9000"),
+    )
+    legacy = replace(
+        official,
+        requested_convert_kg=True,
+        price_krw=Decimal("4400"),
+    )
+    repository.upsert([official, regional, legacy], "seed")
+
+    result = repository.compact_to_official_average_raw("compact")
+    rows = repository.search()
+
+    assert result.total == 1
+    assert len(rows) == 1
+    assert rows[0]["region"] == "평균"
+    assert rows[0]["price_krw"] == 13516.45
+    assert rows[0]["requested_convert_kg"].casefold() == "false"
+
+
 def test_scope_year_counts_separates_raw_from_legacy_converted_rows(
     tmp_path: Path,
 ) -> None:
