@@ -63,52 +63,11 @@ class ApplicationContainer:
         online_repository = OnlinePriceRepository(settings.data_dir, app_logger)
         market_repository = MarketRepository(settings.data_dir, app_logger)
         analytics_repository = AnalyticsRepository(settings.data_dir, app_logger)
-        codex_runner = CodexCliRunner(
-            settings.project_root,
-            settings.codex_executable,
-            app_logger,
-            sandbox_mode=settings.codex_sandbox_mode,
-        )
-        coupang_source = (
-            CoupangAgentSource(
-                settings.project_root,
-                settings.coupang_agent_run_dir,
-                codex_runner,
-                CoupangAgentCsvParser(),
-                app_logger,
-                timeout_seconds=settings.coupang_agent_timeout_seconds,
-                minimum_delay_ms=round(
-                    settings.shopping_request_interval_seconds * 1000
-                ),
-            )
-            if settings.coupang_agent_enabled
-            else None
-        )
-        naver_source = (
-            NaverAgentSource(
-                settings.project_root,
-                settings.naver_agent_run_dir,
-                codex_runner,
-                NaverAgentCsvParser(),
-                app_logger,
-                timeout_seconds=settings.coupang_agent_timeout_seconds,
-                minimum_delay_ms=round(
-                    settings.shopping_request_interval_seconds * 1000
-                ),
-            )
-            if settings.naver_agent_enabled
-            else None
-        )
-        sources = [
-            source for source in (naver_source, coupang_source) if source is not None
-        ]
-        online_service = OnlineCollectionService(
-            sources,
-            online_repository,
-            OnlinePriceCalculator(),
-            app_logger,
-            target_keys=set(settings.online_target_keys),
-        )
+        # Online shopping collection is intentionally disabled while the research
+        # focus is KAMIS wholesale/retail prices versus market series.
+        online_service = None
+        coupang_source = None
+        naver_source = None
         market_client = build_market_collector()
         analytics = AnalyticsService()
         comparison = ComparisonService(
