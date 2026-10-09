@@ -44,6 +44,7 @@ class PriceFilters:
     item_name: str | None = None
     start_date: date | None = None
     end_date: date | None = None
+    requested_convert_kg: bool | None = None
 
 
 class _AtomicCsvRepository:
@@ -245,6 +246,12 @@ class PriceRepository(_AtomicCsvRepository):
                     if value is not None:
                         conditions.append(f"{column} {operator} ?")
                         parameters.append(str(value))
+                if filters.requested_convert_kg is not None:
+                    conditions.append("lower(requested_convert_kg) IN (?, ?, ?)")
+                    if filters.requested_convert_kg:
+                        parameters.extend(["true", "y", "1"])
+                    else:
+                        parameters.extend(["false", "n", "0"])
                 with duckdb.connect(config={"threads": 2}) as connection:
                     cursor = connection.execute(
                         "SELECT * FROM read_csv(?, header=true, all_varchar=true) WHERE "
@@ -319,6 +326,8 @@ class PriceRepository(_AtomicCsvRepository):
         required_scopes: set[tuple[str, str, str, str]]
         | frozenset[tuple[str, str, str, str]]
         | None = None,
+        *,
+        requested_convert_kg: bool | None = None,
     ) -> bool:
         """Return whether a date has sufficient stored KAMIS query coverage.
 
@@ -343,6 +352,17 @@ class PriceRepository(_AtomicCsvRepository):
                             continue
                         if row_date > expected:
                             break
+                        if requested_convert_kg is not None:
+                            stored_convert = str(
+                                row.get("requested_convert_kg", "")
+                            ).strip().casefold()
+                            expected_values = (
+                                {"true", "y", "1"}
+                                if requested_convert_kg
+                                else {"false", "n", "0"}
+                            )
+                            if stored_convert not in expected_values:
+                                continue
                         found_date = True
                         if not required:
                             return True
@@ -368,6 +388,8 @@ class PriceRepository(_AtomicCsvRepository):
         end_date: date,
         required_scopes: set[tuple[str, str, str, str]]
         | frozenset[tuple[str, str, str, str]],
+        *,
+        requested_convert_kg: bool | None = None,
     ) -> set[date]:
         """Return dates whose stored rows cover every required KAMIS scope.
 
@@ -393,6 +415,17 @@ class PriceRepository(_AtomicCsvRepository):
                             continue
                         if observed_text > end_text:
                             break
+                        if requested_convert_kg is not None:
+                            stored_convert = str(
+                                row.get("requested_convert_kg", "")
+                            ).strip().casefold()
+                            expected_values = (
+                                {"true", "y", "1"}
+                                if requested_convert_kg
+                                else {"false", "n", "0"}
+                            )
+                            if stored_convert not in expected_values:
+                                continue
                         scope = (
                             str(row.get("item_code", "")),
                             str(row.get("kind_code", "")),
