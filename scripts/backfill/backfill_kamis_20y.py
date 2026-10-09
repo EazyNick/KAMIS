@@ -8,7 +8,10 @@ if __package__ in {None, ""}:
     if project_root not in sys.path:
         sys.path.insert(0, project_root)
 
-"""Backfill about 20 years of KAMIS wholesale/retail daily prices.
+"""Backfill about 20 years of original-unit KAMIS wholesale/retail prices.
+
+Prices are requested with p_convert_kg_yn=N and stored without kg/count/package
+conversion. The dashboard uses only these raw-survey rows.
 
 Run from the repository root:
     python scripts/backfill/backfill_kamis_20y.py
@@ -24,7 +27,7 @@ Required .env:
 
 Output:
     data/normalized/kamis_prices.csv
-    data/backfill/kamis_20y_checkpoint.json
+    data/backfill/kamis_20y_raw_checkpoint.json
 """
 
 import argparse
@@ -176,9 +179,10 @@ def main() -> int:
     else:
         targets = catalog
 
+    scope = f"category:{args.category_code}" if args.category_code else "full_catalog"
     print(
         f"[START] KAMIS raw survey prices: {start_year}-01-01 ~ {today}, "
-        f"targets={len(targets):,}, scope=full_catalog, convert_kg=N"
+        f"targets={len(targets):,}, scope={scope}, convert_kg=N"
     )
     print(f"[OUTPUT] {prices.path}")
     print(f"[CHECKPOINT] {checkpoint_path}")
