@@ -164,6 +164,28 @@ def test_scope_year_counts_separates_raw_from_legacy_converted_rows(
     assert counts[("111", "01", "retail", "04", 2026)] == 1
 
 
+def test_scope_month_counts_separates_months_and_raw_rows(
+    tmp_path: Path,
+) -> None:
+    repository = PriceRepository(tmp_path, app_logger)
+    jan = replace(price_row(), observed_date=date(2026, 1, 3))
+    feb = replace(price_row(), observed_date=date(2026, 2, 3))
+    converted = replace(
+        feb,
+        requested_convert_kg=True,
+        market_name="legacy-converted",
+    )
+    repository.upsert([jan, feb, converted], "seed")
+
+    counts = repository.scope_month_counts(
+        2026,
+        requested_convert_kg=False,
+    )
+
+    assert counts[("111", "01", "retail", "04", 1)] == 1
+    assert counts[("111", "01", "retail", "04", 2)] == 1
+
+
 def test_price_repository_item_date_stats_stream_long_history(tmp_path: Path) -> None:
     repository = PriceRepository(tmp_path, app_logger)
     repository.upsert(
