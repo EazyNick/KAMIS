@@ -9,15 +9,12 @@ from zoneinfo import ZoneInfo
 from app.collectors.kamis import build_kamis_collector
 from app.collectors.market import build_market_collector
 from app.infrastructure.analytics_repository import AnalyticsRepository
-from app.infrastructure.coupang_agent_source import CoupangAgentSource
 from app.infrastructure.csv_repository import (
     CatalogRepository,
     PriceRepository,
     RunRepository,
 )
 from app.infrastructure.market_data import MarketDataClient, MarketRepository
-from app.infrastructure.naver_agent_source import NaverAgentSource
-from app.infrastructure.online_repository import OnlinePriceRepository
 from app.services.analytics import AnalyticsBatchService, AnalyticsService
 from app.services.collection_service import KamisCollectionService
 from app.services.comparison import ComparisonService
@@ -25,7 +22,6 @@ from app.services.daily_pipeline import DailyPipeline
 from app.services.dashboard_bootstrap import DashboardBootstrapService
 from app.services.kamis_history import KamisHistoryService
 from app.services.market_history import MarketHistoryService
-from app.services.online_collection import OnlineCollectionService
 from app.services.startup_collection import StartupCollectionService
 from config.server_config import Settings
 from log import app_logger
@@ -38,17 +34,17 @@ class ApplicationContainer:
     price_repository: PriceRepository
     run_repository: RunRepository
     collection_service: KamisCollectionService
-    online_repository: OnlinePriceRepository | None = None
+    online_repository: object | None = None
     market_repository: MarketRepository | None = None
     analytics_repository: AnalyticsRepository | None = None
-    online_collection_service: OnlineCollectionService | None = None
+    online_collection_service: object | None = None
     market_client: MarketDataClient | None = None
     comparison_service: ComparisonService | None = None
     daily_pipeline: DailyPipeline | None = None
     startup_collection_service: StartupCollectionService | None = None
     dashboard_bootstrap_service: DashboardBootstrapService | None = None
-    coupang_agent_source: CoupangAgentSource | None = None
-    naver_agent_source: NaverAgentSource | None = None
+    coupang_agent_source: object | None = None
+    naver_agent_source: object | None = None
 
     @classmethod
     def build(cls, settings: Settings) -> ApplicationContainer:
@@ -56,7 +52,7 @@ class ApplicationContainer:
         prices = PriceRepository(settings.data_dir, app_logger)
         runs = RunRepository(settings.data_dir, app_logger)
         service = build_kamis_collector(settings, catalog, prices, runs)
-        online_repository = OnlinePriceRepository(settings.data_dir, app_logger)
+        online_repository = None
         market_repository = MarketRepository(settings.data_dir, app_logger)
         analytics_repository = AnalyticsRepository(settings.data_dir, app_logger)
         # Online shopping collection is intentionally disabled while the research
