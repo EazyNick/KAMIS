@@ -100,22 +100,40 @@ def fetch_in_chunks(client, query, chunk_days: int):
     return rows
 
 
-def load_checkpoint(path: Path) -> set[str]:
+def load_checkpoint(path: Path) -> tuple[set[str], dict[str, int]]:
     if not path.exists():
-        return set()
+        return set(), {}
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
-        return set()
-    return {str(value) for value in payload.get("completed_queries", [])}
+        return set(), {}
+    completed = {str(value) for value in payload.get("completed_queries", [])}
+    counts = {
+        str(key): int(value)
+        for key, value in dict(payload.get("record_counts", {})).items()
+        if str(value).isdigit()
+    }
+    return completed, counts
 
 
-def save_checkpoint(path: Path, completed: set[str]) -> None:
+def save_checkpoint(
+    path: Path,
+    completed: set[str],
+    record_counts: dict[str, int],
+) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temp = path.with_suffix(path.suffix + ".tmp")
     temp.write_text(
         json.dumps(
-            {"version": 1, "completed_queries": sorted(completed)},
+            {
+                "version": 2,
+                "completed_queries": sorted(completed),
+                "record_counts": {
+                    key: record_counts[key]
+                    for key in sorted(completed)
+                    if key in record_counts
+                },
+            },
             ensure_ascii=False,
             indent=2,
         ),
@@ -168,7 +186,15 @@ def run_backfill(
         else "kamis_20y_raw_checkpoint.json"
     )
     checkpoint_path = settings.data_dir / "backfill" / checkpoint_name
-    completed_queries = set() if force else load_checkpoint(checkpoint_path)
+    if force:
+        completed_queries, checkpoint_counts = set(), {}
+    else:
+        completed_queries, checkpoint_counts = load_checkpoint(checkpoint_path)
+    stored_scope_year_counts = prices.scope_year_counts(
+        first_year,
+        last_year,
+        requested_convert_kg=False,
+    )
 
     app_logger.info(
         "kamis.long_history.started",
@@ -201,6 +227,7 @@ def run_backfill(
         period_end = min(date(year, 12, 31), today)
         year_rows = []
         successful_keys: list[str] = []
+        successful_counts: dict[str, int] = {}
         pending: list[tuple[str, PriceQuery]] = []
 
         for entry in targets:
@@ -217,7 +244,23 @@ def run_backfill(
                         period_start,
                         period_end,
                     )
-                    if not force and key in completed_queries:
+                    stored_count = stored_scope_year_counts.get(
+                        (
+                            entry.item_code,
+                            entry.kind_code,
+                            price_type.value,
+                            rank_code,
+                            year,
+                        ),
+                        0,
+                    )
+                    expected_count = checkpoint_counts.get(key)
+                    if (
+                        not force
+                        and key in completed_queries
+                        and expected_count is not None
+                        and stored_count >= expected_count
+                    ):
                         continue
                     pending.append(
                         (
@@ -258,7 +301,21 @@ def run_backfill(
                     for row in rows
                     if period_start <= row.observed_date <= period_end
                 ]
-                return key, rows, None
+                unique = {}
+                for row in rows:
+                    row_key = (
+                        row.price_type.value,
+                        row.observed_date,
+                        row.category_code,
+                        row.item_code,
+                        row.kind_code,
+                        row.rank_code,
+                        row.region,
+                        row.market_name,
+                        row.requested_convert_kg,
+                    )
+                    unique[row_key] = row
+                return key, list(unique.values()), None
             except Exception as fetch_error:  # noqa: BLE001
                 return key, [], fetch_error
 
@@ -275,6 +332,7 @@ def run_backfill(
                     continue
                 year_rows.extend(rows)
                 successful_keys.append(key)
+                successful_counts[key] = len(rows)
 
         # Mark queries complete only after their returned rows are safely persisted.
         if year_rows:
@@ -282,7 +340,8 @@ def run_backfill(
             total_rows += len(year_rows)
 
         completed_queries.update(successful_keys)
-        save_checkpoint(checkpoint_path, completed_queries)
+        checkpoint_counts.update(successful_counts)
+        save_checkpoint(checkpoint_path, completed_queries, checkpoint_counts)
         app_logger.info(
             "kamis.long_history.year.completed",
             "Raw KAMIS history year reconciliation completed",
