@@ -99,7 +99,7 @@ class PriceQuery:
     catalog_entry: ProductCatalogEntry
     rank_code: str
     country_code: str | None = None
-    convert_kg: bool = True
+    convert_kg: bool = False
 
     def __post_init__(self) -> None:
         if self.end_date < self.start_date:
