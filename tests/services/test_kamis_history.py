@@ -33,7 +33,15 @@ class PriceRepo:
             if start_date <= date.fromordinal(day) <= end_date
         }
 
-    def covered_dates(self, start_date, end_date, required_scopes):
+    def covered_dates(
+        self,
+        start_date,
+        end_date,
+        required_scopes,
+        *,
+        requested_convert_kg=None,
+    ):
+        assert requested_convert_kg is False
         if self.scope_covered_dates is None:
             return self.observed_dates(start_date, end_date)
         return {
