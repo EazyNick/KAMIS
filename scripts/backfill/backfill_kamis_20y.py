@@ -101,20 +101,27 @@ def fetch_in_chunks(client, query, chunk_days: int):
     return rows
 
 
-def load_checkpoint(path: Path) -> tuple[set[str], dict[str, int]]:
+CHECKPOINT_STORAGE_SCOPE = "official_average_raw_v1"
+
+
+def load_checkpoint(path: Path) -> tuple[set[str], dict[str, int], str | None]:
     if not path.exists():
-        return set(), {}
+        return set(), {}, None
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
-        return set(), {}
+        return set(), {}, None
     completed = {str(value) for value in payload.get("completed_queries", [])}
     counts = {
         str(key): int(value)
         for key, value in dict(payload.get("record_counts", {})).items()
         if str(value).isdigit()
     }
-    return completed, counts
+    return completed, counts, (
+        str(payload.get("storage_scope"))
+        if payload.get("storage_scope")
+        else None
+    )
 
 
 def save_checkpoint(
@@ -127,7 +134,8 @@ def save_checkpoint(
     temp.write_text(
         json.dumps(
             {
-                "version": 2,
+                "version": 3,
+                "storage_scope": CHECKPOINT_STORAGE_SCOPE,
                 "completed_queries": sorted(completed),
                 "record_counts": {
                     key: record_counts[key]
@@ -188,9 +196,11 @@ def run_backfill(
     )
     checkpoint_path = settings.data_dir / "backfill" / checkpoint_name
     if force:
-        completed_queries, checkpoint_counts = set(), {}
+        completed_queries, checkpoint_counts, checkpoint_scope = set(), {}, None
     else:
-        completed_queries, checkpoint_counts = load_checkpoint(checkpoint_path)
+        completed_queries, checkpoint_counts, checkpoint_scope = load_checkpoint(
+            checkpoint_path
+        )
 
     # The research dataset now uses only KAMIS' official nationwide average
     # (region='평균') in original survey units. Compact old regional/market and
@@ -208,6 +218,58 @@ def run_backfill(
         today.year,
         requested_convert_kg=False,
     )
+
+    if (
+        not force
+        and completed_queries
+        and checkpoint_scope != CHECKPOINT_STORAGE_SCOPE
+    ):
+        migrated_counts: dict[str, int] = {}
+        for key in completed_queries:
+            parts = key.split(":")
+            if len(parts) != 6:
+                continue
+            item_code, kind_code, price_type, rank_code, start_text, end_text = parts
+            try:
+                query_start = date.fromisoformat(start_text)
+                query_end = date.fromisoformat(end_text)
+            except ValueError:
+                continue
+            if (
+                query_start.year == today.year
+                and query_end.year == today.year
+                and query_start.month == query_end.month
+            ):
+                count = stored_scope_month_counts.get(
+                    (
+                        item_code,
+                        kind_code,
+                        price_type,
+                        rank_code,
+                        query_start.month,
+                    ),
+                    0,
+                )
+            else:
+                count = stored_scope_year_counts.get(
+                    (
+                        item_code,
+                        kind_code,
+                        price_type,
+                        rank_code,
+                        query_start.year,
+                    ),
+                    0,
+                )
+            migrated_counts[key] = count
+        checkpoint_counts.update(migrated_counts)
+        save_checkpoint(checkpoint_path, completed_queries, checkpoint_counts)
+        checkpoint_scope = CHECKPOINT_STORAGE_SCOPE
+        app_logger.info(
+            "kamis.long_history.checkpoint.migrated",
+            "Existing KAMIS checkpoint migrated to official-average row counts",
+            migrated_query_count=len(migrated_counts),
+        )
 
     app_logger.info(
         "kamis.long_history.started",
