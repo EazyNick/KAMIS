@@ -225,7 +225,9 @@ class ComparisonService:
             prices = pd.DataFrame(price_rows)
             prices["observed_date"] = pd.to_datetime(prices["observed_date"])
             prices["price_krw"] = pd.to_numeric(prices["price_krw"], errors="coerce")
-            prices["rank_code"] = prices["rank_code"].astype(str)
+            if "rank_code" not in prices:
+                prices["rank_code"] = ""
+            prices["rank_code"] = prices["rank_code"].fillna("").astype(str)
             for price_type in ("wholesale", "retail"):
                 typed = prices.loc[prices["price_type"].eq(price_type)].copy()
                 if typed.empty:
