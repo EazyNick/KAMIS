@@ -28,7 +28,14 @@ def list_prices(
             status_code=422, detail="start_date must not exceed end_date"
         )
     rows = container.price_repository.search(
-        PriceFilters(price_type, item_code, item_name, start_date, end_date)
+        PriceFilters(
+            price_type=price_type,
+            item_code=item_code,
+            item_name=item_name,
+            start_date=start_date,
+            end_date=end_date,
+            requested_convert_kg=False,
+        )
     )
     if order == "desc":
         rows.reverse()
