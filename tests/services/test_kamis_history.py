@@ -9,9 +9,10 @@ TODAY = date(2026, 9, 28)
 
 
 class PriceRepo:
-    def __init__(self, period, stored_dates=None):
+    def __init__(self, period, stored_dates=None, covered_dates=None):
         self.period = period
         self.stored_dates = stored_dates
+        self.scope_covered_dates = covered_dates
 
     def observed_date_range(self):
         return self.period
@@ -30,6 +31,15 @@ class PriceRepo:
             date.fromordinal(day)
             for day in range(earliest.toordinal(), latest.toordinal() + 1)
             if start_date <= date.fromordinal(day) <= end_date
+        }
+
+    def covered_dates(self, start_date, end_date, required_scopes):
+        if self.scope_covered_dates is None:
+            return self.observed_dates(start_date, end_date)
+        return {
+            observed
+            for observed in self.scope_covered_dates
+            if start_date <= observed <= end_date
         }
 
 
@@ -96,6 +106,65 @@ def test_backfills_internal_business_day_gap() -> None:
 
     assert service.collect() == 123
     assert collector.calls == [(date(2026, 9, 23), date(2026, 9, 23))]
+
+
+def test_backfills_partially_collected_business_day_by_rank_coverage() -> None:
+    target_date = date(2026, 10, 8)
+    collector = Collector()
+    catalog = [
+        SimpleNamespace(
+            item_code="111",
+            kind_code="10",
+            wholesale_rank_codes=("04",),
+            retail_rank_codes=(),
+        )
+    ]
+    service = KamisHistoryService(
+        PriceRepo(
+            (date(2026, 10, 7), target_date),
+            stored_dates={date(2026, 10, 7), target_date},
+            covered_dates={date(2026, 10, 7)},
+        ),
+        collector,
+        app_logger,
+        window_days=3,
+        today_provider=lambda: date(2026, 10, 9),
+        catalog_provider=lambda: catalog,
+        required_keys={("111", "10")},
+    )
+
+    assert service.collect() == 123
+    assert collector.calls == [(target_date, target_date)]
+
+
+def test_successful_run_coverage_prevents_retry_when_price_row_is_legitimately_absent() -> None:
+    target_date = date(2026, 10, 8)
+    collector = Collector()
+    catalog = [
+        SimpleNamespace(
+            item_code="111",
+            kind_code="10",
+            wholesale_rank_codes=("04",),
+            retail_rank_codes=(),
+        )
+    ]
+    service = KamisHistoryService(
+        PriceRepo(
+            (date(2026, 10, 7), target_date),
+            stored_dates={date(2026, 10, 7), target_date},
+            covered_dates={date(2026, 10, 7)},
+        ),
+        collector,
+        app_logger,
+        window_days=3,
+        today_provider=lambda: date(2026, 10, 9),
+        catalog_provider=lambda: catalog,
+        required_keys={("111", "10")},
+        successful_dates_provider=lambda start, end: {target_date},
+    )
+
+    assert service.collect() == 0
+    assert collector.calls == []
 
 
 def test_internal_gap_detection_ignores_weekends() -> None:
