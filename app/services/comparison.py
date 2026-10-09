@@ -203,6 +203,7 @@ class ComparisonService:
                 start_date=start_date,
                 end_date=end_date,
                 requested_convert_kg=False,
+                region="평균",
             )
         )
         kind = self.comparison_kinds.get(item_code)
@@ -212,10 +213,7 @@ class ComparisonService:
         ]
         if kind is not None:
             price_rows = [row for row in price_rows if row.get("kind_code") == kind]
-        # Use the nationwide average supplied by KAMIS itself. Do not recompute
-        # an average from regional/market observations because that changes the
-        # official KAMIS representative price and can bias long-history trends.
-        price_rows = [row for row in price_rows if row.get("region") == "평균"]
+        # PriceRepository already filters to KAMIS' nationwide-average rows.
         kamis_dates = sorted(
             {
                 pd.Timestamp(row["observed_date"])
@@ -355,10 +353,14 @@ class ComparisonService:
         item_stats: dict[str, tuple[date, date, int]] = {}
         stats_reader = getattr(self._prices, "item_date_stats", None)
         if callable(stats_reader):
-            item_stats.update(stats_reader(requested_convert_kg=False))
+            item_stats.update(
+                stats_reader(requested_convert_kg=False, region="평균")
+            )
         else:
             # Compatibility path for lightweight test doubles and alternate stores.
-            for row in self._prices.search(PriceFilters(requested_convert_kg=False)):
+            for row in self._prices.search(
+                PriceFilters(requested_convert_kg=False, region="평균")
+            ):
                 item_code = str(row.get("item_code", ""))
                 observed_value = row.get("observed_date")
                 if not item_code or not observed_value:
