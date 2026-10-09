@@ -95,7 +95,7 @@ def test_daily_pipeline_skips_sources_already_completed_for_date() -> None:
             self.calls += 1
             return SimpleNamespace(offer_count=3, error_count=0, errors=())
 
-    runs = Runs(successful_sources={"kamis"})
+    runs = Runs(successful_sources={"kamis_raw"})
     online = CleanOnline()
     pipeline = DailyPipeline(
         AlreadyCollectedKamis(),
@@ -119,7 +119,14 @@ def test_daily_pipeline_skips_sources_already_completed_for_date() -> None:
 
 def test_daily_pipeline_recovers_checkpoints_from_existing_dated_data() -> None:
     class StoredKamisRepository:
-        def has_collected_date(self, observed_date, required_item_keys=None):
+        def has_collected_date(
+            self,
+            observed_date,
+            required_item_keys=None,
+            *,
+            requested_convert_kg=None,
+        ):
+            assert requested_convert_kg is False
             return True
 
     class StoredKamis:
@@ -158,14 +165,21 @@ def test_daily_pipeline_recovers_checkpoints_from_existing_dated_data() -> None:
     result = pipeline.collect(date(2026, 9, 25))
 
     assert result.status is RunStatus.SUCCESS
-    assert {"kamis", "online", "market"}.issubset(runs.successful_sources)
+    assert {"kamis_raw", "online", "market"}.issubset(runs.successful_sources)
 
 
 def test_daily_pipeline_uses_rank_level_kamis_coverage() -> None:
     class CoverageRepository:
         scopes = None
 
-        def has_collected_date(self, observed_date, required_scopes=None):
+        def has_collected_date(
+            self,
+            observed_date,
+            required_scopes=None,
+            *,
+            requested_convert_kg=None,
+        ):
+            assert requested_convert_kg is False
             self.scopes = required_scopes
             return True
 
@@ -243,7 +257,7 @@ def test_daily_pipeline_skips_kamis_and_market_on_weekend() -> None:
 
     assert result.status is RunStatus.SUCCESS
     assert online.calls == 1
-    assert {"kamis", "online", "market"}.issubset(runs.successful_sources)
+    assert {"kamis_raw", "online", "market"}.issubset(runs.successful_sources)
 
 
 def test_kamis_business_day_excludes_korean_public_holiday() -> None:
@@ -281,4 +295,4 @@ def test_daily_pipeline_logs_each_source_before_collection() -> None:
         for event, context in logger.entries
         if event == "daily_pipeline.source.started"
     ]
-    assert started_sources == ["kamis", "online", "market"]
+    assert started_sources == ["kamis_raw", "online", "market"]
