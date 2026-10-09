@@ -234,6 +234,70 @@ def test_dashboard_defaults_use_raw_kamis_date_stats_only() -> None:
     }
 
 
+def test_comparison_refreshes_potato_kind_from_actual_stored_coverage() -> None:
+    class PotatoPrices:
+        def preferred_kind_stats(self, *, requested_convert_kg=None, region=None):
+            assert requested_convert_kg is False
+            assert region == "평균"
+            return {
+                "152": (
+                    "01",
+                    date(2006, 1, 3),
+                    date(2026, 10, 8),
+                    4000,
+                )
+            }
+
+        def search(self, filters):
+            assert filters.item_code == "152"
+            return [
+                {
+                    "item_code": "152",
+                    "kind_code": "01",
+                    "observed_date": "2026-10-08",
+                    "price_type": "retail",
+                    "rank_code": "04",
+                    "price_krw": 4200,
+                    "region": "평균",
+                }
+            ]
+
+    entries = [
+        SimpleNamespace(
+            item_code="152",
+            kind_code="00",
+            wholesale_rank_codes=("04",),
+            retail_rank_codes=("04",),
+            wholesale_unit="kg",
+            wholesale_unit_size="20",
+            retail_unit="kg",
+            retail_unit_size="1",
+        ),
+        SimpleNamespace(
+            item_code="152",
+            kind_code="01",
+            wholesale_rank_codes=("04",),
+            retail_rank_codes=("04",),
+            wholesale_unit="kg",
+            wholesale_unit_size="20",
+            retail_unit="g",
+            retail_unit_size="100",
+        ),
+    ]
+    comparison = ComparisonService(
+        PotatoPrices(),
+        EmptyOnlineRepo(),
+        SimpleNamespace(search=lambda **kwargs: []),
+        AnalyticsService(),
+        catalog_repository=SimpleNamespace(entries=lambda: entries),
+    )
+
+    result = comparison.chart("152", None, None, "raw")
+
+    assert comparison.comparison_kinds["152"] == "01"
+    assert result["series"]["kamis_retail"] == [4200.0]
+
+
 def test_catalog_selects_one_kind_without_unit_conversion_rules() -> None:
     entries = [
         SimpleNamespace(
