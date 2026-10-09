@@ -89,7 +89,7 @@ class StartupCollectionService:
 
         self._logger.info(  # noqa: PLE1205 - custom structured logger
             "startup.collection.scheduled",
-            "Startup collection and market history check scheduled",
+            "Startup collection, 20-year KAMIS reconciliation, and market history check scheduled",
             source="daily_pipeline",
             observed_date=observed_date,
         )
@@ -97,7 +97,7 @@ class StartupCollectionService:
             "startup.daily.skipped" if daily_completed else "startup.daily.pending",
             "오늘 통합 수집의 성공 이력이 있어 재수집하지 않습니다."
             if daily_completed
-            else "과거 누락 데이터 확인 후 오늘 KAMIS 원가격·시장 데이터 수집을 시작합니다.",
+            else "최근 누락과 20년 KAMIS 원가격 이력을 확인한 뒤 오늘 KAMIS·시장 수집을 진행합니다.",
             observed_date=observed_date,
             reason="successful_checkpoint_exists" if daily_completed else "history_check_first",
         )
