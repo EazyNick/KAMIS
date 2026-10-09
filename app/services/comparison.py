@@ -207,11 +207,15 @@ class ComparisonService:
         )
         kind = self.comparison_kinds.get(item_code)
         notes: list[str] = [
-            "KAMIS 가격은 p_convert_kg_yn=N으로 수집한 원 조사단위 KRW를 사용합니다."
+            "KAMIS 가격은 p_convert_kg_yn=N으로 수집한 원 조사단위 KRW를 사용합니다.",
+            "지역·시장 가격을 재평균하지 않고 KAMIS가 제공하는 region=평균 값을 그대로 사용합니다.",
         ]
         if kind is not None:
             price_rows = [row for row in price_rows if row.get("kind_code") == kind]
-        price_rows = [row for row in price_rows if row.get("region") != "평년"]
+        # Use the nationwide average supplied by KAMIS itself. Do not recompute
+        # an average from regional/market observations because that changes the
+        # official KAMIS representative price and can bias long-history trends.
+        price_rows = [row for row in price_rows if row.get("region") == "평균"]
         kamis_dates = sorted(
             {
                 pd.Timestamp(row["observed_date"])
@@ -238,12 +242,17 @@ class ComparisonService:
                     if rank
                 )
                 if available_ranks:
-                    selected_rank = "04" if "04" in available_ranks else available_ranks[0]
+                    selected_rank = (
+                        "04" if "04" in available_ranks else available_ranks[0]
+                    )
                     selected_ranks[price_type] = selected_rank
                     typed = typed.loc[typed["rank_code"].eq(selected_rank)]
-                frame[f"kamis_{price_type}"] = typed.groupby("observed_date")[
-                    "price_krw"
-                ].mean()
+                typed = (
+                    typed.sort_values("observed_date")
+                    .drop_duplicates(subset=["observed_date"], keep="last")
+                    .set_index("observed_date")
+                )
+                frame[f"kamis_{price_type}"] = typed["price_krw"]
 
         market_rows = self._market.search(start_date=start_date, end_date=end_date)
         if market_rows:
