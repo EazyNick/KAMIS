@@ -101,7 +101,7 @@ def fetch_in_chunks(client, query, chunk_days: int):
     return rows
 
 
-CHECKPOINT_STORAGE_SCOPE = "official_average_raw_v1"
+CHECKPOINT_STORAGE_SCOPE = "official_average_raw_v2"
 
 
 def load_checkpoint(path: Path) -> tuple[set[str], dict[str, int], str | None]:
@@ -225,15 +225,19 @@ def run_backfill(
         and checkpoint_scope != CHECKPOINT_STORAGE_SCOPE
     ):
         migrated_counts: dict[str, int] = {}
+        verified_completed: set[str] = set()
+        recheck_count = 0
         for key in completed_queries:
             parts = key.split(":")
             if len(parts) != 6:
+                recheck_count += 1
                 continue
             item_code, kind_code, price_type, rank_code, start_text, end_text = parts
             try:
                 query_start = date.fromisoformat(start_text)
                 query_end = date.fromisoformat(end_text)
             except ValueError:
+                recheck_count += 1
                 continue
             if (
                 query_start.year == today.year
@@ -261,14 +265,28 @@ def run_backfill(
                     ),
                     0,
                 )
+
+            # Old checkpoints were produced before normalized storage was limited
+            # to KAMIS' official region='평균' rows. A migrated count of zero
+            # cannot prove that this query truly has no official-average data;
+            # re-query it once under the v2 storage scope instead of accepting
+            # the old completion marker as sufficient evidence.
+            if count <= 0:
+                recheck_count += 1
+                continue
+
+            verified_completed.add(key)
             migrated_counts[key] = count
-        checkpoint_counts.update(migrated_counts)
+
+        completed_queries = verified_completed
+        checkpoint_counts = migrated_counts
         save_checkpoint(checkpoint_path, completed_queries, checkpoint_counts)
         checkpoint_scope = CHECKPOINT_STORAGE_SCOPE
         app_logger.info(
             "kamis.long_history.checkpoint.migrated",
-            "Existing KAMIS checkpoint migrated to official-average row counts",
+            "Existing KAMIS checkpoint migrated to verified official-average coverage",
             migrated_query_count=len(migrated_counts),
+            recheck_query_count=recheck_count,
         )
 
     app_logger.info(
