@@ -44,6 +44,7 @@ class KamisHistoryService:
         catalog_provider: Callable[[], list[ProductCatalogEntry]] | None = None,
         required_keys: set[tuple[str, str]]
         | frozenset[tuple[str, str]] = frozenset(),
+        successful_dates_provider: Callable[[date, date], set[date]] | None = None,
     ) -> None:
         if window_days < 2:
             raise ValueError("window_days must be at least 2")
@@ -53,6 +54,7 @@ class KamisHistoryService:
         self._window_days = window_days
         self._catalog_provider = catalog_provider
         self._required_keys = frozenset(required_keys)
+        self._successful_dates_provider = successful_dates_provider
         self._today_provider = today_provider or (
             lambda: datetime.now(ZoneInfo(timezone)).date()
         )
@@ -85,6 +87,11 @@ class KamisHistoryService:
                     )
                 else:
                     stored_dates = self._prices.observed_dates(
+                        overlap_start,
+                        overlap_end,
+                    )
+                if self._successful_dates_provider is not None:
+                    stored_dates |= self._successful_dates_provider(
                         overlap_start,
                         overlap_end,
                     )
