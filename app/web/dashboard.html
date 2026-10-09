@@ -233,7 +233,10 @@ function hoverChart(event){
   const localIndex=localIndexFromX(mx,plotWidth,p,dates.length),absoluteIndex=bounds.start+localIndex;
   hoverIndex=absoluteIndex;
   draw();
-  showComparisonTooltip(pinnedIndex!=null?pinnedIndex:absoluteIndex,p.l+plotWidth*(localIndex/Math.max(1,dates.length-1)),my);
+  const tooltipIndex=pinnedIndex!=null?pinnedIndex:absoluteIndex;
+  const tooltipLocalIndex=tooltipIndex-bounds.start;
+  const tooltipX=p.l+plotWidth*(tooltipLocalIndex/Math.max(1,dates.length-1));
+  showComparisonTooltip(tooltipIndex,tooltipX,my);
 }
 
 function startChartZoom(event){
