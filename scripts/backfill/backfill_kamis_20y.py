@@ -150,9 +150,9 @@ def main() -> int:
     start_year = args.start_year or (today.year - 20)
     end_year = min(args.end_year or today.year, today.year)
     checkpoint_name = (
-        f"kamis_20y_category_{args.category_code}.json"
+        f"kamis_20y_raw_category_{args.category_code}.json"
         if args.category_code
-        else "kamis_20y_checkpoint.json"
+        else "kamis_20y_raw_checkpoint.json"
     )
     checkpoint_path = settings.data_dir / "backfill" / checkpoint_name
     completed_queries = set() if args.force else load_checkpoint(checkpoint_path)
@@ -191,8 +191,8 @@ def main() -> int:
             )
 
     print(
-        f"[START] KAMIS: {start_year}-01-01 ~ {today}, "
-        f"targets={len(targets):,}, all_catalog={args.all_catalog}"
+        f"[START] KAMIS raw survey prices: {start_year}-01-01 ~ {today}, "
+        f"targets={len(targets):,}, all_catalog={args.all_catalog}, convert_kg=N"
     )
     print(f"[OUTPUT] {prices.path}")
     print(f"[CHECKPOINT] {checkpoint_path}")
@@ -240,7 +240,7 @@ def main() -> int:
                         catalog_entry=entry,
                         rank_code=rank_code,
                         country_code=None,
-                        convert_kg=True,
+                        convert_kg=False,
                     )
 
                     print(
