@@ -195,6 +195,10 @@ def run_backfill(
         last_year,
         requested_convert_kg=False,
     )
+    stored_scope_month_counts = prices.scope_month_counts(
+        today.year,
+        requested_convert_kg=False,
+    )
 
     app_logger.info(
         "kamis.long_history.started",
@@ -223,8 +227,19 @@ def run_backfill(
     failed_queries: list[str] = []
 
     for year in range(last_year, first_year - 1, -1):
-        period_start = date(year, 1, 1)
-        period_end = min(date(year, 12, 31), today)
+        if year == today.year:
+            segments: list[tuple[date, date]] = []
+            for month in range(1, today.month + 1):
+                month_start = date(year, month, 1)
+                if month == 12:
+                    next_month = date(year + 1, 1, 1)
+                else:
+                    next_month = date(year, month + 1, 1)
+                month_end = min(next_month - timedelta(days=1), today)
+                segments.append((month_start, month_end))
+        else:
+            segments = [(date(year, 1, 1), date(year, 12, 31))]
+
         year_rows = []
         successful_keys: list[str] = []
         successful_counts: dict[str, int] = {}
@@ -236,54 +251,68 @@ def run_backfill(
                 (PriceType.RETAIL, entry.retail_rank_codes),
             ):
                 for rank_code in rank_codes:
-                    key = query_key(
-                        entry.item_code,
-                        entry.kind_code,
-                        price_type,
-                        rank_code,
-                        period_start,
-                        period_end,
-                    )
-                    stored_count = stored_scope_year_counts.get(
-                        (
+                    for period_start, period_end in segments:
+                        key = query_key(
                             entry.item_code,
                             entry.kind_code,
-                            price_type.value,
+                            price_type,
                             rank_code,
-                            year,
-                        ),
-                        0,
-                    )
-                    expected_count = checkpoint_counts.get(key)
-                    if (
-                        not force
-                        and key in completed_queries
-                        and expected_count is not None
-                        and stored_count >= expected_count
-                    ):
-                        continue
-                    pending.append(
-                        (
-                            key,
-                            PriceQuery(
-                                price_type=price_type,
-                                start_date=period_start,
-                                end_date=period_end,
-                                catalog_entry=entry,
-                                rank_code=rank_code,
-                                country_code=None,
-                                convert_kg=False,
-                            ),
+                            period_start,
+                            period_end,
                         )
-                    )
+                        if year == today.year:
+                            stored_count = stored_scope_month_counts.get(
+                                (
+                                    entry.item_code,
+                                    entry.kind_code,
+                                    price_type.value,
+                                    rank_code,
+                                    period_start.month,
+                                ),
+                                0,
+                            )
+                        else:
+                            stored_count = stored_scope_year_counts.get(
+                                (
+                                    entry.item_code,
+                                    entry.kind_code,
+                                    price_type.value,
+                                    rank_code,
+                                    year,
+                                ),
+                                0,
+                            )
+                        expected_count = checkpoint_counts.get(key)
+                        if (
+                            not force
+                            and key in completed_queries
+                            and expected_count is not None
+                            and stored_count >= expected_count
+                        ):
+                            continue
+                        pending.append(
+                            (
+                                key,
+                                PriceQuery(
+                                    price_type=price_type,
+                                    start_date=period_start,
+                                    end_date=period_end,
+                                    catalog_entry=entry,
+                                    rank_code=rank_code,
+                                    country_code=None,
+                                    convert_kg=False,
+                                ),
+                            )
+                        )
 
         if not pending:
             continue
 
         app_logger.info(
             "kamis.long_history.year.started",
-            "Missing raw KAMIS query-years will be collected",
+            "Missing raw KAMIS history segments will be collected",
             year=year,
+            segment_granularity="month" if year == today.year else "year",
             pending_query_count=len(pending),
         )
 
@@ -299,7 +328,7 @@ def run_backfill(
                 rows = [
                     row
                     for row in rows
-                    if period_start <= row.observed_date <= period_end
+                    if query.start_date <= row.observed_date <= query.end_date
                 ]
                 unique = {}
                 for row in rows:
