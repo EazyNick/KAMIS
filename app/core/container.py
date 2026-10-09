@@ -52,14 +52,20 @@ class ApplicationContainer:
         prices = PriceRepository(settings.data_dir, app_logger)
         runs = RunRepository(settings.data_dir, app_logger)
         service = build_kamis_collector(settings, catalog, prices, runs)
+        # TEMP: Agent-based Naver/Coupang crawling is disabled for main.py startup.
+        # Manual agent entrypoints remain available; only automatic startup/daily
+        # execution is paused while the research focus is KAMIS wholesale/retail
+        # prices versus stock indices and futures.
+        #
+        # Re-enable later by restoring the online repository/agent source/service
+        # construction here and passing online_service to DailyPipeline below.
         online_repository = None
-        market_repository = MarketRepository(settings.data_dir, app_logger)
-        analytics_repository = AnalyticsRepository(settings.data_dir, app_logger)
-        # Online shopping collection is intentionally disabled while the research
-        # focus is KAMIS wholesale/retail prices versus market series.
         online_service = None
         coupang_source = None
         naver_source = None
+
+        market_repository = MarketRepository(settings.data_dir, app_logger)
+        analytics_repository = AnalyticsRepository(settings.data_dir, app_logger)
         market_client = build_market_collector()
         analytics = AnalyticsService()
         comparison = ComparisonService(
@@ -81,7 +87,7 @@ class ApplicationContainer:
         )
         pipeline = DailyPipeline(
             service,
-            None,
+            None,  # TEMP: do not run Naver/Coupang Agent crawling from main.py
             market_client,
             market_repository,
             runs,
