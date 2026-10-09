@@ -74,6 +74,76 @@ def test_comparison_chart_uses_raw_kamis_prices_without_unit_conversion() -> Non
     assert any("p_convert_kg_yn=N" in note for note in result["comparison_notes"])
 
 
+def test_comparison_prefers_rank_04_and_exposes_survey_units() -> None:
+    rows = [
+        {
+            "item_code": "257",
+            "kind_code": "00",
+            "observed_date": "2026-05-14",
+            "price_type": "retail",
+            "rank_code": "04",
+            "price_krw": 16000,
+            "region": "대구",
+        },
+        {
+            "item_code": "257",
+            "kind_code": "00",
+            "observed_date": "2026-05-14",
+            "price_type": "retail",
+            "rank_code": "05",
+            "price_krw": 8000,
+            "region": "대구",
+        },
+        {
+            "item_code": "257",
+            "kind_code": "00",
+            "observed_date": "2026-05-14",
+            "price_type": "wholesale",
+            "rank_code": "04",
+            "price_krw": 44000,
+            "region": "서울",
+        },
+        {
+            "item_code": "257",
+            "kind_code": "00",
+            "observed_date": "2026-05-14",
+            "price_type": "wholesale",
+            "rank_code": "05",
+            "price_krw": 33000,
+            "region": "서울",
+        },
+    ]
+    catalog_entry = SimpleNamespace(
+        item_code="257",
+        kind_code="00",
+        wholesale_rank_codes=("04", "05"),
+        retail_rank_codes=("04", "05"),
+        wholesale_unit="kg",
+        wholesale_unit_size="8",
+        retail_unit="개",
+        retail_unit_size="1",
+    )
+    comparison = ComparisonService(
+        SimpleNamespace(search=lambda filters: rows),
+        EmptyOnlineRepo(),
+        SimpleNamespace(search=lambda **kwargs: []),
+        AnalyticsService(),
+        target_keys={("257", "00")},
+        catalog_repository=SimpleNamespace(entries=lambda: [catalog_entry]),
+    )
+
+    result = comparison.chart("257", None, None, "raw")
+
+    assert result["series"]["kamis_retail"] == [16000.0]
+    assert result["series"]["kamis_wholesale"] == [44000.0]
+    assert result["kamis_selected_ranks"] == {
+        "wholesale": "04",
+        "retail": "04",
+    }
+    assert result["series_labels"]["kamis_wholesale"] == "KAMIS 도매 (8kg)"
+    assert result["series_labels"]["kamis_retail"] == "KAMIS 소매 (1개)"
+
+
 def test_base100_uses_first_raw_observation_once_for_entire_range() -> None:
     result = service().chart(
         "257", date(2026, 9, 1), date(2026, 9, 30), "base100"
