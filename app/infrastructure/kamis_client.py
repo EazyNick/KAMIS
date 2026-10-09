@@ -72,14 +72,18 @@ class KamisClient:
     def _get(self, action: str, params: dict[str, str]) -> dict[str, Any] | None:
         started = perf_counter()
         context = {"source": "kamis", "action": action}
-        self._logger.info("kamis.request.started", "KAMIS request started", **context)
+        self._logger.debug(
+            "kamis.request.started",
+            "KAMIS HTTP request started",
+            **context,
+        )
         try:
             payload = self._retrying(self._request_once, action, params)
             code = self._error_code(payload)
             if code == "001":
-                self._logger.info(
+                self._logger.debug(
                     "kamis.request.no_data",
-                    "KAMIS returned no data",
+                    "KAMIS HTTP response contained no data",
                     **context,
                     duration_ms=round((perf_counter() - started) * 1000),
                 )
@@ -88,9 +92,9 @@ class KamisClient:
                 raise KamisAuthenticationError(code, self._extract_message(payload))
             if code != "000":
                 raise KamisApiError(code, self._extract_message(payload))
-            self._logger.info(
+            self._logger.debug(
                 "kamis.request.succeeded",
-                "KAMIS request completed",
+                "KAMIS HTTP request completed",
                 **context,
                 duration_ms=round((perf_counter() - started) * 1000),
             )
@@ -164,8 +168,38 @@ class KamisClient:
             "p_cert_id": cert_id,
             "p_returntype": "json",
         }
+        price_label = (
+            "도매" if query.price_type is PriceType.WHOLESALE else "소매"
+        )
+        log_context = {
+            "item_name": query.catalog_entry.item_name,
+            "item_code": query.catalog_entry.item_code,
+            "kind_code": query.catalog_entry.kind_code,
+            "price_type": query.price_type.value,
+            "rank_code": query.rank_code,
+            "start_date": query.start_date,
+            "end_date": query.end_date,
+            "convert_kg": "Y" if query.convert_kg else "N",
+        }
+        self._logger.info(
+            "kamis.price.fetch.started",
+            f"[수집] {query.catalog_entry.item_name} {price_label} "
+            f"rank={query.rank_code} {query.start_date}~{query.end_date} "
+            "KAMIS API 요청",
+            **log_context,
+        )
+        fetch_started = perf_counter()
         payload = self._get(action, params)
         if payload is None:
+            self._logger.info(
+                "kamis.price.fetch.completed",
+                f"[완료] {query.catalog_entry.item_name} {price_label} "
+                f"rank={query.rank_code} 수집 결과 없음",
+                **log_context,
+                returned_records=0,
+                official_average_records=0,
+                duration_ms=round((perf_counter() - fetch_started) * 1000),
+            )
             return []
         raw_data = payload.get("data", [])
         if isinstance(raw_data, Mapping):
@@ -177,11 +211,25 @@ class KamisClient:
         if not isinstance(raw_rows, list):
             raise KamisApiError("PARSE", "price data is not a list")
         collected_at = datetime.now(ZoneInfo(self._settings.timezone))
-        return [
+        observations = [
             PriceObservation.from_api(cast(dict[str, object], row), query, collected_at)
             for row in raw_rows
             if isinstance(row, dict)
         ]
+        official_average_count = sum(
+            1 for row in observations if row.region == "평균"
+        )
+        self._logger.info(
+            "kamis.price.fetch.completed",
+            f"[완료] {query.catalog_entry.item_name} {price_label} "
+            f"rank={query.rank_code} API {len(observations)}건 / "
+            f"대시보드 평균값 {official_average_count}건",
+            **log_context,
+            returned_records=len(observations),
+            official_average_records=official_average_count,
+            duration_ms=round((perf_counter() - fetch_started) * 1000),
+        )
+        return observations
 
 
 def build_requests_session() -> requests.Session:
