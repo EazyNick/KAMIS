@@ -139,7 +139,7 @@ class ComparisonService:
     def __init__(
         self,
         price_repository: PriceRepositoryProtocol,
-        online_repository: OnlineRepositoryProtocol,
+        online_repository: Any,
         market_repository: MarketRepositoryProtocol,
         analytics: AnalyticsService,
         *,
@@ -267,10 +267,10 @@ class ComparisonService:
         item_stats: dict[str, tuple[date, date, int]] = {}
         stats_reader = getattr(self._prices, "item_date_stats", None)
         if callable(stats_reader):
-            item_stats.update(stats_reader())
+            item_stats.update(stats_reader(requested_convert_kg=False))
         else:
             # Compatibility path for lightweight test doubles and alternate stores.
-            for row in self._prices.search(PriceFilters()):
+            for row in self._prices.search(PriceFilters(requested_convert_kg=False)):
                 item_code = str(row.get("item_code", ""))
                 observed_value = row.get("observed_date")
                 if not item_code or not observed_value:
