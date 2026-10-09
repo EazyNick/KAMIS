@@ -14,10 +14,15 @@ class PriceRepo:
         self.stored_dates = stored_dates
         self.scope_covered_dates = covered_dates
 
-    def observed_date_range(self):
+    def observed_date_range(self, *, requested_convert_kg=None):
+        assert requested_convert_kg is False
         return self.period
 
-    def observed_dates(self, start_date, end_date):
+    def observed_dates(
+        self, start_date, end_date, *, requested_convert_kg=None
+    ):
+        if requested_convert_kg is not None:
+            assert requested_convert_kg is False
         if self.stored_dates is not None:
             return {
                 observed
