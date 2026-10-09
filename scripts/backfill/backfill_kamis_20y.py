@@ -40,7 +40,7 @@ from zoneinfo import ZoneInfo
 from app.domain.models import PriceQuery, PriceType
 from app.infrastructure.csv_repository import CatalogRepository, PriceRepository
 from app.infrastructure.kamis_client import KamisClient, build_requests_session
-from config.server_config import DEFAULT_ONLINE_TARGET_KEYS, Settings
+from config.server_config import Settings
 from log import app_logger
 
 
@@ -51,7 +51,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--all-catalog",
         action="store_true",
-        help="Collect the complete KAMIS catalog instead of the project's 11 targets.",
+        help="Compatibility flag; the complete KAMIS catalog is now the default.",
     )
     parser.add_argument(
         "--force",
@@ -173,26 +173,12 @@ def main() -> int:
         targets = [
             entry for entry in catalog if entry.category_code == args.category_code
         ]
-    elif args.all_catalog:
-        targets = catalog
     else:
-        target_keys = set(DEFAULT_ONLINE_TARGET_KEYS)
-        targets = [
-            entry
-            for entry in catalog
-            if (entry.item_code, entry.kind_code) in target_keys
-        ]
-        found = {(entry.item_code, entry.kind_code) for entry in targets}
-        missing = sorted(target_keys - found)
-        if missing:
-            print(
-                "[WARN] targets missing from current catalog: "
-                + ", ".join(f"{item}:{kind}" for item, kind in missing)
-            )
+        targets = catalog
 
     print(
         f"[START] KAMIS raw survey prices: {start_year}-01-01 ~ {today}, "
-        f"targets={len(targets):,}, all_catalog={args.all_catalog}, convert_kg=N"
+        f"targets={len(targets):,}, scope=full_catalog, convert_kg=N"
     )
     print(f"[OUTPUT] {prices.path}")
     print(f"[CHECKPOINT] {checkpoint_path}")
