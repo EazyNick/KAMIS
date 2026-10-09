@@ -71,6 +71,38 @@ def test_price_repository_requires_configured_item_coverage(tmp_path: Path) -> N
     )
 
 
+def test_price_repository_reports_only_dates_with_complete_scope_coverage(
+    tmp_path: Path,
+) -> None:
+    repository = PriceRepository(tmp_path, app_logger)
+    first = replace(price_row(), observed_date=date(2026, 10, 7))
+    second = replace(price_row(), observed_date=date(2026, 10, 8))
+    repository.upsert(
+        [
+            first,
+            replace(
+                first,
+                price_type=PriceType.WHOLESALE,
+                rank_code="03",
+                market_name="B-유통",
+            ),
+            second,
+        ],
+        "seed",
+    )
+
+    required = {
+        ("111", "01", "retail", "04"),
+        ("111", "01", "wholesale", "03"),
+    }
+
+    assert repository.covered_dates(
+        date(2026, 10, 7),
+        date(2026, 10, 8),
+        required,
+    ) == {date(2026, 10, 7)}
+
+
 def price_row(price: str = "1000") -> PriceObservation:
     return PriceObservation(
         price_type=PriceType.RETAIL,
@@ -194,6 +226,30 @@ def test_repository_preserves_existing_file_when_new_write_fails(
         repository.upsert([price_row("1020")], "run-2")
 
     assert repository.path.read_bytes() == original
+
+
+def test_run_repository_returns_dates_covered_by_successful_ranges(
+    tmp_path: Path,
+) -> None:
+    repository = RunRepository(tmp_path, app_logger)
+    successful = CollectionRun.start(
+        "kamis",
+        date(2026, 10, 7),
+        date(2026, 10, 8),
+    ).finish(RunStatus.SUCCESS, record_count=10, error_count=0)
+    partial = CollectionRun.start(
+        "kamis",
+        date(2026, 10, 5),
+        date(2026, 10, 6),
+    ).finish(RunStatus.PARTIAL_FAILURE, record_count=3, error_count=1)
+    repository.save(successful)
+    repository.save(partial)
+
+    assert repository.successful_covered_dates(
+        "kamis",
+        date(2026, 10, 5),
+        date(2026, 10, 9),
+    ) == {date(2026, 10, 7), date(2026, 10, 8)}
 
 
 def test_run_repository_detects_only_successful_daily_run(tmp_path: Path) -> None:
