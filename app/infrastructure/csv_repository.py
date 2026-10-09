@@ -289,6 +289,92 @@ class PriceRepository(_AtomicCsvRepository):
                 raise StorageError(f"failed to search {self.path}: {error}") from error
         return result
 
+    def preferred_kind_stats(
+        self,
+        *,
+        requested_convert_kg: bool | None = None,
+        region: str | None = None,
+    ) -> dict[str, tuple[str, date, date, int]]:
+        """Return the best-covered kind per item from actually stored prices.
+
+        Selection prefers the kind with the most observations, then the widest
+        observed date span. This keeps dashboard varieties aligned with the
+        available long-history KAMIS data instead of catalog row order.
+        """
+        if not self.path.exists() or self.path.stat().st_size == 0:
+            return {}
+        conditions = [
+            "observed_date IS NOT NULL",
+            "observed_date <> ''",
+            "item_code IS NOT NULL",
+            "item_code <> ''",
+            "kind_code IS NOT NULL",
+            "kind_code <> ''",
+        ]
+        parameters: list[Any] = [str(self.path)]
+        if requested_convert_kg is not None:
+            conditions.append("lower(requested_convert_kg) IN (?, ?, ?)")
+            parameters.extend(
+                ["true", "y", "1"]
+                if requested_convert_kg
+                else ["false", "n", "0"]
+            )
+        if region is not None:
+            conditions.append("region = ?")
+            parameters.append(region)
+        try:
+            with duckdb.connect(config={"threads": 2}) as connection:
+                rows = connection.execute(
+                    """
+                    WITH kind_stats AS (
+                        SELECT
+                            item_code,
+                            kind_code,
+                            min(observed_date) AS first_date,
+                            max(observed_date) AS last_date,
+                            count(*) AS observations
+                        FROM read_csv(?, header=true, all_varchar=true)
+                        WHERE """
+                    + " AND ".join(conditions)
+                    + """
+                        GROUP BY item_code, kind_code
+                    ),
+                    ranked AS (
+                        SELECT *,
+                            row_number() OVER (
+                                PARTITION BY item_code
+                                ORDER BY
+                                    observations DESC,
+                                    date_diff(
+                                        'day',
+                                        CAST(first_date AS DATE),
+                                        CAST(last_date AS DATE)
+                                    ) DESC,
+                                    kind_code ASC
+                            ) AS rn
+                        FROM kind_stats
+                    )
+                    SELECT item_code, kind_code, first_date, last_date, observations
+                    FROM ranked
+                    WHERE rn = 1
+                    """,
+                    parameters,
+                ).fetchall()
+        except duckdb.Error as error:
+            raise StorageError(
+                f"failed to inspect preferred KAMIS kinds in {self.path}: {error}"
+            ) from error
+        return {
+            str(item_code): (
+                str(kind_code),
+                date.fromisoformat(str(first)),
+                date.fromisoformat(str(last)),
+                int(count),
+            )
+            for item_code, kind_code, first, last, count in rows
+            if item_code and kind_code and first and last
+        }
+
     def item_date_stats(
         self,
         *,
