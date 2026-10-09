@@ -27,7 +27,7 @@ from app.services.kamis_history import KamisHistoryService
 from app.services.market_history import MarketHistoryService
 from app.services.online_collection import OnlineCollectionService
 from app.services.startup_collection import StartupCollectionService
-from config.server_config import DEFAULT_ONLINE_TARGET_KEYS, Settings
+from config.server_config import Settings
 from log import app_logger
 
 
@@ -71,21 +71,10 @@ class ApplicationContainer:
             online_repository,
             market_repository,
             analytics,
-            target_keys=settings.online_target_keys,
+            target_keys=frozenset(),
             catalog_repository=catalog,
         )
-        configured_targets = set(settings.online_target_keys)
-        preferred_item_codes = tuple(
-            dict.fromkeys(
-                item_code
-                for item_code, kind_code in DEFAULT_ONLINE_TARGET_KEYS
-                if (item_code, kind_code) in configured_targets
-            )
-        )
-        if not preferred_item_codes:
-            preferred_item_codes = tuple(
-                sorted({item_code for item_code, _ in configured_targets})
-            )
+        preferred_item_codes: tuple[str, ...] = ()
         dashboard_bootstrap = DashboardBootstrapService(
             analytics_repository,
             comparison,
