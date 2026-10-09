@@ -16,24 +16,27 @@ class PriceRepo:
                 "kind_code": "00",
                 "observed_date": "2026-09-23",
                 "price_type": "retail",
+                "rank_code": "04",
                 "price_krw": 28980.57,
-                "region": "서울",
+                "region": "평균",
             },
             {
                 "item_code": "257",
                 "kind_code": "00",
                 "observed_date": "2026-09-24",
                 "price_type": "retail",
+                "rank_code": "04",
                 "price_krw": 30000,
-                "region": "서울",
+                "region": "평균",
             },
             {
                 "item_code": "257",
                 "kind_code": "00",
                 "observed_date": "2026-09-24",
                 "price_type": "wholesale",
+                "rank_code": "04",
                 "price_krw": 42000,
-                "region": "서울",
+                "region": "평균",
             },
         ]
 
@@ -74,6 +77,56 @@ def test_comparison_chart_uses_raw_kamis_prices_without_unit_conversion() -> Non
     assert any("p_convert_kg_yn=N" in note for note in result["comparison_notes"])
 
 
+def test_comparison_uses_kamis_official_average_instead_of_regional_mean() -> None:
+    rows = [
+        {
+            "item_code": "257",
+            "kind_code": "00",
+            "observed_date": "2026-05-14",
+            "price_type": "retail",
+            "rank_code": "04",
+            "price_krw": 13516.45,
+            "region": "평균",
+            "market_name": None,
+        },
+        {
+            "item_code": "257",
+            "kind_code": "00",
+            "observed_date": "2026-05-14",
+            "price_type": "retail",
+            "rank_code": "04",
+            "price_krw": 5000,
+            "region": "서울",
+            "market_name": "A-유통",
+        },
+        {
+            "item_code": "257",
+            "kind_code": "00",
+            "observed_date": "2026-05-14",
+            "price_type": "retail",
+            "rank_code": "04",
+            "price_krw": 21000,
+            "region": "포항",
+            "market_name": "죽도",
+        },
+    ]
+    comparison = ComparisonService(
+        SimpleNamespace(search=lambda filters: rows),
+        EmptyOnlineRepo(),
+        SimpleNamespace(search=lambda **kwargs: []),
+        AnalyticsService(),
+        target_keys={("257", "00")},
+    )
+
+    result = comparison.chart("257", None, None, "raw")
+
+    assert result["series"]["kamis_retail"] == [13516.45]
+    assert any(
+        "region=평균" in note
+        for note in result["comparison_notes"]
+    )
+
+
 def test_comparison_prefers_rank_04_and_exposes_survey_units() -> None:
     rows = [
         {
@@ -83,7 +136,7 @@ def test_comparison_prefers_rank_04_and_exposes_survey_units() -> None:
             "price_type": "retail",
             "rank_code": "04",
             "price_krw": 16000,
-            "region": "대구",
+            "region": "평균",
         },
         {
             "item_code": "257",
@@ -92,7 +145,7 @@ def test_comparison_prefers_rank_04_and_exposes_survey_units() -> None:
             "price_type": "retail",
             "rank_code": "05",
             "price_krw": 8000,
-            "region": "대구",
+            "region": "평균",
         },
         {
             "item_code": "257",
@@ -101,7 +154,7 @@ def test_comparison_prefers_rank_04_and_exposes_survey_units() -> None:
             "price_type": "wholesale",
             "rank_code": "04",
             "price_krw": 44000,
-            "region": "서울",
+            "region": "평균",
         },
         {
             "item_code": "257",
@@ -110,7 +163,7 @@ def test_comparison_prefers_rank_04_and_exposes_survey_units() -> None:
             "price_type": "wholesale",
             "rank_code": "05",
             "price_krw": 33000,
-            "region": "서울",
+            "region": "평균",
         },
     ]
     catalog_entry = SimpleNamespace(
