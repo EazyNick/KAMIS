@@ -141,6 +141,29 @@ def test_price_repository_can_select_only_original_kamis_prices(
     assert repository.item_date_stats(requested_convert_kg=False)["111"][2] == 1
 
 
+def test_scope_year_counts_separates_raw_from_legacy_converted_rows(
+    tmp_path: Path,
+) -> None:
+    repository = PriceRepository(tmp_path, app_logger)
+    raw_2025 = replace(price_row(), observed_date=date(2025, 1, 3))
+    raw_2026 = replace(price_row(), observed_date=date(2026, 1, 3))
+    converted_2026 = replace(
+        raw_2026,
+        requested_convert_kg=True,
+        market_name="legacy-converted",
+    )
+    repository.upsert([raw_2025, raw_2026, converted_2026], "seed")
+
+    counts = repository.scope_year_counts(
+        2025,
+        2026,
+        requested_convert_kg=False,
+    )
+
+    assert counts[("111", "01", "retail", "04", 2025)] == 1
+    assert counts[("111", "01", "retail", "04", 2026)] == 1
+
+
 def test_price_repository_item_date_stats_stream_long_history(tmp_path: Path) -> None:
     repository = PriceRepository(tmp_path, app_logger)
     repository.upsert(
