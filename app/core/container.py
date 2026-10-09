@@ -141,7 +141,7 @@ class ApplicationContainer:
         )
         pipeline = DailyPipeline(
             service,
-            online_service,
+            None,
             market_client,
             market_repository,
             runs,
@@ -159,7 +159,7 @@ class ApplicationContainer:
             catalog_provider=catalog.entries,
             required_keys=set(settings.online_target_keys),
             successful_dates_provider=lambda start, end: runs.successful_covered_dates(
-                "kamis",
+                "kamis_raw",
                 start,
                 end,
             ),
