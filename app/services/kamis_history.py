@@ -84,6 +84,7 @@ class KamisHistoryService:
                         overlap_start,
                         overlap_end,
                         required_scopes,
+                        requested_convert_kg=False,
                     )
                 else:
                     stored_dates = self._prices.observed_dates(
