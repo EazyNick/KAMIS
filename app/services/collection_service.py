@@ -186,7 +186,10 @@ class KamisCollectionService:
                         )
                         try:
                             fetched = self._client.fetch_prices(query)
-                            observations.extend(fetched)
+                            official_average = [
+                                row for row in fetched if row.region == "평균"
+                            ]
+                            observations.extend(official_average)
                             self._logger.debug(  # noqa: PLE1205 - structured logger
                                 "collection.query.completed",
                                 "KAMIS item price collection completed",
@@ -195,7 +198,7 @@ class KamisCollectionService:
                                 kind_code=entry.kind_code,
                                 price_type=price_type.value,
                                 rank_code=rank_code,
-                                record_count=len(fetched),
+                                record_count=len(official_average),
                             )
                         except Exception as error:
                             scope = (
