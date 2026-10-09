@@ -132,7 +132,7 @@ class AllMarketWeekendRepo:
         ]
 
 
-def test_chart_payload_keeps_all_market_series_continuous_across_weekend() -> None:
+def test_chart_payload_contains_market_series_without_online_dates() -> None:
     service = ComparisonService(
         OneDayPriceRepo(),
         WeekendOnlineRepo(),
@@ -144,14 +144,9 @@ def test_chart_payload_keeps_all_market_series_continuous_across_weekend() -> No
         "111", date(2026, 9, 25), date(2026, 9, 28), "raw"
     )
 
-    assert result["dates"] == [
-        "2026-09-25",
-        "2026-09-26",
-        "2026-09-27",
-        "2026-09-28",
-    ]
+    assert result["dates"] == ["2026-09-25", "2026-09-28"]
     for series_id in MARKET_EXCHANGES:
-        assert result["series"][series_id] == [100.0, 100.0, 100.0, 110.0]
+        assert result["series"][series_id] == [100.0, 110.0]
 
 
 def test_market_history_dates_extend_chart_timeline() -> None:
