@@ -120,13 +120,13 @@ class DailyPipeline:
                 if getattr(kamis_run, "error_count", 0):
                     errors.append(
                         CollectionError(
-                            "kamis",
+                            "kamis_raw",
                             "PartialFailure",
                             f"{kamis_run.error_count} KAMIS queries failed",
                         )
                     )
             except Exception as error:  # noqa: BLE001 - source isolation boundary
-                self._record_error(errors, "kamis", error, run.run_id)
+                self._record_error(errors, "kamis_raw", error, run.run_id)
 
         if self._online is not None:
             if self._source_completed(
