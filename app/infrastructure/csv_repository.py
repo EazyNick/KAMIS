@@ -287,7 +287,9 @@ class PriceRepository(_AtomicCsvRepository):
                 raise StorageError(f"failed to search {self.path}: {error}") from error
         return result
 
-    def item_date_stats(self) -> dict[str, tuple[date, date, int]]:
+    def item_date_stats(
+        self, *, requested_convert_kg: bool | None = None
+    ) -> dict[str, tuple[date, date, int]]:
         """Return earliest/latest/count per item without materializing price rows."""
         stats: dict[str, tuple[date, date, int]] = {}
         with self._lock:
@@ -296,6 +298,17 @@ class PriceRepository(_AtomicCsvRepository):
             try:
                 with self.path.open(encoding="utf-8-sig", newline="") as handle:
                     for row in csv.DictReader(handle):
+                        if requested_convert_kg is not None:
+                            stored_convert = str(
+                                row.get("requested_convert_kg", "")
+                            ).strip().casefold()
+                            expected_values = (
+                                {"true", "y", "1"}
+                                if requested_convert_kg
+                                else {"false", "n", "0"}
+                            )
+                            if stored_convert not in expected_values:
+                                continue
                         item_code = str(row.get("item_code", ""))
                         observed_text = row.get("observed_date", "")
                         if not item_code or not observed_text:
@@ -399,7 +412,11 @@ class PriceRepository(_AtomicCsvRepository):
         """
         required = set(required_scopes)
         if not required:
-            return self.observed_dates(start_date, end_date)
+            return self.observed_dates(
+                start_date,
+                end_date,
+                requested_convert_kg=requested_convert_kg,
+            )
 
         start_text = start_date.isoformat()
         end_text = end_date.isoformat()
@@ -447,7 +464,13 @@ class PriceRepository(_AtomicCsvRepository):
             if required.issubset(scopes)
         }
 
-    def observed_dates(self, start_date: date, end_date: date) -> set[date]:
+    def observed_dates(
+        self,
+        start_date: date,
+        end_date: date,
+        *,
+        requested_convert_kg: bool | None = None,
+    ) -> set[date]:
         """Return stored observation dates in a bounded window without loading rows."""
         result: set[date] = set()
         start_text = start_date.isoformat()
@@ -458,6 +481,17 @@ class PriceRepository(_AtomicCsvRepository):
             try:
                 with self.path.open(encoding="utf-8-sig", newline="") as handle:
                     for row in csv.DictReader(handle):
+                        if requested_convert_kg is not None:
+                            stored_convert = str(
+                                row.get("requested_convert_kg", "")
+                            ).strip().casefold()
+                            expected_values = (
+                                {"true", "y", "1"}
+                                if requested_convert_kg
+                                else {"false", "n", "0"}
+                            )
+                            if stored_convert not in expected_values:
+                                continue
                         observed_text = row.get("observed_date", "")
                         if not observed_text or observed_text < start_text:
                             continue
