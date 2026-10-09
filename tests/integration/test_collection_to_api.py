@@ -62,7 +62,7 @@ class IntegrationKamisClient:
                 region="서울",
                 market_name="테스트시장",
                 price_krw=Decimal(1000),
-                requested_convert_kg=True,
+                requested_convert_kg=query.convert_kg,
             )
         ]
 
