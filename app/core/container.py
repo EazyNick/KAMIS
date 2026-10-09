@@ -128,6 +128,16 @@ class ApplicationContainer:
         def collect_startup_history() -> int:
             total = 0
             try:
+                prices.compact_to_official_average_raw(
+                    f"startup-average-compact-{uuid4().hex}"
+                )
+            except Exception as error:  # noqa: BLE001 - optimization is retryable
+                app_logger.exception(
+                    "startup.kamis_compaction.failed",
+                    "KAMIS normalized CSV compaction failed; startup history will continue",
+                    error,
+                )
+            try:
                 total += kamis_history.collect()
             except Exception as error:  # noqa: BLE001 - independent history source
                 app_logger.exception(
