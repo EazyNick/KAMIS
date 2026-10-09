@@ -362,6 +362,58 @@ class PriceRepository(_AtomicCsvRepository):
                 ) from error
         return found_date if not required else required.issubset(found_scopes)
 
+    def covered_dates(
+        self,
+        start_date: date,
+        end_date: date,
+        required_scopes: set[tuple[str, str, str, str]]
+        | frozenset[tuple[str, str, str, str]],
+    ) -> set[date]:
+        """Return dates whose stored rows cover every required KAMIS scope.
+
+        A scope is (item_code, kind_code, price_type, rank_code). The CSV is
+        scanned once for the bounded window so startup recovery remains cheap
+        even with a large long-history file.
+        """
+        required = set(required_scopes)
+        if not required:
+            return self.observed_dates(start_date, end_date)
+
+        start_text = start_date.isoformat()
+        end_text = end_date.isoformat()
+        scopes_by_date: dict[date, set[tuple[str, str, str, str]]] = {}
+        with self._lock:
+            if not self.path.exists() or self.path.stat().st_size == 0:
+                return set()
+            try:
+                with self.path.open(encoding="utf-8-sig", newline="") as handle:
+                    for row in csv.DictReader(handle):
+                        observed_text = row.get("observed_date", "")
+                        if not observed_text or observed_text < start_text:
+                            continue
+                        if observed_text > end_text:
+                            break
+                        scope = (
+                            str(row.get("item_code", "")),
+                            str(row.get("kind_code", "")),
+                            str(row.get("price_type", "")),
+                            str(row.get("rank_code", "")),
+                        )
+                        if scope not in required:
+                            continue
+                        observed = date.fromisoformat(observed_text)
+                        scopes_by_date.setdefault(observed, set()).add(scope)
+            except (OSError, csv.Error, ValueError) as error:
+                raise StorageError(
+                    f"failed to inspect KAMIS scope coverage in {self.path}: {error}"
+                ) from error
+
+        return {
+            observed
+            for observed, scopes in scopes_by_date.items()
+            if required.issubset(scopes)
+        }
+
     def observed_dates(self, start_date: date, end_date: date) -> set[date]:
         """Return stored observation dates in a bounded window without loading rows."""
         result: set[date] = set()
