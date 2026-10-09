@@ -291,7 +291,7 @@ def run_backfill(
 
     app_logger.info(
         "kamis.long_history.started",
-        "20-year raw KAMIS history reconciliation started",
+        "[확인 시작] KAMIS 20년 데이터 누락 여부 점검",
         start_year=first_year,
         end_year=last_year,
         checkpoint=checkpoint_path,
@@ -333,6 +333,8 @@ def run_backfill(
         successful_keys: list[str] = []
         successful_counts: dict[str, int] = {}
         pending: list[tuple[str, PriceQuery]] = []
+        candidate_count = 0
+        skipped_count = 0
 
         for entry in targets:
             for price_type, rank_codes in (
@@ -341,6 +343,7 @@ def run_backfill(
             ):
                 for rank_code in rank_codes:
                     for period_start, period_end in segments:
+                        candidate_count += 1
                         key = query_key(
                             entry.item_code,
                             entry.kind_code,
@@ -378,6 +381,7 @@ def run_backfill(
                             and expected_count is not None
                             and stored_count >= expected_count
                         ):
+                            skipped_count += 1
                             continue
                         pending.append(
                             (
@@ -395,13 +399,24 @@ def run_backfill(
                         )
 
         if not pending:
+            app_logger.info(
+                "kamis.long_history.year.checked",
+                f"[확인] {year}년 KAMIS 데이터 이미 저장됨 - API 수집 없음",
+                year=year,
+                total_query_count=candidate_count,
+                skipped_query_count=skipped_count,
+                pending_query_count=0,
+            )
             continue
 
         app_logger.info(
             "kamis.long_history.year.started",
-            "Missing raw KAMIS history segments will be collected",
+            f"[수집 필요] {year}년 KAMIS 누락 {len(pending)}구간 발견 - "
+            "실제 API 수집 시작",
             year=year,
             segment_granularity="month" if year == today.year else "year",
+            total_query_count=candidate_count,
+            skipped_query_count=skipped_count,
             pending_query_count=len(pending),
         )
 
@@ -463,7 +478,7 @@ def run_backfill(
         save_checkpoint(checkpoint_path, completed_queries, checkpoint_counts)
         app_logger.info(
             "kamis.long_history.year.completed",
-            "Raw KAMIS history year reconciliation completed",
+            f"[저장 완료] {year}년 KAMIS 평균가격 보정 완료",
             year=year,
             fetched_rows=len(year_rows),
             completed_query_count=len(successful_keys),
@@ -477,7 +492,7 @@ def run_backfill(
     )
     app_logger.info(
         "kamis.long_history.completed",
-        "20-year raw KAMIS history reconciliation completed",
+        "[전체 완료] KAMIS 20년 데이터 확인/수집 종료",
         fetched_rows=result.fetched_rows,
         completed_query_count=result.completed_queries,
         failed_query_count=len(result.failed_queries),
