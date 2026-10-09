@@ -1,105 +1,34 @@
-from app.services.comparison_units import comparable_kamis_rows
+from app.infrastructure.csv_repository import PriceFilters
+from app.services.analytics import AnalyticsService
+from app.services.comparison import ComparisonService
 
 
-def test_generic_potato_uses_labelled_field_sumi_without_mixing_greenhouse():
-    entries = catalog('152', '00', 'kg', '1') + catalog('152', '01', 'g', '100')
-    rows, notes = comparable_kamis_rows([
-        row('01', '250', '수미(노지)(100g)'),
-        row('04', '500', '수미(시설)(100g)'),
-    ], '152', '00', entries)
-    assert [r['price_krw'] for r in rows] == [2500]
-    assert any('수미(노지)' in note for note in notes)
+def test_dashboard_does_not_apply_shopping_unit_conversion_to_kamis_prices():
+    original_price = 28980.57
 
+    class Prices:
+        def search(self, filters: PriceFilters):
+            assert filters.requested_convert_kg is False
+            return [
+                {
+                    "item_code": "257",
+                    "kind_code": "00",
+                    "observed_date": "2026-10-08",
+                    "price_type": "retail",
+                    "price_krw": original_price,
+                    "region": "서울",
+                }
+            ]
 
-def test_exact_potato_preferred_over_field_sumi_on_same_date():
-    entries = catalog('152', '00', 'kg', '1') + catalog('152', '01', 'g', '100')
-    rows, _ = comparable_kamis_rows([
-        row('00', '3000', '감자(1kg)'), row('01', '250', '수미(노지)(100g)'),
-    ], '152', '00', entries)
-    assert [r['price_krw'] for r in rows] == [3000]
+    service = ComparisonService(
+        Prices(),
+        object(),
+        type("Market", (), {"search": lambda self, **kwargs: []})(),
+        AnalyticsService(),
+        target_keys={("257", "00")},
+    )
 
+    chart = service.chart("257", None, None, "raw")
 
-def catalog(item="111", kind="10", unit="kg", size="10"):
-    return [{"item_code": item, "kind_code": kind, "retail_unit": unit, "retail_unit_size": size}]
-
-
-def row(kind="01", price="3000", variety="20kg(1kg)", **extra):
-    return dict(observed_date="2026-09-29", kind_code=kind, price_type="retail", price_krw=price, variety=variety, requested_convert_kg="True", region="??", **extra)
-
-
-def test_rice_converts_kg_to_10kg_without_changing_source():
-    source = row()
-    rows, notes = comparable_kamis_rows([source], "111", "10", catalog())
-    assert rows[0]["price_krw"] == 30000
-    assert source["price_krw"] == "3000"
-    assert any("20kg" in note for note in notes)
-
-
-def test_exact_rice_package_preferred_and_not_multiplied_twice():
-    rows, _ = comparable_kamis_rows([row(), dict(row("10", "40000", "10kg"), requested_convert_kg="False")], "111", "10", catalog())
-    assert len(rows) == 1
-    assert rows[0]["price_krw"] == 40000
-
-
-def test_count_prices_not_treated_as_kg_despite_request_flag():
-    rows, notes = comparable_kamis_rows([row("01", "20000", "신고(10개)"), row("01", "3000", "신고(1kg)")], "412", "01", catalog("412", "01", "개", "10"))
-    assert [r["price_krw"] for r in rows] == [20000]
-    assert notes
-
-
-def test_different_variety_not_substituted():
-    rows, notes = comparable_kamis_rows([row("02", "4000", "여름(1포기)")], "211", "03", catalog("211", "03", "포기", "1"))
-    assert not rows
-    assert notes
-
-
-def test_normal_year_reference_is_excluded():
-    source = row(); source["region"] = "평년"
-    rows, _ = comparable_kamis_rows([source], "111", "10", catalog())
-    assert not rows
-
-
-def test_unconverted_twenty_kg_price_is_halved():
-    entries = catalog() + [dict(catalog(kind="01", size="20")[0])]
-    source = dict(row(price="60000", variety="20kg"), requested_convert_kg="False")
-    rows, _ = comparable_kamis_rows([source], "111", "10", entries)
-    assert rows[0]["price_krw"] == 30000
-
-
-def test_chart_exposes_converted_price_and_explanation():
-    from types import SimpleNamespace
-
-    from app.services.analytics import AnalyticsService
-    from app.services.comparison import ComparisonService
-
-    prices = SimpleNamespace(search=lambda filters: [row()])
-    online = SimpleNamespace(search_summaries=lambda **kw: [])
-    market = SimpleNamespace(search=lambda **kw: [])
-    entries = SimpleNamespace(entries=lambda: [SimpleNamespace(to_dict=lambda: catalog()[0])])
-    service = ComparisonService(prices, online, market, AnalyticsService(),
-                                target_keys={("111", "10")}, catalog_repository=entries)
-    chart = service.chart("111", None, None, "raw")
-    assert chart["series"]["kamis_retail"] == [30000]
-    assert chart["raw_series"]["kamis_retail"] == [30000]
-    assert chart["comparison_notes"]
-
-
-def test_weight_price_converts_to_count_with_explicit_rule():
-    rules = {"257:00": {"kg_per_unit": 2, "unit": "개", "basis": "가정"}}
-    source = dict(row("00", "3000", "멜론(1kg)"), price_type="wholesale")
-    rows, notes = comparable_kamis_rows([source], "257", "00", catalog("257", "00", "개", "1"), conversion_rules=rules)
-    assert rows[0]["price_krw"] == 6000
-    assert source["price_krw"] == "3000"
-    assert any("2kg" in note and "가정" in note for note in notes)
-
-
-def test_count_price_converts_to_weight_with_explicit_rule():
-    rules = {"257:00": {"kg_per_unit": 2, "unit": "개", "basis": "가정"}}
-    rows, _ = comparable_kamis_rows([row("00", "12000", "멜론(2개)")], "257", "00", catalog("257", "00", "kg", "1"), conversion_rules=rules)
-    assert rows[0]["price_krw"] == 3000
-
-
-def test_bridge_does_not_convert_unrelated_count_units():
-    rules = {"257:00": {"kg_per_unit": 2, "unit": "개", "basis": "가정"}}
-    rows, _ = comparable_kamis_rows([row("00", "3000", "멜론(1kg)")], "257", "00", catalog("257", "00", "마리", "1"), conversion_rules=rules)
-    assert rows == []
+    assert chart["series"]["kamis_retail"] == [original_price]
+    assert chart["raw_series"]["kamis_retail"] == [original_price]
