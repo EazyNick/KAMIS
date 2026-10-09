@@ -12,9 +12,17 @@ from log.logger import StructuredLogger
 
 
 class PriceHistoryRepositoryProtocol(Protocol):
-    def observed_date_range(self) -> tuple[date, date] | None: ...
+    def observed_date_range(
+        self, *, requested_convert_kg: bool | None = None
+    ) -> tuple[date, date] | None: ...
 
-    def observed_dates(self, start_date: date, end_date: date) -> set[date]: ...
+    def observed_dates(
+        self,
+        start_date: date,
+        end_date: date,
+        *,
+        requested_convert_kg: bool | None = None,
+    ) -> set[date]: ...
 
     def covered_dates(
         self,
@@ -22,6 +30,8 @@ class PriceHistoryRepositoryProtocol(Protocol):
         end_date: date,
         required_scopes: set[tuple[str, str, str, str]]
         | frozenset[tuple[str, str, str, str]],
+        *,
+        requested_convert_kg: bool | None = None,
     ) -> set[date]: ...
 
 
@@ -63,7 +73,7 @@ class KamisHistoryService:
         today = self._today_provider()
         target_start = today - timedelta(days=self._window_days - 1)
         target_end = today - timedelta(days=1)
-        period = self._prices.observed_date_range()
+        period = self._prices.observed_date_range(requested_convert_kg=False)
 
         ranges: list[tuple[date, date]] = []
         if period is None:
@@ -90,6 +100,7 @@ class KamisHistoryService:
                     stored_dates = self._prices.observed_dates(
                         overlap_start,
                         overlap_end,
+                        requested_convert_kg=False,
                     )
                 if self._successful_dates_provider is not None:
                     stored_dates |= self._successful_dates_provider(
