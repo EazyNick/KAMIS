@@ -10,6 +10,7 @@ from app.services.comparison import ComparisonService
 class PriceRepo:
     def search(self, filters):
         assert filters.requested_convert_kg is False
+        assert filters.region == "평균"
         return [
             {
                 "item_code": "257",
