@@ -103,7 +103,7 @@ class ApplicationContainer:
             catalog.entries,
             analytics_batch if settings.analytics_auto_refresh else None,
             app_logger,
-            kamis_required_keys=set(settings.online_target_keys),
+            kamis_required_keys=frozenset(),
         )
         kamis_history = KamisHistoryService(
             prices,
@@ -112,7 +112,7 @@ class ApplicationContainer:
             timezone=settings.timezone,
             window_days=90,
             catalog_provider=catalog.entries,
-            required_keys=set(settings.online_target_keys),
+            required_keys=frozenset(),
             successful_dates_provider=lambda start, end: runs.successful_covered_dates(
                 "kamis_raw",
                 start,
