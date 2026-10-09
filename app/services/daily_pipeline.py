@@ -240,18 +240,22 @@ class DailyPipeline:
     ) -> frozenset[tuple[str, str, str, str]]:
         scopes: set[tuple[str, str, str, str]] = set()
         for entry in catalog:
+            item_code = getattr(entry, "item_code", None)
+            kind_code = getattr(entry, "kind_code", None)
+            if not item_code or not kind_code:
+                continue
             if (
                 self._kamis_required_keys
-                and (entry.item_code, entry.kind_code) not in self._kamis_required_keys
+                and (item_code, kind_code) not in self._kamis_required_keys
             ):
                 continue
             scopes.update(
-                (entry.item_code, entry.kind_code, "wholesale", rank_code)
-                for rank_code in entry.wholesale_rank_codes
+                (item_code, kind_code, "wholesale", rank_code)
+                for rank_code in getattr(entry, "wholesale_rank_codes", ())
             )
             scopes.update(
-                (entry.item_code, entry.kind_code, "retail", rank_code)
-                for rank_code in entry.retail_rank_codes
+                (item_code, kind_code, "retail", rank_code)
+                for rank_code in getattr(entry, "retail_rank_codes", ())
             )
         return frozenset(scopes)
 
