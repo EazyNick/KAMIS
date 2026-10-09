@@ -97,22 +97,23 @@ class DailyPipeline:
             lambda: kamis_price_repository.has_collected_date(
                 observed_date,
                 required_kamis_scopes,
+                requested_convert_kg=False,
             )
             if kamis_price_repository is not None
             and (required_kamis_scopes or not self._kamis_required_keys)
             else False
         )
         if not self._is_kamis_business_day(observed_date):
-            self._skip_calendar_closed_source("kamis", observed_date, run.run_id)
+            self._skip_calendar_closed_source("kamis_raw", observed_date, run.run_id)
         elif self._source_completed(
-            "kamis",
+            "kamis_raw",
             observed_date,
             run.run_id,
             data_probe=kamis_data_probe,
         ):
-            self._log_source_skipped("kamis", observed_date, run.run_id)
+            self._log_source_skipped("kamis_raw", observed_date, run.run_id)
         else:
-            self._log_source_started("kamis", observed_date, run.run_id)
+            self._log_source_started("kamis_raw", observed_date, run.run_id)
             try:
                 kamis_run = self._kamis.collect(observed_date, observed_date)
                 record_count += int(getattr(kamis_run, "record_count", 0))
@@ -127,47 +128,48 @@ class DailyPipeline:
             except Exception as error:  # noqa: BLE001 - source isolation boundary
                 self._record_error(errors, "kamis", error, run.run_id)
 
-        if self._source_completed(
-            "online",
-            observed_date,
-            run.run_id,
-            data_probe=lambda: self._online.has_collected_date(catalog, observed_date),
-        ):
-            self._log_source_skipped("online", observed_date, run.run_id)
-        else:
-            online_checkpoint = CollectionRun.start(
-                "online", observed_date, observed_date
-            )
-            self._runs.save(online_checkpoint)
-            self._log_source_started(
+        if self._online is not None:
+            if self._source_completed(
                 "online",
                 observed_date,
                 run.run_id,
-                catalog_count=len(catalog),
-            )
-            try:
-                online_result = self._online.collect(catalog, observed_date, run.run_id)
-                online_count = int(getattr(online_result, "offer_count", 0))
-                record_count += online_count
-                online_errors = tuple(
-                    CollectionError("online", "SourceFailure", str(message))
-                    for message in getattr(online_result, "errors", ())
+                data_probe=lambda: self._online.has_collected_date(catalog, observed_date),
+            ):
+                self._log_source_skipped("online", observed_date, run.run_id)
+            else:
+                online_checkpoint = CollectionRun.start(
+                    "online", observed_date, observed_date
                 )
-                errors.extend(online_errors)
-                online_status = (
-                    RunStatus.PARTIAL_FAILURE if online_errors else RunStatus.SUCCESS
+                self._runs.save(online_checkpoint)
+                self._log_source_started(
+                    "online",
+                    observed_date,
+                    run.run_id,
+                    catalog_count=len(catalog),
                 )
-                self._runs.save(
-                    online_checkpoint.finish(
-                        online_status,
-                        record_count=online_count,
-                        error_count=len(online_errors),
-                        errors=online_errors,
+                try:
+                    online_result = self._online.collect(catalog, observed_date, run.run_id)
+                    online_count = int(getattr(online_result, "offer_count", 0))
+                    record_count += online_count
+                    online_errors = tuple(
+                        CollectionError("online", "SourceFailure", str(message))
+                        for message in getattr(online_result, "errors", ())
                     )
-                )
-            except Exception as error:  # noqa: BLE001 - source isolation boundary
-                self._save_failed_checkpoint(online_checkpoint, error)
-                self._record_error(errors, "online", error, run.run_id)
+                    errors.extend(online_errors)
+                    online_status = (
+                        RunStatus.PARTIAL_FAILURE if online_errors else RunStatus.SUCCESS
+                    )
+                    self._runs.save(
+                        online_checkpoint.finish(
+                            online_status,
+                            record_count=online_count,
+                            error_count=len(online_errors),
+                            errors=online_errors,
+                        )
+                    )
+                except Exception as error:  # noqa: BLE001 - source isolation boundary
+                    self._save_failed_checkpoint(online_checkpoint, error)
+                    self._record_error(errors, "online", error, run.run_id)
 
         if observed_date.weekday() >= 5:
             self._skip_calendar_closed_source("market", observed_date, run.run_id)
