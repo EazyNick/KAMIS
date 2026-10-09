@@ -238,11 +238,12 @@ class DailyPipeline:
     def _required_kamis_scopes(
         self, catalog: list[ProductCatalogEntry]
     ) -> frozenset[tuple[str, str, str, str]]:
-        if not self._kamis_required_keys:
-            return frozenset()
         scopes: set[tuple[str, str, str, str]] = set()
         for entry in catalog:
-            if (entry.item_code, entry.kind_code) not in self._kamis_required_keys:
+            if (
+                self._kamis_required_keys
+                and (entry.item_code, entry.kind_code) not in self._kamis_required_keys
+            ):
                 continue
             scopes.update(
                 (entry.item_code, entry.kind_code, "wholesale", rank_code)
