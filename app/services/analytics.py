@@ -142,10 +142,6 @@ class AnalyticsService:
     @staticmethod
     def spreads_and_volatility(frame: pd.DataFrame) -> pd.DataFrame:
         output = pd.DataFrame(index=frame.index)
-        if {"online_combined", "kamis_retail"}.issubset(frame.columns):
-            output["online_minus_kamis_retail"] = (
-                frame["online_combined"] - frame["kamis_retail"]
-            )
         if {"kamis_retail", "kamis_wholesale"}.issubset(frame.columns):
             output["retail_minus_wholesale"] = (
                 frame["kamis_retail"] - frame["kamis_wholesale"]
