@@ -153,11 +153,20 @@ class ComparisonService:
         self.comparison_kinds: dict[str, str] = {}
         if catalog_repository is not None:
             for entry in catalog_repository.entries():
-                if not (
-                    entry.wholesale_rank_codes or entry.retail_rank_codes
+                data = entry.to_dict() if hasattr(entry, "to_dict") else {}
+                item_code = getattr(entry, "item_code", None) or data.get("item_code")
+                kind_code = getattr(entry, "kind_code", None) or data.get("kind_code")
+                wholesale_ranks = getattr(
+                    entry, "wholesale_rank_codes", None
+                ) or data.get("wholesale_rank_codes")
+                retail_ranks = getattr(
+                    entry, "retail_rank_codes", None
+                ) or data.get("retail_rank_codes")
+                if not item_code or not kind_code or not (
+                    wholesale_ranks or retail_ranks
                 ):
                     continue
-                self.comparison_kinds.setdefault(entry.item_code, entry.kind_code)
+                self.comparison_kinds.setdefault(str(item_code), str(kind_code))
         self.comparison_kinds.update(dict(sorted(target_keys)))
 
     def build_frame(
