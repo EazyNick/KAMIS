@@ -4,7 +4,7 @@ import csv
 import json
 import os
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 from threading import RLock
 from time import perf_counter
@@ -480,6 +480,32 @@ class RunRepository(_AtomicCsvRepository):
     def latest(self) -> dict[str, Any] | None:
         rows = self._read()
         return dict(rows[-1]) if rows else None
+
+    def successful_covered_dates(
+        self,
+        source: str,
+        start_date: date,
+        end_date: date,
+    ) -> set[date]:
+        """Return dates covered by successful collection runs for a source."""
+        covered: set[date] = set()
+        for row in self._read():
+            if row.get("source") != source or row.get("status") != "success":
+                continue
+            try:
+                run_start = date.fromisoformat(str(row.get("requested_start", "")))
+                run_end = date.fromisoformat(str(row.get("requested_end", "")))
+            except ValueError:
+                continue
+            overlap_start = max(start_date, run_start)
+            overlap_end = min(end_date, run_end)
+            if overlap_start > overlap_end:
+                continue
+            covered.update(
+                overlap_start + timedelta(days=offset)
+                for offset in range((overlap_end - overlap_start).days + 1)
+            )
+        return covered
 
     def has_successful_run(self, source: str, requested_date: date) -> bool:
         expected_date = requested_date.isoformat()
