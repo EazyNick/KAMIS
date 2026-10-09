@@ -1,0 +1,14 @@
+{
+  "targets": {
+    "611:05": {
+      "comparable_count": 0,
+      "excluded_reasons": {}
+    }
+  },
+  "invalid_row_count": 3,
+  "errors": [
+    "row 2: offer has no usable price",
+    "row 3: offer has no usable price",
+    "row 4: offer has no usable price"
+  ]
+}
