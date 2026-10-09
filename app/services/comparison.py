@@ -213,7 +213,9 @@ class ComparisonService:
         ]
         if kind is not None:
             price_rows = [row for row in price_rows if row.get("kind_code") == kind]
-        # PriceRepository already filters to KAMIS' nationwide-average rows.
+        # PriceRepository pushes this filter into DuckDB; keep the check here too
+        # for alternate repositories and regression tests.
+        price_rows = [row for row in price_rows if row.get("region") == "평균"]
         kamis_dates = sorted(
             {
                 pd.Timestamp(row["observed_date"])
