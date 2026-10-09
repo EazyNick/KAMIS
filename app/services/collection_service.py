@@ -74,7 +74,7 @@ class KamisCollectionService:
         if not self._run_lock.acquire(blocking=False):
             raise CollectionAlreadyRunning("a KAMIS collection is already running")
 
-        run = CollectionRun.start("kamis", start_date, end_date)
+        run = CollectionRun.start("kamis_raw", start_date, end_date)
         started = perf_counter()
         try:
             self.run_repository.save(run)
