@@ -211,8 +211,11 @@ def test_base100_uses_first_raw_observation_once_for_entire_range() -> None:
 
 def test_dashboard_defaults_use_raw_kamis_date_stats_only() -> None:
     class DateStatsRepo:
-        def item_date_stats(self, *, requested_convert_kg=None):
+        def item_date_stats(
+            self, *, requested_convert_kg=None, region=None
+        ):
             assert requested_convert_kg is False
+            assert region == "평균"
             return {"257": (date(2009, 5, 4), date(2026, 10, 8), 1000)}
 
     comparison = ComparisonService(
