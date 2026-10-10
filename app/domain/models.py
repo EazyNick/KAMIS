@@ -28,6 +28,7 @@ def split_codes(value: object) -> tuple[str, ...]:
 class PriceType(StrEnum):
     WHOLESALE = "wholesale"
     RETAIL = "retail"
+    ECO = "eco"
 
 
 class RunStatus(StrEnum):

@@ -56,7 +56,7 @@ def fill_exchange_holidays(frame: pd.DataFrame) -> pd.DataFrame:
         index=result.index,
         dtype=bool,
     )
-    for column in ("kamis_wholesale", "kamis_retail"):
+    for column in ("kamis_wholesale", "kamis_retail", "kamis_eco"):
         if column in result:
             fillable = result[column].isna() & closed
             result.loc[fillable, column] = result[column].ffill().loc[fillable]
@@ -120,6 +120,7 @@ class ComparisonService:
     core_series = (
         "kamis_wholesale",
         "kamis_retail",
+        "kamis_eco",
         "kospi",
         "kosdaq",
         "sp500",
@@ -165,7 +166,7 @@ class ComparisonService:
                 entry, "retail_rank_codes", None
             ) or data.get("retail_rank_codes")
             if not item_code or not kind_code or not (
-                wholesale_ranks or retail_ranks
+                wholesale_ranks or retail_ranks or getattr(entry, "eco_rank_codes", ())
             ):
                 continue
             self.comparison_kinds.setdefault(str(item_code), str(kind_code))
@@ -177,7 +178,7 @@ class ComparisonService:
             if not item_code or self.comparison_kinds.get(item_code) != kind_code:
                 continue
 
-            def unit_text(prefix: str) -> str | None:
+            def unit_text(prefix: str, entry=entry) -> str | None:
                 unit = getattr(entry, f"{prefix}_unit", None)
                 size = getattr(entry, f"{prefix}_unit_size", None)
                 if not unit:
@@ -189,6 +190,8 @@ class ComparisonService:
                 units["kamis_wholesale"] = wholesale
             if retail := unit_text("retail"):
                 units["kamis_retail"] = retail
+            if eco := unit_text("eco"):
+                units["kamis_eco"] = eco
             if units:
                 self.kamis_units[item_code] = units
 
@@ -209,7 +212,7 @@ class ComparisonService:
             if not item_code or self.comparison_kinds.get(item_code) != kind_code:
                 continue
 
-            def unit_text(prefix: str) -> str | None:
+            def unit_text(prefix: str, entry=entry) -> str | None:
                 unit = getattr(entry, f"{prefix}_unit", None)
                 size = getattr(entry, f"{prefix}_unit_size", None)
                 if not unit:
@@ -221,6 +224,8 @@ class ComparisonService:
                 units["kamis_wholesale"] = wholesale
             if retail := unit_text("retail"):
                 units["kamis_retail"] = retail
+            if eco := unit_text("eco"):
+                units["kamis_eco"] = eco
             if units:
                 self.kamis_units[item_code] = units
 
@@ -266,7 +271,7 @@ class ComparisonService:
             if "rank_code" not in prices:
                 prices["rank_code"] = ""
             prices["rank_code"] = prices["rank_code"].fillna("").astype(str)
-            for price_type in ("wholesale", "retail"):
+            for price_type in ("wholesale", "retail", "eco"):
                 typed = prices.loc[prices["price_type"].eq(price_type)].copy()
                 if typed.empty:
                     continue
@@ -299,7 +304,7 @@ class ComparisonService:
                 frame[str(series_id)] = values.groupby("observed_date")["close"].mean()
 
         observed_coverage = {}
-        for key in ("kamis_wholesale", "kamis_retail"):
+        for key in ("kamis_wholesale", "kamis_retail", "kamis_eco"):
             observed = frame[key].dropna() if key in frame else pd.Series(dtype=float)
             observed_coverage[key] = {
                 "first_date": observed.index.min().date().isoformat()
@@ -334,9 +339,9 @@ class ComparisonService:
             key: (
                 f"KAMIS 도매 ({unit_map[key]})"
                 if key == "kamis_wholesale"
-                else f"KAMIS 소매 ({unit_map[key]})"
+                else f"KAMIS {'친환경 소매' if key == 'kamis_eco' else '소매'} ({unit_map[key]})"
             )
-            for key in ("kamis_wholesale", "kamis_retail")
+            for key in ("kamis_wholesale", "kamis_retail", "kamis_eco")
             if key in unit_map
         }
         result["comparison_notes"] = raw_frame.attrs.get("comparison_notes", [])
@@ -350,6 +355,8 @@ class ComparisonService:
                 rank_parts.append(f"도매 rank {selected_ranks['wholesale']}")
             if "retail" in selected_ranks:
                 rank_parts.append(f"소매 rank {selected_ranks['retail']}")
+            if "eco" in selected_ranks:
+                rank_parts.append(f"친환경 소매 rank {selected_ranks['eco']}")
             result["comparison_notes"].append(
                 "장기 비교의 등급 혼합을 피하기 위해 "
                 + ", ".join(rank_parts)
@@ -361,12 +368,14 @@ class ComparisonService:
                 unit_parts.append(f"도매 {unit_map['kamis_wholesale']}")
             if "kamis_retail" in unit_map:
                 unit_parts.append(f"소매 {unit_map['kamis_retail']}")
+            if "kamis_eco" in unit_map:
+                unit_parts.append(f"친환경 소매 {unit_map['kamis_eco']}")
             result["comparison_notes"].append(
                 "KAMIS 원 조사단위: " + ", ".join(unit_parts)
                 + ". 도매와 소매의 조사 단위가 다르면 절대가격 크기를 직접 비교하면 안 됩니다."
             )
         coverage = raw_frame.attrs["kamis_observed_coverage"]
-        for key, label in (("kamis_wholesale", "도매"), ("kamis_retail", "소매")):
+        for key, label in (("kamis_wholesale", "도매"), ("kamis_retail", "소매"), ("kamis_eco", "친환경 소매")):
             first = coverage[key]["first_date"]
             last = coverage[key]["last_date"]
             if first:

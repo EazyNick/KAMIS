@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from datetime import datetime
+from dataclasses import replace
+from datetime import date, datetime
 from time import perf_counter
 from typing import Any, Protocol, cast
 from zoneinfo import ZoneInfo
@@ -21,6 +22,7 @@ from app.domain.models import (
     PriceType,
     ProductCatalogEntry,
 )
+from app.infrastructure.kamis_catalog_overrides import apply_verified_overrides
 from config.server_config import Settings
 from log.logger import StructuredLogger
 
@@ -142,19 +144,26 @@ class KamisClient:
         raw_rows = payload.get("info", [])
         if not isinstance(raw_rows, list):
             raise KamisApiError("PARSE", "productInfo.info is not a list")
-        return [
+        return apply_verified_overrides([
             ProductCatalogEntry.from_api(cast(dict[str, object], row))
             for row in raw_rows
             if isinstance(row, dict)
-        ]
+        ])
 
     def fetch_prices(self, query: PriceQuery) -> list[PriceObservation]:
+        if query.price_type is PriceType.ECO and query.start_date.year != query.end_date.year:
+            boundary = date(query.start_date.year, 12, 31)
+            return self.fetch_prices(replace(query, end_date=boundary)) + self.fetch_prices(
+                replace(query, start_date=date(boundary.year + 1, 1, 1))
+            )
         cert_key, cert_id = self._settings.require_kamis_credentials()
         action = (
             "periodWholesaleProductList"
             if query.price_type is PriceType.WHOLESALE
             else "periodRetailProductList"
         )
+        if query.price_type is PriceType.ECO:
+            action = "periodEcoPriceList"
         params = {
             "p_startday": query.start_date.isoformat(),
             "p_endday": query.end_date.isoformat(),
@@ -171,6 +180,8 @@ class KamisClient:
         price_label = (
             "도매" if query.price_type is PriceType.WHOLESALE else "소매"
         )
+        if query.price_type is PriceType.ECO:
+            price_label = "친환경 소매"
         log_context = {
             "item_name": query.catalog_entry.item_name,
             "item_code": query.catalog_entry.item_code,
@@ -212,7 +223,11 @@ class KamisClient:
             raise KamisApiError("PARSE", "price data is not a list")
         collected_at = datetime.now(ZoneInfo(self._settings.timezone))
         observations = [
-            PriceObservation.from_api(cast(dict[str, object], row), query, collected_at)
+            PriceObservation.from_api(
+                {"yyyy": str(query.start_date.year), **row}
+                if query.price_type is PriceType.ECO else cast(dict[str, object], row),
+                query, collected_at,
+            )
             for row in raw_rows
             if isinstance(row, dict)
         ]

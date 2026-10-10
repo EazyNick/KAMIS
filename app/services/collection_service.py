@@ -161,6 +161,7 @@ class KamisCollectionService:
             price_ranks = (
                 (PriceType.WHOLESALE, entry.wholesale_rank_codes),
                 (PriceType.RETAIL, entry.retail_rank_codes),
+                (PriceType.ECO, entry.eco_rank_codes),
             )
             for price_type, ranks in price_ranks:
                 for rank_code in ranks:

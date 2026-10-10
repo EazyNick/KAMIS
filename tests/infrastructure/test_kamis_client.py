@@ -8,7 +8,12 @@ from typing import Any
 import pytest
 
 from app.core.errors import KamisAuthenticationError
-from app.domain.models import PriceObservation, PriceQuery, PriceType, ProductCatalogEntry
+from app.domain.models import (
+    PriceObservation,
+    PriceQuery,
+    PriceType,
+    ProductCatalogEntry,
+)
 from app.infrastructure.kamis_client import KamisClient
 from config.server_config import Settings
 from log.logger import StructuredLogger
@@ -57,6 +62,35 @@ class FakeSession:
         assert timeout > 0
         self.last_params = params
         return self._responses.popleft()
+
+
+def test_eco_prices_use_dedicated_api_and_request_year(settings):
+    session = FakeSession()
+    session.queue_json({"data": {"error_code": "000", "item": [
+        {"countyname": "평균", "regday": "09/01", "price": "18,600", "unit": "400g"}
+    ]}})
+    client = KamisClient(settings, session, StructuredLogger(logging.getLogger("test.eco")))
+    query = PriceQuery(PriceType.ECO, date(2026, 9, 1), date(2026, 9, 30),
+                       ProductCatalogEntry.from_api(CATALOG_ROW), "07", convert_kg=False)
+    rows = client.fetch_prices(query)
+    assert session.last_params["action"] == "periodEcoPriceList"
+    assert rows[0].price_type is PriceType.ECO
+    assert rows[0].observed_date == date(2026, 9, 1)
+    assert rows[0].price_krw == 18600
+
+
+def test_eco_year_boundary_preserves_observation_years(settings):
+    session = FakeSession()
+    for day in ("12/31", "01/01"):
+        session.queue_json({"data": {"error_code": "000", "item": [
+            {"countyname": "평균", "regday": day, "price": "1000"}
+        ]}})
+    client = KamisClient(settings, session, StructuredLogger(logging.getLogger("test.eco")))
+    query = PriceQuery(PriceType.ECO, date(2025, 12, 31), date(2026, 1, 1),
+                       ProductCatalogEntry.from_api(CATALOG_ROW), "07", convert_kg=False)
+    assert [row.observed_date for row in client.fetch_prices(query)] == [
+        date(2025, 12, 31), date(2026, 1, 1)
+    ]
 
 
 @pytest.fixture

@@ -339,7 +339,7 @@ def run_backfill(
         entry.item_code
         for entry in targets
         if entry.item_code not in existing_item_codes
-        and (entry.wholesale_rank_codes or entry.retail_rank_codes)
+        and (entry.wholesale_rank_codes or entry.retail_rank_codes or entry.eco_rank_codes)
     }
     targets = sorted(
         targets,
@@ -385,8 +385,11 @@ def run_backfill(
             for price_type, rank_codes in (
                 (PriceType.WHOLESALE, entry.wholesale_rank_codes),
                 (PriceType.RETAIL, entry.retail_rank_codes),
+                (PriceType.ECO, entry.eco_rank_codes),
             ):
                 for rank_code in rank_codes:
+                    if price_type is PriceType.ECO and year < 2020:
+                        continue
                     for period_start, period_end in segments:
                         candidate_count += 1
                         key = query_key(
@@ -565,7 +568,7 @@ def run_backfill(
         {
             entry.item_code
             for entry in targets
-            if (entry.wholesale_rank_codes or entry.retail_rank_codes)
+            if (entry.wholesale_rank_codes or entry.retail_rank_codes or entry.eco_rank_codes)
             and entry.item_code not in final_item_stats
         }
     )

@@ -1,0 +1,145 @@
+{
+  "144:01": {
+    "wholesale_rank_codes": [
+      "05"
+    ],
+    "wholesale_unit_size": "1",
+    "wholesale_unit": "kg"
+  },
+  "248:00": {
+    "retail_rank_codes": [
+      "04"
+    ],
+    "retail_unit_size": "1",
+    "retail_unit": "kg"
+  },
+  "248:01": {
+    "retail_rank_codes": [
+      "04"
+    ],
+    "retail_unit_size": "1",
+    "retail_unit": "kg"
+  },
+  "313:01": {
+    "wholesale_rank_codes": [
+      "04",
+      "05"
+    ],
+    "wholesale_unit_size": "22.5",
+    "wholesale_unit": "kg"
+  },
+  "313:02": {
+    "wholesale_rank_codes": [
+      "05"
+    ],
+    "wholesale_unit_size": "45",
+    "wholesale_unit": "kg"
+  },
+  "318:00": {
+    "retail_rank_codes": [
+      "05"
+    ],
+    "retail_unit_size": "100",
+    "retail_unit": "g"
+  },
+  "319:00": {
+    "retail_rank_codes": [
+      "05"
+    ],
+    "retail_unit_size": "100",
+    "retail_unit": "g"
+  },
+  "430:00": {
+    "retail_rank_codes": [
+      "04"
+    ],
+    "retail_unit_size": "1",
+    "retail_unit": "개"
+  },
+  "614:06": {
+    "retail_rank_codes": [
+      "21",
+      "22"
+    ],
+    "retail_unit_size": "1",
+    "retail_unit": "마리"
+  },
+  "614:07": {
+    "retail_rank_codes": [
+      "21"
+    ],
+    "retail_unit_size": "1",
+    "retail_unit": "마리"
+  },
+  "641:00": {
+    "wholesale_rank_codes": [
+      "05"
+    ],
+    "wholesale_unit_size": "1",
+    "wholesale_unit": "속"
+  },
+  "642:00": {
+    "wholesale_rank_codes": [
+      "04"
+    ],
+    "wholesale_unit_size": "1",
+    "wholesale_unit": "kg"
+  },
+  "653:00": {
+    "wholesale_rank_codes": [
+      "05"
+    ],
+    "wholesale_unit_size": "1",
+    "wholesale_unit": "kg"
+  },
+  "654:01": {
+    "wholesale_rank_codes": [
+      "05"
+    ],
+    "wholesale_unit_size": "2",
+    "wholesale_unit": "kg"
+  },
+  "658:02": {
+    "wholesale_rank_codes": [
+      "04"
+    ],
+    "wholesale_unit_size": "1",
+    "wholesale_unit": "kg"
+  },
+  "660:01": {
+    "wholesale_rank_codes": [
+      "04"
+    ],
+    "wholesale_unit_size": "1",
+    "wholesale_unit": "kg"
+  },
+  "216:00": {
+    "retail_rank_codes": [
+      "04"
+    ],
+    "retail_unit_size": "1",
+    "retail_unit": "kg"
+  },
+  "614:05": {
+    "retail_rank_codes": [
+      "21",
+      "22"
+    ],
+    "retail_unit_size": "1",
+    "retail_unit": "마리"
+  },
+  "644:00": {
+    "wholesale_rank_codes": [
+      "04"
+    ],
+    "wholesale_unit_size": "1",
+    "wholesale_unit": "kg"
+  },
+  "659:01": {
+    "wholesale_rank_codes": [
+      "04"
+    ],
+    "wholesale_unit_size": "1",
+    "wholesale_unit": "kg"
+  }
+}
