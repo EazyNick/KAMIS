@@ -1,208 +1,133 @@
-# KAMIS 가격 비교·상관관계 대시보드
+﻿# KAMIS × 주가지수 분석
 
-## 비교 단위 환산
+**농축수산물 가격과 주식시장은 어떻게 함께 움직일까?**
 
-그래프는 KAMIS 소매 단위를 공통 비교 기준으로 사용합니다. kg↔g와 같은 단위는
-자동 환산하며, kg↔개·포기·마리는 `config/comparison_unit_rules.json`의 품목별
-중량 기준이 있을 때 환산합니다. 원본 CSV 가격은 변경하지 않습니다.
+KAMIS 농축수산물 가격과 KOSPI 등 주가지수의 장기 시계열을 비교하는 분석 저장소입니다. 과거 20년 범위의 데이터를 수집하고, 대시보드에서 품목별 가격 흐름을 살펴본 뒤 변화율과 상관계수로 관계를 검토합니다. 실제 조회 가능한 기간은 품목과 시장 지표에 따라 다릅니다.
 
-설정 예시(중량은 설명용 가정이며 실제 상품의 중량을 뜻하지 않습니다):
+![KAMIS 도매·소매 가격과 KOSPI를 함께 표시한 대시보드](docs/img/대시보드사진.png)
 
-```json
-{
-  "257:00": {"kg_per_unit": 2, "unit": "개", "basis": "1개=2kg 가정"}
-}
-```
+## 분석 목적
 
-이 예시에서는 멜론 도매 3,000원/kg을 6,000원/개로 표시합니다. 그래프 아래에
-환산 기준과 가정 여부가 표시됩니다. 개당 중량은 품목·크기마다 다르므로 가격 비율로
-역산하지 않습니다. 근거 또는 명시적 가정이 없는 품목은 서로 다른 차원의 단위를
-임의로 환산하지 않습니다. 설정 파일은 다음 조회부터 읽습니다.
+- 농축수산물 가격과 주가지수가 같은 방향 또는 반대 방향으로 움직이는지 살펴봅니다.
+- 품목·품종, 도매·소매·친환경 가격, 조회 기간에 따라 관계가 달라지는지 비교합니다.
+- 그래프에서 발견한 패턴을 변화율 상관계수, 관측 수, 통계적 유의성과 함께 검토합니다.
 
-## 네이버·쿠팡 Codex agent 수집
+## 비교 데이터
 
-네이버와 쿠팡은 저장소 skill과 Codex CLI를 통해, 로그인된 Windows 사용자의 일반 Chrome
-창을 UI Automation으로 조작해 수집합니다. 처음 clone한 뒤 Codex CLI 인증을
-완료하세요.
+| 데이터 | 비교 대상 | 기준 |
+| --- | --- | --- |
+| KAMIS | 식량작물·채소류·과일류 등 농축수산물 | 공식 평균 가격, 품종·등급 및 원 조사단위 |
+| 주가지수 | KOSPI, KOSDAQ, S&P 500, NASDAQ, Dow Jones | 시장 관측값 |
+| 보조 시장 지표 | 원/달러 환율, 옥수수·밀·대두 등 농산물 선물 | 시장 관측값 |
 
-수집 스킬과 실행 스크립트는 이 저장소에 포함됩니다. 별도의 개인 스킬 폴더로 복사할
-필요 없이 프로젝트 루트에서 실행하세요.
+KAMIS는 도매·소매·친환경 가격을 구분합니다. 가격 수집에는 원 조사단위(`p_convert_kg_yn=N`)를 사용하며, 모든 품목을 kg당 가격으로 통일하지 않습니다. 예를 들어 멜론 도매 `8kg`와 소매 `1개`는 서로 다른 단위의 가격입니다.
 
-- 네이버: `.agents/skills/naver-ui-collector/`
-- 쿠팡: `.agents/skills/coupang-ui-collector/`
-- 공통 CSV 검증기: `app/infrastructure/shopping_agent_validation.py`
+## 대시보드로 탐색하기
 
-새 환경에서는 아래 **저장소 클론 및 실행** 절차로 프로젝트 루트에 `.venv`를 만들고
-`requirements.txt`를 설치한 뒤, Google Chrome과 인증된 Codex CLI를 준비해야 합니다.
-수집 스크립트는 자신의 위치에서 프로젝트 루트를 계산하므로 clone 경로와 Windows
-사용자 이름이 달라도 동작합니다. API 키·Codex 인증·브라우저 로그인은 각 사용자
-환경에서 설정하며 저장소에 포함하지 않습니다.
+품목과 기간을 선택하고 KAMIS 가격과 시장 지표를 겹쳐 볼 수 있습니다. 그래프 확대·이동, 범례 선택, 툴팁을 이용해 관심 구간의 값을 확인합니다.
 
-```powershell
-codex login
-Copy-Item .env.example .env
-.\.venv\Scripts\python.exe app\main.py
-```
+| 표시 방식 | 읽는 방법 |
+| --- | --- |
+| 원가격 | 저장된 가격·지수 수준을 표시합니다. 각 계열의 단위를 함께 확인해야 합니다. |
+| 조회 시작값 = 100 | 계열별 첫 유효값을 100으로 맞춰 이후 상대적 변화를 비교합니다. |
+| 변화율 | 가격 수준 대신 관측값 간 변화를 비교합니다. |
 
-서버는 당일 플랫폼·품목별 완료 CSV를 먼저 확인합니다. 이미 완료된 항목은 다시
-요청하지 않고, 플랫폼별로 빠진 항목들만 배치당 최대 10개씩 나눠 수집합니다. 직접 한 품목을
-점검하려면 다음 명령을 실행합니다.
+기준값 100은 물가를 보정한 실질가격이 아니라, 서로 다른 규모의 시계열을 비교하기 위한 지수화입니다.
 
-```powershell
-.\.venv\Scripts\python.exe -m app.collectors.naver_agent --date 2026-09-26 --item 111:10
-.\.venv\Scripts\python.exe -m app.collectors.coupang_agent --date 2026-09-26 --item 111:10
-```
+![멜론 가격과 KOSPI의 움직임을 구간별로 비교한 예시](docs/img/주가와%20kamis%20데이터%20비교.png)
 
-Windows 데스크톱은 로그인된 상태로 잠금 해제되어 있어야 하며, 일반 Chrome 창을
-사용합니다. 화면 좌표 클릭은 사용하지 않습니다. 접근 차단, CAPTCHA 또는 로그인
-요구를 우회하지 않으며 agent 수집이 실패한 품목은 수집 오류로 기록합니다.
-기존 Playwright fallback 호출은 주석 처리되어 실행하지 않습니다. Codex CLI 호출에는 계정 사용량이 발생합니다.
-Windows UI Automation 프로세스 실행 때문에 기본 `CODEX_SANDBOX_MODE`는
-`danger-full-access`입니다. 이 설정은 명시적 `naver-ui-collector`와
-`coupang-ui-collector` skill에만 사용하고,
-외부 prompt나 임의 명령 실행에 재사용하지 마세요.
+위 이미지는 멜론 가격과 KOSPI의 특정 구간을 확대한 탐색 예시입니다. 붉은 표시 구간의 모양이 비슷하더라도 전체 기간의 상관관계나 인과관계가 확인된 것은 아닙니다. 계절성과 분석 기간에 따라 결과가 달라질 수 있습니다.
 
-원시 agent 파일은 `data/runs/naver-agent/<run-id>/` 또는
-`data/runs/coupang-agent/<run-id>/` 아래의 `manifest.json`,
-`result-schema.json`, `agent-result.json`, `offers.csv`로 남습니다. 검증을 통과한 결과는
-`data/normalized/online_offers.csv`, 판단 사유는
-`data/normalized/online_offer_decisions.csv`, 일별 평균은
-`data/normalized/online_price_summaries.csv`에서 확인합니다. 실행 원인과 실패 범위는
-`log/logs/`의 `codex_cli.*`, `naver_agent.*`, `coupang_agent.*`,
-`online.collection.*` 이벤트로 추적합니다.
+## 상관관계 분석
 
-각 실행 폴더의 `validation-report.json`에는 CSV 행별 검증 오류와 품목별 비교 가능한
-상품 수·제외 사유가 기록됩니다. 최종 성공 여부는 접근 가능한 상품 카드 수가 아니라
-이 검증 결과로 결정합니다. 상품 수량이 모호하면 임의로 채우지 않으며, 현재 수집기는
-상품 상세 페이지의 선택 옵션을 자동으로 확인하지 않습니다.
+![품목별 가격 현황과 시장 지표 간 상관계수 및 관측 수](docs/img/상관관계분석.png)
 
-API에서 직접 실행할 때는 `POST /api/v1/collections/naver-agent` 또는
-`POST /api/v1/collections/coupang-agent`에 다음 JSON을 전송합니다. `item`을 생략하면
-설정된 대표 11개 중 해당 플랫폼의 당일 누락 항목만 처리합니다.
+대시보드에서 상관계수와 관측 수를 함께 확인할 수 있습니다. 표본이 적은 계열의 큰 상관계수는 장기간 관측한 결과와 구분해서 해석해야 합니다. 이미지의 수치는 촬영 당시 선택한 품목과 기간의 예시입니다.
 
-```json
-{"observed_date":"2026-09-26","item":"111:10"}
-```
+별도 분석 스크립트는 KOSPI와 KAMIS 품종별 관계를 계산하고 CSV로 저장합니다.
 
-KAMIS 도매·소매가격, 네이버·쿠팡 온라인 판매가격, 원자재 선물과 주요 주가지수를 하루 한 번 수집해 비교·분석하는 FastAPI 프로젝트입니다. 데이터는 CSV에 원본·정규화 형태로 보존하며 웹에서 검색, 필터, 표, 그래프와 상관관계 분석을 제공합니다.
-
-## 저장소 클론 및 실행
-
-### Windows PowerShell
-
-1. 저장소를 클론하고 프로젝트 폴더로 이동합니다.
+- 공통 관측일 기준 일간 변화율의 Pearson·Spearman 상관계수
+- 월간 변화율 상관계수와 참고용 가격 수준 상관계수
+- 일간 상관계수의 p-value 및 다중 비교를 고려한 Benjamini–Hochberg FDR 보정
+- 최소 관측 수 조건을 충족한 품종의 양·음의 상관관계 순위
 
 ```powershell
-git clone https://github.com/EazyNick/KAMIS.git
-Set-Location KAMIS
+# 기본 분석
+.\.venv\Scripts\python.exe scripts/analyze_kospi_kamis_correlations.py
+
+# 2010년 이후 도매 가격, 최소 관측 수 1,000개, 상위 20개
+.\.venv\Scripts\python.exe scripts/analyze_kospi_kamis_correlations.py --price-type wholesale --start-date 2010-01-01 --min-observations 1000 --top 20
 ```
 
-2. Python 3.11 가상환경을 만들고 패키지와 Chromium을 설치합니다.
+기본 결과 경로는 `data/analysis/kospi_kamis_correlations.csv`입니다. `--output`으로 저장 위치를 지정할 수 있습니다. 분석에는 로컬에 저장된 KAMIS 및 시장 데이터가 필요합니다.
+
+## 실행 방법
+
+Windows PowerShell 기준입니다.
+
+### 1. 환경 준비
 
 ```powershell
-py -3.11 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install --upgrade pip
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-.\.venv\Scripts\python.exe -m playwright install chromium
-```
-
-3. 환경변수 파일을 만들고 KAMIS 인증정보를 입력합니다.
-
-```powershell
-Copy-Item .env.example .env
-notepad .env
-```
-
-`.env`의 필수 항목은 다음과 같습니다. 실제 키는 Git에 커밋하지 마세요.
-
-```dotenv
-KAMIS_CERT_KEY=발급받은_API_키
-KAMIS_CERT_ID=발급받은_요청자_ID
-```
-
-4. 웹 서버를 실행합니다.
-
-```powershell
-.\.venv\Scripts\python.exe -m app.cli serve --host 127.0.0.1 --port 8000
-```
-
-서버가 시작되면 서울 기준 오늘의 `daily_pipeline` 성공 이력을 자동으로 확인합니다. 오늘 성공 이력이 없거나 이전 실행이 실패·부분 실패라면 백그라운드에서 KAMIS·네이버·쿠팡·시장 데이터 통합 수집을 시작합니다. 수집 중에도 대시보드와 API는 바로 사용할 수 있으며, 이미 성공한 날짜에는 다시 수집하지 않습니다.
-
-수집 도중 서버가 종료된 경우에도 다음 실행에서 날짜별 KAMIS·온라인·시장 성공 체크포인트와 기존 CSV의 관측일을 확인합니다. 이미 저장까지 완료된 소스는 건너뛰고 실패·부분 완료·미실행 소스만 다시 수집하며, 이 판단은 `log/logs/`의 `daily_pipeline.checkpoint.recovered`와 `daily_pipeline.source.skipped` 이벤트에서 확인할 수 있습니다.
-
-KAMIS 품목·도매가·소매가는 전체 수집하고, 네이버·쿠팡 검색은 대표 KAMIS 품목 11개에만 수행합니다(플랫폼별 11회, 하루 최대 22회). 기본 요청 간격은 5초이며 진행 상황과 실패 원인은 `log/logs/`의 로그에서 확인할 수 있습니다.
-
-온라인 수집은 기본적으로 설치된 Google Chrome과 `data/browser-profile`의 전용 프로필을 화면 표시 모드로 재사용합니다. 쿠팡은 검색 URL로 직접 진입하지 않고 홈페이지를 연 뒤 검색창을 사용합니다. 서버 환경에 Chrome이 없으면 `.env`의 `SHOPPING_BROWSER_CHANNEL`을 빈 값으로 설정해 Playwright Chromium을 사용할 수 있지만, 쿠팡은 해당 브라우저를 차단할 수 있습니다. `ONLINE_TARGETS`에는 중복 없는 KAMIS `item_code:kind_code` 쌍을 지정할 수 있습니다. HTTP 403/418/429, `Access Denied` 또는 CAPTCHA가 감지되면 우회하지 않고 그 플랫폼의 남은 검색을 당일 중단합니다.
-
-### VS Code에서 실행
-
-프로젝트 루트가 `D:\Python\KAMIS`라면 다음 두 방식 모두 지원합니다.
-
-```powershell
-# 권장 방식
-.\.venv\Scripts\python.exe -m app.cli serve --host 127.0.0.1 --port 8000
-
-# app/main.py를 직접 실행하는 방식
-.\.venv\Scripts\python.exe app\main.py
-```
-
-VS Code의 Python 인터프리터는 `.venv\Scripts\python.exe`를 선택하고, 반드시 저장소 루트를 작업 폴더로 연 뒤 실행하세요.
-
-### macOS/Linux
-
-```bash
 git clone https://github.com/EazyNick/KAMIS.git
 cd KAMIS
-python3.11 -m venv .venv
-./.venv/bin/python -m pip install --upgrade pip
-./.venv/bin/python -m pip install -r requirements.txt
-./.venv/bin/python -m playwright install chromium
-cp .env.example .env
-# 편집기로 .env에 KAMIS_CERT_KEY와 KAMIS_CERT_ID를 입력합니다.
-./.venv/bin/python -m app.cli serve --host 127.0.0.1 --port 8000
+git lfs install
+git lfs pull
+
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
-## 실행 후 접속 주소
+KAMIS 가격 CSV는 Git LFS로 관리하므로, 저장소의 기존 데이터를 이용하려면 실제 LFS 파일을 내려받아야 합니다.
 
-- 웹 대시보드: <http://127.0.0.1:8000/>
+### 2. KAMIS 인증 설정
+
+`.env.example`을 `.env`로 복사하고 발급받은 인증 정보를 입력합니다. 기존 `.env`가 있다면 해당 값을 수정합니다.
+
+```dotenv
+KAMIS_CERT_KEY=발급받은_인증키
+KAMIS_CERT_ID=발급받은_인증ID
+```
+
+현재 기본 실행 경로에서는 네이버·쿠팡 자동 수집을 중지하고 KAMIS와 금융시장 데이터 비교에 집중합니다. 관련 레거시 코드와 환경변수는 저장소에 남아 있습니다.
+
+### 3. 대시보드 실행
+
+```powershell
+.\.venv\Scripts\python.exe app/main.py
+```
+
+- 대시보드: <http://127.0.0.1:8000/>
 - API 문서: <http://127.0.0.1:8000/docs>
 - 상태 확인: <http://127.0.0.1:8000/health>
-- 개발·운영 안내: [docs/dev/README.md](docs/dev/README.md)
 
-## 추가 수집 명령
+시작 시 과거 데이터 보충 수집이 백그라운드에서 진행될 수 있습니다. 서버가 실행되었다고 모든 품목의 수집이 완료된 것은 아니며, 초기 수집에는 인증 정보와 네트워크 연결이 필요합니다.
 
-KAMIS만 지정 기간으로 수집하거나 과거 3년 자료를 초기 적재할 수 있습니다.
+## 데이터 해석 기준
 
-```powershell
-$today = Get-Date -Format yyyy-MM-dd
-.\.venv\Scripts\python.exe -m app.cli collect-all --date $today
-.\.venv\Scripts\python.exe -m app.cli collect-kamis --start 2026-09-24 --end 2026-09-24
-.\.venv\Scripts\python.exe -m app.cli backfill-kamis --years 3
-.\.venv\Scripts\python.exe -m app.cli schedule
+- **단위와 등급:** 원가격을 비교할 때는 품종·등급·도소매 구분·조사단위를 확인합니다. 단위가 다른 가격의 절대 크기를 바로 비교하지 않습니다.
+- **관측 기간:** 20년 조회 범위를 요청해도 품목의 조사 시작일, 계절성, API 제공 범위에 따라 실제 데이터가 적을 수 있습니다.
+- **휴장일과 결측:** 화면에서는 휴장일 전일값 유지 및 결측 구간 선 연결로 흐름을 이어 보여줍니다. 선이 이어져 있어도 매일 실제 관측값이 존재한다는 뜻은 아닙니다.
+- **명목가격:** 원가격에는 물가 조정이 적용되지 않습니다. 기준값 100으로 표시해도 물가 조정은 이루어지지 않습니다.
+- **상관관계:** 장기 추세가 비슷한 가격 수준에서는 허위상관이 나타날 수 있습니다. 변화율, 관측 수, 기간, 계절성을 함께 검토하며 상관관계를 인과관계로 해석하지 않습니다.
+- **수집 누락:** 로컬 데이터가 없거나 특정 API 요청이 무자료로 응답했다고 영구 미제공 품목으로 단정하지 않습니다. 확인한 코드·등급·기간과 근거는 아래 API 점검 기록에 남깁니다.
+
+## 저장소 구성
+
+```text
+app/               FastAPI 서버, 대시보드, 수집·비교·분석 서비스
+config/            품목 및 수집 관련 설정
+scripts/           과거 데이터 수집, 점검, 상관관계 분석 스크립트
+data/              원본·정규화 데이터, 수집 이력, 분석 결과
+docs/              API 점검 기록과 개발 문서
+  img/             README 대시보드 이미지
+tests/             수집·정규화·분석·화면 관련 테스트
 ```
 
-## 수집기 개별 실행
+Python·FastAPI 기반으로 데이터를 수집하고, pandas·DuckDB·SciPy 등을 활용해 조회·분석합니다.
 
-서버가 사용하는 KAMIS·네이버·쿠팡·시장 수집기는 각각 독립된 파일로도 실행할 수 있습니다. 네이버·쿠팡 문제를 확인할 때는 `--headful`로 브라우저를 표시하고, `--item`으로 KAMIS 품목 하나만 지정할 수 있습니다.
+## 관련 문서
 
-```powershell
-# KAMIS 전체 품목의 해당 날짜 가격
-.\.venv\Scripts\python.exe app\collectors\kamis.py --date 2026-09-25
-
-# 네이버 대표 11개 / 쌀 10kg 한 품목만 화면 표시
-.\.venv\Scripts\python.exe app\collectors\naver.py --date 2026-09-25 --headful
-.\.venv\Scripts\python.exe app\collectors\naver.py --date 2026-09-25 --item 111:10 --headful
-
-# 쿠팡 대표 11개 / 쌀 10kg 한 품목만 화면 표시
-.\.venv\Scripts\python.exe app\collectors\coupang.py --date 2026-09-25 --headful
-.\.venv\Scripts\python.exe app\collectors\coupang.py --date 2026-09-25 --item 111:10 --headful
-
-# 주가지수·선물·환율
-.\.venv\Scripts\python.exe app\collectors\market.py --date 2026-09-25
-```
-
-날짜를 생략하면 서울 기준 오늘을 사용합니다. 네이버·쿠팡 단독 실행 결과는 해당 플랫폼 데이터만 갱신하며 다른 플랫폼과 기존 통합 평균은 덮어쓰지 않습니다. HTTP 403/418/429 또는 CAPTCHA는 로그에 `shopping.search.failed`와 `online.collection.source.blocked`로 기록됩니다.
-
-실제 인증정보는 `.env`에만 저장하며 저장소, 로그, 화면에 노출하지 않습니다.
-
-대시보드는 KAMIS 도매·소매, 네이버, 쿠팡, 통합 온라인 평균, 국내외 5개 주가지수와 관련 농산물 선물·환율을 제공합니다. 첫 접속 시 KAMIS 품목 목록에 쌀(111)·콩(141)이 있으면 각각 쌀 선물·대두 선물을 기본 활성화합니다. 오렌지주스 등 나머지 선물은 데이터를 유지하되 기본 비활성화하며, 사용자가 범례를 눌러 표시할 수 있습니다. 변동폭에 따른 `주목` 자동 선택은 사용하지 않으며, 조회 조건 변경 시 사용자의 선택을 유지합니다. 시계열별 활성화, 기준 100·원값·1일·7일 변화율, 날짜 필터, 검색 가능한 웹 테이블과 상관관계 분석을 지원합니다.
+- [KAMIS API 제공 여부 및 코드 조합 점검](docs/api/kamis-availability-20261010.md)
+- [KAMIS 카탈로그 검증 기록](docs/kamis-catalog-verification-20261009.md)
+- [누락 데이터 복구 결과](docs/kamis-recovery-result-20261010.md)
+- [개발 문서](docs/dev/README.md)
